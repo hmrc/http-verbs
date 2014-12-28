@@ -37,21 +37,13 @@ private object AppDependencies {
   val compile = Seq(
     "com.typesafe.play" %% "play" % PlayVersion.current,
     ws % "provided",
+    "net.ceedubs" %% "ficus" % "1.1.1",
+    "uk.gov.hmrc" %% "time" % "1.0.1",
+    "uk.gov.hmrc" %% "http-exceptions" % "0.1.0",
+
     "uk.gov.hmrc" %% "audit-config" % "999-SNAPSHOT",
     "uk.gov.hmrc" %% "play-config" % "999-SNAPSHOT",
-    "uk.gov.hmrc" %% "js-validation" % "999-SNAPSHOT",
-
-    "net.ceedubs" %% "ficus" % "1.1.1",
-
-//    "com.kenshoo" %% "metrics-play" % "2.3.0_0.1.6",
-//    "com.codahale.metrics" % "metrics-graphite" % "3.0.1",
-//
-//    "commons-io" % "commons-io" % "2.4",
-    "uk.gov.hmrc" %% "time" % "1.0.1",
-//
-//    "uk.gov.hmrc" %% "domain" % "2.2.2",
-//    "uk.gov.hmrc" % "secure-utils" % "4.1.0",
-    "uk.gov.hmrc" %% "http-exceptions" % "0.1.0"
+    "uk.gov.hmrc" %% "js-validation" % "999-SNAPSHOT"
   )
 
   trait TestDependencies {
