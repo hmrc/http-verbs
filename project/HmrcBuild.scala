@@ -41,9 +41,9 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "time" % "1.0.1",
     "uk.gov.hmrc" %% "http-exceptions" % "0.1.0",
 
-    "uk.gov.hmrc" %% "audit-config" % "999-SNAPSHOT",
-    "uk.gov.hmrc" %% "play-config" % "999-SNAPSHOT",
-    "uk.gov.hmrc" %% "js-validation" % "999-SNAPSHOT"
+    "uk.gov.hmrc" %% "audit-config" % "0.1.0",
+    "uk.gov.hmrc" %% "play-config" % "0.1.0",
+    "uk.gov.hmrc" %% "js-validation" % "0.1.0"
   )
 
   trait TestDependencies {
@@ -60,7 +60,7 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % "1.4.2" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.46" % scope,
 
-        "uk.gov.hmrc" %% "hmrctest" % "999-SNAPSHOT" % scope
+        "uk.gov.hmrc" %% "hmrctest" % "0.1.0" % scope
       )
     }.test
   }
