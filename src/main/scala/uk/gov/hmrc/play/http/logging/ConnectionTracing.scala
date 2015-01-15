@@ -18,8 +18,8 @@ trait ConnectionTracing {
   }
 
   def logResult[A](ld: LoggingDetails, method: String, uri: String, startAge: Long)(result: Try[A]) = result match {
-    case Success(ground) => connectionLogger.info(formatMessage(ld, method, uri, startAge, "ok"))
-    case Failure(ex) => connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
+    case Success(ground) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
+    case Failure(ex) => connectionLogger.warn(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
   }
 
   import uk.gov.hmrc.play.http.logging.ConnectionTracing.formatNs
