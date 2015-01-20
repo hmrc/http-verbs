@@ -22,7 +22,7 @@ object HmrcBuild extends Build {
       shellPrompt := ShellPrompt(appVersion),
       libraryDependencies ++= AppDependencies(),
       Collaborators(),
-      crossScalaVersions := Seq("2.11.4")
+      crossScalaVersions := Seq("2.11.5")
     )
     .settings(publishAllArtefacts : _*)
     .settings(nexusPublishingSettings : _*)
@@ -38,12 +38,12 @@ private object AppDependencies {
     "com.typesafe.play" %% "play" % PlayVersion.current,
     ws % "provided",
     "net.ceedubs" %% "ficus" % "1.1.1",
-    "uk.gov.hmrc" %% "time" % "1.0.1",
-    "uk.gov.hmrc" %% "http-exceptions" % "0.1.0",
+    "uk.gov.hmrc" %% "time" % "1.1.0",
+    "uk.gov.hmrc" %% "http-exceptions" % "0.2.0",
 
-    "uk.gov.hmrc" %% "audit-config" % "0.1.0",
-    "uk.gov.hmrc" %% "play-config" % "0.1.0",
-    "uk.gov.hmrc" %% "js-validation" % "0.1.0"
+    "uk.gov.hmrc" %% "audit-config" % "0.2.0",
+    "uk.gov.hmrc" %% "play-config" % "0.2.0",
+    "uk.gov.hmrc" %% "js-validation" % "0.2.0"
   )
 
   trait TestDependencies {
@@ -60,7 +60,7 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % "1.4.2" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.46" % scope,
 
-        "uk.gov.hmrc" %% "hmrctest" % "0.1.0" % scope
+        "uk.gov.hmrc" %% "hmrctest" % "0.2.0" % scope
       )
     }.test
   }
