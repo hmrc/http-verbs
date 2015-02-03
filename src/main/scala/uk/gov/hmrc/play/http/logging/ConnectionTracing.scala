@@ -1,6 +1,7 @@
 package uk.gov.hmrc.play.http.logging
 
 import play.api.Logger
+import uk.gov.hmrc.play.http.{Upstream4xxResponse, HttpException}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent._
@@ -19,6 +20,8 @@ trait ConnectionTracing {
 
   def logResult[A](ld: LoggingDetails, method: String, uri: String, startAge: Long)(result: Try[A]) = result match {
     case Success(ground) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
+    case Failure(ex: HttpException) if ex.responseCode == 404 => connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
+    case Failure(ex: Upstream4xxResponse) if ex.upstreamResponseCode == 404 => connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
     case Failure(ex) => connectionLogger.warn(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
   }
 
