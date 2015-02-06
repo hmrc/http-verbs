@@ -79,7 +79,7 @@ object AuditConnector extends AuditConnector with ConnectionTracing {
       buildRequest(url).post(body).map(new WSHttpResponse(_))
     }
 
-  protected def logError(s: String) = Logger.error(s)
+  protected def logError(s: String) = Logger.warn(s)
 
-  protected def logError(s: String, t: Throwable) = Logger.error(s, t)
+  protected def logError(s: String, t: Throwable) = Logger.warn(s, t)
 }
