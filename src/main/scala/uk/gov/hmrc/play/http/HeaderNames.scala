@@ -20,6 +20,7 @@ object SessionKeys {
   val sessionId = "sessionId"
   val userId = "userId"
   val name = "name"
+  val email = "email"
   val agentName = "agentName"
   val token = "token"
   val authToken = "authToken"
