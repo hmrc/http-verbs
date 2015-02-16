@@ -3,6 +3,7 @@ package uk.gov.hmrc.play.audit.http.connector
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.model.{MergedDataEvent, AuditEvent}
+import uk.gov.hmrc.play.connectors.Connector
 import uk.gov.hmrc.play.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}

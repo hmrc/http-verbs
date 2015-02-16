@@ -42,7 +42,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "http-exceptions" % "0.2.0",
 
     "uk.gov.hmrc" %% "audit-config" % "0.2.0",
-    "uk.gov.hmrc" %% "play-config" % "0.2.0",
+    "uk.gov.hmrc" %% "play-config" % "0.3.0",
     "uk.gov.hmrc" %% "js-validation" % "0.2.0"
   )
 
