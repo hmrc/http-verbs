@@ -80,7 +80,7 @@ class AuditConnectorSpec extends UnitSpec with Eventually with ScalaFutures {
       }
 
       val f = Future.successful(response)
-      mockConnector.handleResult(f, body)(new HeaderCarrier).futureValue
+      mockConnector.handleResult(f, body)(new HeaderCarrier).failed.futureValue
 
       mockConnector.called.logError2 shouldBe None
       mockConnector.called.logError1 shouldNot be(None)
@@ -136,14 +136,14 @@ class AuditConnectorSpec extends UnitSpec with Eventually with ScalaFutures {
   "sendEvent" should {
     case class Called(callDatastream: Option[JsValue] = None, handleResult: Boolean = false)
 
-    class MockAuditConnector(response: Future[HttpResponse]) extends StubAuditConnector {
+    class MockAuditConnector(response: Future[HttpResponse], enabled: Boolean = true) extends StubAuditConnector {
       var called = new Called()
 
-      override def auditingConfig: AuditingConfig = AuditingConfig(BaseUri("datastream-base-url", 8080))
+      override def auditingConfig: AuditingConfig = AuditingConfig(BaseUri("datastream-base-url", 8080), enabled)
 
       override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails) = {
         called = called.copy(handleResult = true)
-        resultF
+        super.handleResult(resultF, body)
       }
 
       override protected def callAuditConsumer(url: String, body: JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
@@ -154,11 +154,42 @@ class AuditConnectorSpec extends UnitSpec with Eventually with ScalaFutures {
     }
 
     "call datastream with the event converted to json" in {
-      val mockConnector = new MockAuditConnector(Future.failed(new Exception("failed")))
-      val event: DataEvent = DataEvent("source", "type")
-      mockConnector.sendEvent(event)
+      val mockConnector = new MockAuditConnector(response = Future.successful(HttpResponse(200)))
+      val event = DataEvent("source", "type")
+      mockConnector.sendEvent(event).futureValue should be (AuditResult.Success)
 
       mockConnector.called shouldBe Called(Some(Json.toJson(event)), true)
+    }
+
+    "return a failed future if the HTTP response status is greater than 299" in {
+      val mockConnector = new MockAuditConnector(response = Future.successful(HttpResponse(300)))
+      val event = DataEvent("source", "type")
+
+      val failureResponse = mockConnector.sendEvent(event).failed.futureValue
+      failureResponse should have ('nested (None))
+      checkAuditFailureMessage(failureResponse.getMessage, Json.toJson(event), 300)
+
+      mockConnector.called shouldBe Called(Some(Json.toJson(event)), true)
+    }
+
+    "return a failed future if there is an exception in the HTTP connection" in {
+      val exception = new Exception("failed")
+      val mockConnector = new MockAuditConnector(response = Future.failed(exception))
+      val event = DataEvent("source", "type")
+
+      val failureResponse = mockConnector.sendEvent(event).failed.futureValue
+      failureResponse should have ('nested (Some(exception)))
+      checkAuditRequestFailureMessage(failureResponse.getMessage, Json.toJson(event))
+
+      mockConnector.called shouldBe Called(Some(Json.toJson(event)), true)
+    }
+
+    "return disabled if auditing is not enabled" in {
+      val mockConnector = new MockAuditConnector(response = Future.successful(HttpResponse(200)), enabled = false)
+      val event = DataEvent("source", "type")
+      mockConnector.sendEvent(event).futureValue should be (AuditResult.Disabled)
+
+      mockConnector.called shouldBe Called()
     }
 
     "serialize the date correctly" in {
@@ -169,7 +200,7 @@ class AuditConnectorSpec extends UnitSpec with Eventually with ScalaFutures {
     }
 
     "call data stream with extended event data converted to json" in {
-      val response = Future.successful(new DummyHttpResponse("some response", 200))
+      val response = Future.successful(HttpResponse(200))
 
       val mockConnector = new MockAuditConnector(Future.successful(response))
       val detail = Json.parse( """{"some-event": "value", "some-other-event": "other-value"}""")
@@ -218,7 +249,7 @@ trait StubAuditConnector extends AuditConnector {
 
   override protected def callAuditConsumer(url: String, body: JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = ???
 
-  override protected def logError(s: String, t: Throwable): Unit = ???
+  override protected def logError(s: String, t: Throwable) {}
 
-  override protected def logError(s: String): Unit = ???
+  override protected def logError(s: String) {}
 }

@@ -19,6 +19,12 @@ trait AuditEventFailureKeys {
 
 object AuditEventFailureKeys extends AuditEventFailureKeys
 
+sealed trait AuditResult
+object AuditResult {
+  case object Success extends AuditResult
+  case object Disabled extends AuditResult
+  case class Failure(msg: String, nested: Option[Throwable] = None) extends Exception(msg, nested.orNull) with AuditResult
+}
 
 trait AuditConnector extends Connector with AuditEventFailureKeys{
 
@@ -35,29 +41,39 @@ trait AuditConnector extends Connector with AuditEventFailureKeys{
 
   protected def logError(s: String, t: Throwable)
 
-  def sendEvent(event: AuditEvent)(implicit hc: HeaderCarrier = HeaderCarrier(), ec : ExecutionContext): Unit =
+  def sendEvent(event: AuditEvent)(implicit hc: HeaderCarrier = HeaderCarrier(), ec : ExecutionContext): Future[AuditResult] =
     sendEvent(auditingConfig.consumer.singleEventUrl, Json.toJson(event))
 
-  def sendMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier = HeaderCarrier(), ec : ExecutionContext): Unit =
+  def sendMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier = HeaderCarrier(), ec : ExecutionContext): Future[AuditResult] =
     sendEvent(auditingConfig.consumer.mergedEventUrl, Json.toJson(event))
 
-  def sendLargeMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier = HeaderCarrier()) {
+  def sendLargeMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier = HeaderCarrier()): Future[AuditResult] =
     sendEvent(auditingConfig.consumer.largeMergedEventUrl, Json.toJson(event))
-  }
 
   private def sendEvent(url: String, body: JsValue)(implicit hc: HeaderCarrier) = {
     if (auditingConfig.enabled) {
-      handleResult(callAuditConsumer(url, body), body)
+      handleResult(callAuditConsumer(url, body), body).map { _ => AuditResult.Success }
     } else {
       Logger.info(s"auditing disabled for request-id ${hc.requestId}, session-id: ${hc.sessionId}")
+      Future.successful(AuditResult.Disabled)
     }
   }
 
   protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails): Future[HttpResponse] = {
-    resultF.andThen {
-      case Success(response) => checkResponse(body, response).map(logError)
-      case Failure(t) => logError(makeFailureMessage(body), t)
-    }
+    resultF
+      .recoverWith { case t =>
+        val message = makeFailureMessage(body)
+        logError(message, t)
+        Future.failed(AuditResult.Failure(message, Some(t)))
+      }
+      .map { response =>
+        checkResponse(body, response) match {
+          case Some(error) =>
+            logError(error)
+            throw AuditResult.Failure(error)
+          case None => response
+        }
+      }
   }
 
   private[connector] def makeFailureMessage(body: JsValue): String = s"$LoggingAuditRequestFailureKey : audit item : $body"
