@@ -1,20 +1,20 @@
 package uk.gov.hmrc.play.audit.http.connector
 
 import org.joda.time.{DateTime, DateTimeZone}
-import org.scalatest.concurrent.{ScalaFutures, Eventually}
+import org.scalatest.Tag
+import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.{JsObject, JsValue, Json}
 import uk.gov.hmrc.play.audit.EventTypes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.config.{AuditingConfig, BaseUri}
-import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent, DataEvent, ExtendedDataEvent}
+import uk.gov.hmrc.play.audit.model.{DataCall, DataEvent, ExtendedDataEvent, MergedDataEvent}
+import uk.gov.hmrc.play.http.HttpResponse
 import uk.gov.hmrc.play.http.logging.LoggingDetails
-import uk.gov.hmrc.play.http.{DummyHttpResponse, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.scalatest.Tag
 
-class AuditConnectorSpec extends UnitSpec with Eventually with ScalaFutures {
+class AuditConnectorSpec extends UnitSpec with ScalaFutures {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
