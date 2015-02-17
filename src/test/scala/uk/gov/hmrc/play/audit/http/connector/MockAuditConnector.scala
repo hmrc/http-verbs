@@ -12,12 +12,14 @@ class MockAuditConnector extends AuditConnector {
   var recordedEvent: Option[AuditEvent] = None
   var recordedMergedEvent: Option[MergedDataEvent] = None
 
-  override def sendEvent(event: AuditEvent)(implicit hc: HeaderCarrier, ec : ExecutionContext): Unit = {
+  override def sendEvent(event: AuditEvent)(implicit hc: HeaderCarrier, ec : ExecutionContext) = {
     recordedEvent = Some(event)
+    Future.successful(AuditResult.Success)
   }
 
-  override def sendMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier, ec : ExecutionContext): Unit = {
+  override def sendMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier, ec : ExecutionContext) = {
     recordedMergedEvent = Some(event)
+    Future.successful(AuditResult.Success)
   }
 
   override protected def logError(s: String, t: Throwable): Unit = ???

@@ -64,7 +64,7 @@ class HttpAuditingSpec extends UnitSpec with Eventually with LogCapturing with B
   sealed class HttpAuditingWithAuditException extends HttpWithAuditing {
 
     override lazy val auditConnector: AuditConnector = new MockAuditConnector {
-      override def sendMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier, ec : ExecutionContext): Unit = {
+      override def sendMergedEvent(event: MergedDataEvent)(implicit hc: HeaderCarrier, ec : ExecutionContext) = {
         throw new IllegalArgumentException("any exception")
       }
     }
