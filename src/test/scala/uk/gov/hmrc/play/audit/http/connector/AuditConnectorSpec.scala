@@ -1,7 +1,7 @@
 package uk.gov.hmrc.play.audit.http.connector
 
 import org.joda.time.{DateTime, DateTimeZone}
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{ScalaFutures, Eventually}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import uk.gov.hmrc.play.audit.EventTypes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
@@ -14,7 +14,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.Tag
 
-class AuditConnectorSpec extends UnitSpec with Eventually {
+class AuditConnectorSpec extends UnitSpec with Eventually with ScalaFutures {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -80,12 +80,10 @@ class AuditConnectorSpec extends UnitSpec with Eventually {
       }
 
       val f = Future.successful(response)
-      mockConnector.handleResult(f, body)(new HeaderCarrier)
+      mockConnector.handleResult(f, body)(new HeaderCarrier).futureValue
 
-      eventually {
-        mockConnector.called.logError2 shouldBe None
-        mockConnector.called.logError1 shouldNot be(None)
-      }
+      mockConnector.called.logError2 shouldBe None
+      mockConnector.called.logError1 shouldNot be(None)
 
       checkAuditFailureMessage(mockConnector.called.logError1.get, body, code)
     }
@@ -95,13 +93,10 @@ class AuditConnectorSpec extends UnitSpec with Eventually {
       val body = Json.obj("key" -> "value")
 
       val f = Future.failed(new Exception("failed"))
-      mockConnector.handleResult(f, body)(new HeaderCarrier)
-      intercept[Exception](await(f))
+      mockConnector.handleResult(f, body)(new HeaderCarrier).failed.futureValue
 
-      eventually {
-        mockConnector.called.logError1 shouldBe None
-        mockConnector.called.logError2 shouldNot be(None)
-      }
+      mockConnector.called.logError1 shouldBe None
+      mockConnector.called.logError2 shouldNot be(None)
 
       val (message, _) = mockConnector.called.logError2.get
       checkAuditRequestFailureMessage(message, body)
@@ -116,7 +111,10 @@ class AuditConnectorSpec extends UnitSpec with Eventually {
 
       override def auditingConfig: AuditingConfig = AuditingConfig(BaseUri("datastream-base-url", 8080))
 
-      override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails): Unit = called = called.copy(handleResult = true)
+      override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails) = {
+        called = called.copy(handleResult = true)
+        resultF
+      }
 
       override protected def callAuditConsumer(url: String, body: JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
         called = called.copy(callDatastream = Some(body))
@@ -143,7 +141,10 @@ class AuditConnectorSpec extends UnitSpec with Eventually {
 
       override def auditingConfig: AuditingConfig = AuditingConfig(BaseUri("datastream-base-url", 8080))
 
-      override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails): Unit = called = called.copy(handleResult = true)
+      override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails) = {
+        called = called.copy(handleResult = true)
+        resultF
+      }
 
       override protected def callAuditConsumer(url: String, body: JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
         called = called.copy(callDatastream = Some(body))

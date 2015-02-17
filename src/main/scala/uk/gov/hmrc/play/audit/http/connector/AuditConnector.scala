@@ -9,6 +9,8 @@ import uk.gov.hmrc.play.http.logging.ConnectionTracing
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.Logger
 
+import scala.util.{Failure, Success}
+
 trait AuditEventFailureKeys {
   private val EventMissed = "DS_EventMissed"
   val LoggingAuditRequestFailureKey : String = EventMissed + "_AuditFailureResponse"
@@ -51,11 +53,11 @@ trait AuditConnector extends Connector with AuditEventFailureKeys{
     }
   }
 
-  protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails) {
-    resultF.onSuccess {
-      case response => checkResponse(body, response).map(logError)
+  protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails): Future[HttpResponse] = {
+    resultF.andThen {
+      case Success(response) => checkResponse(body, response).map(logError)
+      case Failure(t) => logError(makeFailureMessage(body), t)
     }
-    resultF.onFailure { case t => logError(makeFailureMessage(body), t)}
   }
 
   private[connector] def makeFailureMessage(body: JsValue): String = s"$LoggingAuditRequestFailureKey : audit item : $body"
