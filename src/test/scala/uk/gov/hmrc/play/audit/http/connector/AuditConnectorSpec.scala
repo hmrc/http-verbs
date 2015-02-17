@@ -1,6 +1,7 @@
 package uk.gov.hmrc.play.audit.http.connector
 
 import org.joda.time.{DateTime, DateTimeZone}
+import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, JsValue, Json}
 import uk.gov.hmrc.play.audit.EventTypes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
@@ -13,7 +14,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.Tag
 
-class AuditConnectorSpec extends UnitSpec {
+class AuditConnectorSpec extends UnitSpec with Eventually {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -69,7 +70,7 @@ class AuditConnectorSpec extends UnitSpec {
       mockConnector.called shouldBe Called(None, None)
     }
 
-    "log an error for a result status of 300" ignore {
+    "log an error for a result status of 300" in {
       val mockConnector = new MockAuditConnector
       val body = Json.obj("key" -> "value")
 
@@ -80,15 +81,16 @@ class AuditConnectorSpec extends UnitSpec {
 
       val f = Future.successful(response)
       mockConnector.handleResult(f, body)(new HeaderCarrier)
-      await(f)
 
-      mockConnector.called.logError2 shouldBe None
-      mockConnector.called.logError1 shouldNot be(None)
+      eventually {
+        mockConnector.called.logError2 shouldBe None
+        mockConnector.called.logError1 shouldNot be(None)
+      }
 
       checkAuditFailureMessage(mockConnector.called.logError1.get, body, code)
     }
 
-    "log an error for a Future.failed" ignore {
+    "log an error for a Future.failed" in {
       val mockConnector = new MockAuditConnector
       val body = Json.obj("key" -> "value")
 
@@ -96,8 +98,11 @@ class AuditConnectorSpec extends UnitSpec {
       mockConnector.handleResult(f, body)(new HeaderCarrier)
       intercept[Exception](await(f))
 
-      mockConnector.called.logError1 shouldBe None
-      mockConnector.called.logError2 shouldNot be(None)
+      eventually {
+        mockConnector.called.logError1 shouldBe None
+        mockConnector.called.logError2 shouldNot be(None)
+      }
+
       val (message, _) = mockConnector.called.logError2.get
       checkAuditRequestFailureMessage(message, body)
     }
