@@ -49,7 +49,7 @@ trait HttpVerb {
     case status if is2xx(status) => response
     case 400 => throw new BadRequestException(badRequestMessage(httpMethod, url, response.body))
     case 404 => throw new NotFoundException(notFoundMessage(httpMethod, url, response.body))
-    case status if is4xx(status) => throw new Upstream4xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 500)
+    case status if is4xx(status) => throw new Upstream4xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 500, response.allHeaders)
     case status if is5xx(status) => throw new Upstream5xxResponse(upstreamResponseMessage(httpMethod, url, response.status, response.body), status, 502)
     case status => throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
   }
