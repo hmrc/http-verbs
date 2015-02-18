@@ -39,8 +39,7 @@ private object AppDependencies {
     ws % "provided",
     "net.ceedubs" %% "ficus" % "1.1.1",
     "uk.gov.hmrc" %% "time" % "1.1.0",
-    "uk.gov.hmrc" %% "http-exceptions" % "0.2.0",
-
+    "uk.gov.hmrc" %% "http-exceptions" % "0.3.0",
     "uk.gov.hmrc" %% "audit-config" % "0.2.0",
     "uk.gov.hmrc" %% "play-config" % "0.3.0",
     "uk.gov.hmrc" %% "js-validation" % "0.2.0"
