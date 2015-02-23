@@ -1,8 +1,5 @@
 package uk.gov.hmrc.play.http
 
-/**
- * Created by hpe on 23/02/2015.
- */
 protected[http] trait HttpErrorFunctions {
   protected def notFoundMessage(verbName: String, url: String, responseBody: String): String = {
     s"$verbName of '$url' returned 404 (Not Found). Response body: '$responseBody'"
