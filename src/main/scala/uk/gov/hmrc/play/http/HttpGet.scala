@@ -1,6 +1,5 @@
 package uk.gov.hmrc.play.http
 
-import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.{HeaderCarrier, HttpAuditing}
 import uk.gov.hmrc.play.http.logging.{MdcLoggingExecutionContext, ConnectionTracing}
 
@@ -20,7 +19,7 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
   }
 
   def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
-    GET_RawResponse(url, handleResponse(GET_VERB, url)).map(response => rds.read(GET_VERB, url, response))
+    GET_RawResponse(url).map(response => rds.read(GET_VERB, url, response))
 
   @deprecated("GET_Optional and GET_Collection have been added for common use cases, and GET_RawResponse gives you access to the unprocessed HttpResponse", "10/10/14")
   def GET[A](url: String, responseHandler: ProcessingFunction)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier): Future[HttpResponse] =
@@ -50,10 +49,7 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
       }
   }
 
-  @deprecated
-  def readJson[A](url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier) = {
-    jsValue.validate[A].fold(
-      errs => throw new JsValidationException(GET_VERB, url, Json.stringify(jsValue), mf.runtimeClass, errs),
-      valid => valid)
-  }
+  @deprecated("moved to HttpReads", "23/2/2015")
+  def readJson[A](url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier) =
+    HttpReads.readJson(GET_VERB, url, jsValue)
 }
