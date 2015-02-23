@@ -223,6 +223,24 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       e.getMessage should include("404")
       e.getMessage should include(exampleHtml)
     }
+    "read optional HTML" in {
+
+      val httpGet = new HttpGet with ConnectionTracingCapturing {
+        protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse(exampleHtml, 200))
+      }
+
+      val html = httpGet.GET[Option[Html]](url).futureValue
+      html should be(an[Some[Html]])
+      html.get.toString should be (exampleHtml)
+    }
+    "read empty optional HTML" in {
+
+      val httpGet = new HttpGet with ConnectionTracingCapturing {
+        protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse("", 404))
+      }
+
+      httpGet.GET[Option[Html]](url).futureValue should be( a[None.type])
+    }
 
     "throw an BadRequestException when the response has 400 status" in {
       val httpGet = new HttpGet {
