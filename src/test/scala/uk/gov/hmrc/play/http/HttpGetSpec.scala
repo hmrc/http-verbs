@@ -166,7 +166,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like aTracingHttpCall(GET, "GET_Optional", new TestHttpGet(response(None, 204))) {_.GET_Optional[String](url)}
   }
 
-  "GET[Option[_]]" ignore {
+  "GET[Option[_]]" should {
     val url: String = "http://some.nonexistent.url"
 
     implicit val hc = HeaderCarrier()
@@ -178,7 +178,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
-      val values: Option[Value] = testGet.GET[Option[Value]](url).futureValue
+      val values = testGet.GET[Option[Value]](url).futureValue
 
       values shouldBe Some(Value("something"))
     }
@@ -189,6 +189,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       val testGet = new HttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
+
       val values = testGet.GET[Option[Value]](url).futureValue
 
       values shouldBe None

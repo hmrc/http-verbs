@@ -21,7 +21,7 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
   def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
     GET_RawResponse(url).map(response => rds.read(GET_VERB, url, response))
 
-  @deprecated("GET_Optional and GET_Collection have been added for common use cases, and GET_RawResponse gives you access to the unprocessed HttpResponse", "10/10/14")
+  @deprecated("GET[Option[A]] and GET_Collection have been added for common use cases, and GET_RawResponse gives you access to the unprocessed HttpResponse", "10/10/14")
   def GET[A](url: String, responseHandler: ProcessingFunction)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier): Future[HttpResponse] =
     responseHandler(GET_RawResponse(url), url)
 
@@ -29,8 +29,9 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
    * The method wraps the response in Option.
    * For HttpResponse with status 404 or 202, instead of throwing an Exception, None will be returned.
    */
+  @deprecated("use GET[Option[A]] instead", "23/2/2015")
   def GET_Optional[A](url: String)(implicit rds: json.Reads[A], mfst: Manifest[A], hc: HeaderCarrier): Future[Option[A]] =
-    GETm[A, Option](url, None, response => Some(readJson(url, response.json)))
+    GET[Option[A]](url)
 
   /**
    * The method extracts the requested collection (array) from JSON response.

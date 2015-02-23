@@ -10,6 +10,13 @@ trait HttpReads[O] {
 }
 
 object HttpReads extends HttpErrorFunctions {
+  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
+    def read(method: String, url: String, response: HttpResponse) = response.status match {
+      case 204 | 404 => None
+      case _ => Some(rds.read(method, url, response))
+    }
+  }
+
   implicit val readToHtml: HttpReads[Html] = new HttpReads[Html] {
     def read(method: String, url: String, response: HttpResponse) = Html(handleResponse(method, url)(response).body)
   }
