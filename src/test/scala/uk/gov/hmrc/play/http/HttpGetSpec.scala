@@ -166,4 +166,17 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like aTracingHttpCall(GET, "GET_Optional", new TestHttpGet(response(None, 204))) {_.GET_Optional[String]("http://some.url")}
   }
 
+  "GET of non-Json payload" should {
+    "read HTML" in {
+      val exampleHtml = "<h1>Hello Mum</h1>"
+
+      val httpGet = new HttpGet with ConnectionTracingCapturing {
+        protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse(exampleHtml, 200))
+      }
+
+      httpGet.GET[Html]("http://some.url").futureValue should (
+        be (an [Html]) and have ('text (exampleHtml))
+      )
+    }
+  }
 }

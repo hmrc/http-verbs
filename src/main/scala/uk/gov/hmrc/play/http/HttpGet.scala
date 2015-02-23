@@ -1,10 +1,12 @@
 package uk.gov.hmrc.play.http
 
+import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.{HeaderCarrier, HttpAuditing}
 import uk.gov.hmrc.play.http.logging.{MdcLoggingExecutionContext, ConnectionTracing}
 
 import scala.concurrent.Future
-import play.api.libs.json.{Json, JsValue, Reads}
+import play.api.libs.json
+import play.api.libs.json.{Json, JsValue}
 import MdcLoggingExecutionContext._
 import play.api.http.HttpVerbs.{GET => GET_VERB}
 
@@ -17,18 +19,18 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
     mapErrors(GET_VERB, url, httpResponse).map(fn)
   }
 
-  def GET[A](url: String)(implicit rds: Reads[A], mf: Manifest[A], hc: HeaderCarrier): Future[A] =
-    GET_RawResponse(url, handleResponse(GET_VERB, url)).map(response => readJson(url, response.json))
+  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
+    GET_RawResponse(url, handleResponse(GET_VERB, url)).map(response => rds.read(GET_VERB, url, response))
 
   @deprecated("GET_Optional and GET_Collection have been added for common use cases, and GET_RawResponse gives you access to the unprocessed HttpResponse", "10/10/14")
-  def GET[A](url: String, responseHandler: ProcessingFunction)(implicit rds: Reads[A], mf: Manifest[A], hc: HeaderCarrier): Future[HttpResponse] =
+  def GET[A](url: String, responseHandler: ProcessingFunction)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier): Future[HttpResponse] =
     responseHandler(GET_RawResponse(url), url)
 
   /**
    * The method wraps the response in Option.
    * For HttpResponse with status 404 or 202, instead of throwing an Exception, None will be returned.
    */
-  def GET_Optional[A](url: String)(implicit rds: Reads[A], mfst: Manifest[A], hc: HeaderCarrier): Future[Option[A]] =
+  def GET_Optional[A](url: String)(implicit rds: json.Reads[A], mfst: Manifest[A], hc: HeaderCarrier): Future[Option[A]] =
     GETm[A, Option](url, None, response => Some(readJson(url, response.json)))
 
   /**
@@ -36,7 +38,7 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
    * arrayFieldName indicates the name of the array field available in the JSON response.
    * For HttpResponse with status 404 or 202, instead of throwing an Exception, empty Seq is returned.
    */
-  def GET_Collection[A](url: String, arrayFieldName: String)(implicit rds: Reads[A], mfst: Manifest[A], hc: HeaderCarrier) : Future[Seq[A]] =
+  def GET_Collection[A](url: String, arrayFieldName: String)(implicit rds: json.Reads[A], mfst: Manifest[A], hc: HeaderCarrier) : Future[Seq[A]] =
     GETm[A, Seq](url, Seq.empty, response => readJson[Seq[A]](url, response.json \ arrayFieldName))
 
   protected[http] def GETm[A, M[_]](url: String, empty: => M[A], extractor: HttpResponse => M[A])(implicit hc: HeaderCarrier) : Future[M[A]] =
@@ -48,7 +50,8 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
       }
   }
 
-  def readJson[A](url: String, jsValue: JsValue)(implicit rds: Reads[A], mf: Manifest[A], hc: HeaderCarrier) = {
+  @deprecated
+  def readJson[A](url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier) = {
     jsValue.validate[A].fold(
       errs => throw new JsValidationException(GET_VERB, url, Json.stringify(jsValue), mf.runtimeClass, errs),
       valid => valid)
