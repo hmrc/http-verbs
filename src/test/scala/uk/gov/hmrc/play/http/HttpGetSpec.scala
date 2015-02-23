@@ -135,6 +135,39 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like aTracingHttpCall(GET, "GET_Collection", new TestHttpGet(response(Some("""{"values" : [] }""")))) {_.GET_Collection[String](url, "values")}
   }
 
+  "GET iterable from property" should {
+
+    val url: String = "http://some.nonexistent.url"
+    import HttpReads._
+
+    implicit val hc = HeaderCarrier()
+
+    "Allow a collection of values to be deserialised" in {
+      val response = Some(Json.parse("""{ "values" : [{"value" : "something"}]}"""))
+
+      val testGet = new HttpGet {
+        override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
+      }
+
+      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readJsonFromProperty("values"), hc).futureValue
+
+      values shouldBe Seq(Value("something"))
+    }
+
+    "Allow an empty collection to be deserialised" in {
+      val response = None
+
+      val testGet = new HttpGet {
+        override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
+      }
+      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readJsonFromProperty("values"), hc).futureValue
+
+      values shouldBe Seq.empty
+    }
+    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET_Collection[String](url, "values"))
+    behave like aTracingHttpCall(GET, "GET_Collection", new TestHttpGet(response(Some("""{"values" : [] }""")))) {_.GET_Collection[String](url, "values")}
+  }
+
   "GET optional" should {
     val url: String = "http://some.nonexistent.url"
 

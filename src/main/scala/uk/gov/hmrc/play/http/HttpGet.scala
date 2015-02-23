@@ -38,17 +38,9 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
    * arrayFieldName indicates the name of the array field available in the JSON response.
    * For HttpResponse with status 404 or 202, instead of throwing an Exception, empty Seq is returned.
    */
+  @deprecated("use GET[Seq[A]] and put a implicit (HttpReads.readJsonFromProperty(arrayFieldName) in scope instead", "23/2/2015")
   def GET_Collection[A](url: String, arrayFieldName: String)(implicit rds: json.Reads[A], mfst: Manifest[A], hc: HeaderCarrier) : Future[Seq[A]] =
-    GETm[A, Seq](url, Seq.empty, response => readJson[Seq[A]](url, response.json \ arrayFieldName))
-
-  protected[http] def GETm[A, M[_]](url: String, empty: => M[A], extractor: HttpResponse => M[A])(implicit hc: HeaderCarrier) : Future[M[A]] =
-    GET_RawResponse(url).map { response =>
-      response.status match {
-        case 204 | 404 => empty
-        case _ =>
-          extractor(handleResponse(GET_VERB, url)(response))
-      }
-  }
+    GET[Seq[A]](url)(HttpReads.readJsonFromProperty(arrayFieldName), hc)
 
   @deprecated("moved to HttpReads", "23/2/2015")
   def readJson[A](url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier) =
