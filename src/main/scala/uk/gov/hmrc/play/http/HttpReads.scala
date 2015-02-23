@@ -25,6 +25,10 @@ object HttpReads extends HttpErrorFunctions {
     def read(method: String, url: String, response: HttpResponse) = readJson(method, url, handleResponse(method, url)(response).json)
   }
 
+  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
+    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
+  }
+
   def readJsonFromProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
     def read(method: String, url: String, response: HttpResponse) = response.status match {
       case 204 | 404 => Seq.empty

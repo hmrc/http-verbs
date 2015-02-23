@@ -93,7 +93,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       val testGet = new HttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(dummyResponse)
       }
-      val result = testGet.GET(url, (responseF, url) => responseF)(null, null, hc)
+      val result = testGet.GET[HttpResponse](url)
 
       await(result).body shouldBe testData
       await(result).header("X-Header") should contain ("Value")

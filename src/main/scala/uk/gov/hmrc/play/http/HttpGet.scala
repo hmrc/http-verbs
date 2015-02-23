@@ -12,18 +12,15 @@ import play.api.http.HttpVerbs.{GET => GET_VERB}
 trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
   protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  def GET_RawResponse(url:String, fn: HttpResponse => HttpResponse = identity, auditResponseBody: Boolean = true)(implicit hc: HeaderCarrier): Future[HttpResponse] = withTracing(GET_VERB, url) {
+  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =withTracing(GET_VERB, url) {
     val httpResponse = doGet(url)
     auditRequestWithResponseF(url, GET_VERB, None, httpResponse)
-    mapErrors(GET_VERB, url, httpResponse).map(fn)
+    mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
   }
 
-  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
-    GET_RawResponse(url).map(response => rds.read(GET_VERB, url, response))
-
-  @deprecated("GET[Option[A]] and GET_Collection have been added for common use cases, and GET_RawResponse gives you access to the unprocessed HttpResponse", "10/10/14")
-  def GET[A](url: String, responseHandler: ProcessingFunction)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier): Future[HttpResponse] =
-    responseHandler(GET_RawResponse(url), url)
+  @deprecated("use GET[HttpResponse] instead, or implement an HttpReads for your type", "23/2/2015")
+  def GET_RawResponse(url:String, fn: HttpResponse => HttpResponse = identity, auditResponseBody: Boolean = true)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    GET[HttpResponse](url).map(fn)
 
   /**
    * The method wraps the response in Option.
