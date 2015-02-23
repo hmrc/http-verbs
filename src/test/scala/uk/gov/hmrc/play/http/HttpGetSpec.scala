@@ -2,7 +2,8 @@ package uk.gov.hmrc.play.http
 
 import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HttpVerbs._
-import play.api.libs.json.Json
+import play.api.libs.json._
+import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.test.WithFakeApplication
 import uk.gov.hmrc.play.test.UnitSpec
@@ -24,29 +25,28 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
   implicit val hc = HeaderCarrier()
   val testBody = "testBody"
 
-  "handleGETResponse" should {
-    "decode a valid 200 json response successfully" in {
+  "GET" should {
+    val url = "http://some.called.url"
 
+    "decode a valid 200 json response successfully" in {
       val testData = TestClass("foovalue", 123)
       val jsonResponse = Json.toJson(testData).toString()
 
-      val response = new DummyHttpResponse(jsonResponse, 200)
+      val httpGet = new HttpGet {
+        def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(jsonResponse, 200))
+      }
 
-
-      val url = "http://some.called.url"
-      val result = TestGET.handleResponse(GET, url)(response)
-
-      await(result.json) shouldBe Json.toJson(testData)
+      httpGet.GET[TestClass](url).futureValue shouldBe testData
     }
 
     "throw an NotFound exception when the response has 404 status" in {
-      val response = new DummyHttpResponse(testBody, 404)
-
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[NotFoundException] {
-        await(TestGET.handleResponse(GET, url)(response))
+      val httpGet = new HttpGet {
+        def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(testBody, 404))
       }
 
+      val e = httpGet.GET[TestClass](url).failed.futureValue
+
+      e should be(a[NotFoundException])
       e.getMessage should startWith(GET)
       e.getMessage should include(url)
       e.getMessage should include("404")
@@ -54,13 +54,13 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     }
 
     "throw an BadRequestException when the response has 400 status" in {
-      val response = new DummyHttpResponse(testBody, 400)
-
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[BadRequestException] {
-        await(TestGET.handleResponse(GET, url)(response))
+      val httpGet = new HttpGet {
+        def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(testBody, 400))
       }
 
+      val e = httpGet.GET[TestClass](url).failed.futureValue
+
+      e should be(a[BadRequestException])
       e.getMessage should startWith("GET")
       e.getMessage should include(url)
       e.getMessage should include("400")
@@ -71,17 +71,16 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like aTracingHttpCall(GET, "GET", new TestHttpGet(response(Some(""""test"""")))) {_.GET[String]("http://some.url")}
 
     "throw an Exception when the response has an arbitrary status" in {
-      val status = 500
-      val response = new DummyHttpResponse(testBody, status)
-
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[Exception] {
-        await(TestGET.handleResponse(GET, url)(response))
+      val httpGet = new HttpGet {
+        def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(testBody, 699))
       }
 
+      val e = httpGet.GET[TestClass](url).failed.futureValue
+
+      e should be(a[Exception])
       e.getMessage should startWith(GET)
       e.getMessage should include(url)
-      e.getMessage should include("500")
+      e.getMessage should include("699")
       e.getMessage should include(testBody)
     }
 
@@ -92,8 +91,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
 
       val url = "http://some.called.url"
       val testGet = new HttpGet {
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(dummyResponse)
-        override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {}
+        def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(dummyResponse)
       }
       val result = testGet.GET(url, (responseF, url) => responseF)(null, null, hc)
 
@@ -167,4 +165,5 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET_Optional[String](url))
     behave like aTracingHttpCall(GET, "GET_Optional", new TestHttpGet(response(None, 204))) {_.GET_Optional[String]("http://some.url")}
   }
+
 }
