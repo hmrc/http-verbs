@@ -37,7 +37,7 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
    */
   @deprecated("use GET[Seq[A]] and put a implicit (HttpReads.readJsonFromProperty(arrayFieldName) in scope instead", "23/2/2015")
   def GET_Collection[A](url: String, arrayFieldName: String)(implicit rds: json.Reads[A], mfst: Manifest[A], hc: HeaderCarrier) : Future[Seq[A]] =
-    GET[Seq[A]](url)(HttpReads.readJsonFromProperty(arrayFieldName), hc)
+    GET[Seq[A]](url)(HttpReads.readSeqFromJsonProperty(arrayFieldName), hc)
 
   @deprecated("moved to HttpReads", "23/2/2015")
   def readJson[A](url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A], hc: HeaderCarrier) =

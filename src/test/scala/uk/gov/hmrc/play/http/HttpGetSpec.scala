@@ -149,7 +149,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
-      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readJsonFromProperty("values"), hc).futureValue
+      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readSeqFromJsonProperty("values"), hc).futureValue
 
       values shouldBe Seq(Value("something"))
     }
@@ -160,7 +160,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       val testGet = new HttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
-      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readJsonFromProperty("values"), hc).futureValue
+      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readSeqFromJsonProperty("values"), hc).futureValue
 
       values shouldBe Seq.empty
     }

@@ -29,7 +29,7 @@ object HttpReads extends HttpErrorFunctions {
     def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
   }
 
-  def readJsonFromProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
     def read(method: String, url: String, response: HttpResponse) = response.status match {
       case 204 | 404 => Seq.empty
       case _ => readJson[Seq[O]](method, url, handleResponse(method, url)(response).json \ name)
