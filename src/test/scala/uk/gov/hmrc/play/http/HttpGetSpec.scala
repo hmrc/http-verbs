@@ -13,7 +13,7 @@ import scala.concurrent.Future
 
 class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures with CommonHttpBehaviour {
 
-  class TestHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends HttpGet with ConnectionTracingCapturing {
+  class TestHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends MockHttpGet with ConnectionTracingCapturing {
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
 
     override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier)= {}
@@ -27,12 +27,14 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
   val testBody = "testBody"
   val url = "http://some.url"
 
+  trait MockHttpGet extends HttpGet with MockAuditing
+
   "GET" should {
     "decode a valid 200 json response successfully" in {
       val testData = TestClass("foovalue", 123)
       val jsonResponse = Json.toJson(testData).toString()
 
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(jsonResponse, 200))
       }
 
@@ -40,7 +42,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     }
 
     "throw an NotFound exception when the response has 404 status" in {
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(testBody, 404))
       }
 
@@ -54,7 +56,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     }
 
     "throw an BadRequestException when the response has 400 status" in {
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(testBody, 400))
       }
 
@@ -71,7 +73,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like aTracingHttpCall(GET, "GET", new TestHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
 
     "throw an Exception when the response has an arbitrary status" in {
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(testBody, 699))
       }
 
@@ -90,7 +92,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       val dummyResponse = new DummyHttpResponse(testData, status, Map("X-Header" -> Seq("Value")))
 
       val url = "http://some.called.url"
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(dummyResponse)
       }
       val result = testGet.GET[HttpResponse](url)
@@ -112,7 +114,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow a collection of values to be deserialised" in {
       val response = Some(Json.parse("""{ "values" : [{"value" : "something"}]}"""))
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
@@ -124,7 +126,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow an empty collection to be deserialised" in {
       val response = None
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
       val values = testGet.GET_Collection[Value](url, "values").futureValue
@@ -145,7 +147,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow a collection of values to be deserialised" in {
       val response = Some(Json.parse("""{ "values" : [{"value" : "something"}]}"""))
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
@@ -157,7 +159,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow an empty collection to be deserialised" in {
       val response = None
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
       val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readSeqFromJsonProperty("values"), hc).futureValue
@@ -176,7 +178,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow a value to be deserialised" in {
       val response = Some(Json.parse("""{"value" : "something"}"""))
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
@@ -188,7 +190,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow no value to be deserialised" in {
       val response = None
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
       val values = testGet.GET_Optional[Value](url).futureValue
@@ -207,7 +209,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow a value to be deserialised" in {
       val response = Some(Json.parse("""{"value" : "something"}"""))
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
@@ -219,7 +221,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     "Allow no value to be deserialised" in {
       val response = None
 
-      val testGet = new HttpGet {
+      val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
 
@@ -235,7 +237,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     val exampleHtml = "<h1>Hello Mum</h1>"
     "read HTML" in {
 
-      val httpGet = new HttpGet with ConnectionTracingCapturing {
+      val httpGet = new MockHttpGet with ConnectionTracingCapturing {
         protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse(exampleHtml, 200))
       }
 
@@ -244,7 +246,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       )
     }
     "throw an NotFound exception when the response has 404 status" in {
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(exampleHtml, 404))
       }
 
@@ -258,7 +260,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     }
     "read optional HTML" in {
 
-      val httpGet = new HttpGet with ConnectionTracingCapturing {
+      val httpGet = new MockHttpGet with ConnectionTracingCapturing {
         protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse(exampleHtml, 200))
       }
 
@@ -268,7 +270,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     }
     "read empty optional HTML" in {
 
-      val httpGet = new HttpGet with ConnectionTracingCapturing {
+      val httpGet = new MockHttpGet with ConnectionTracingCapturing {
         protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse("", 404))
       }
 
@@ -276,7 +278,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     }
 
     "throw an BadRequestException when the response has 400 status" in {
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(exampleHtml, 400))
       }
 
@@ -293,7 +295,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
     behave like aTracingHttpCall(GET, "GET", new TestHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
 
     "throw an Exception when the response has an arbitrary status" in {
-      val httpGet = new HttpGet {
+      val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(exampleHtml, 699))
       }
 

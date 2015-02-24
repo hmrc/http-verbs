@@ -1,5 +1,7 @@
 package uk.gov.hmrc.play.audit.model
 
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -56,23 +58,22 @@ object Audit {
 
   val defaultEventTypes: EventTypeFlowDescriptions = (Succeeded, Failed)
 
-  def apply(applicationName: String) = new Audit(applicationName)
+  def apply(applicationName: String, auditConnector: AuditConnector) = new Audit(applicationName, auditConnector)
 }
 
 trait AuditTags {
   val xRequestId = "X-Request-ID"
   val TransactionName = "transactionName"
 }
-class Audit(applicationName: String) extends AuditTags {
+class Audit(applicationName: String, auditConnector: AuditConnector) extends AuditTags {
 
   import uk.gov.hmrc.play.audit.http.HeaderCarrier
-  import uk.gov.hmrc.play.audit.http.connector.AuditConnector
   import Audit._
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def sendDataEvent: (DataEvent) => Unit = AuditConnector.sendEvent
+  def sendDataEvent: (DataEvent) => Unit = auditConnector.sendEvent(_)
 
-  def sendLargeMergedDataEvent: (MergedDataEvent) => Unit = AuditConnector.sendLargeMergedEvent
+  def sendLargeMergedDataEvent: (MergedDataEvent) => Unit = auditConnector.sendLargeMergedEvent(_)
 
   private def sendEvent[A](auditMagnet: AuditAsMagnet[A], eventType: String, outputs: Map[String, String])(implicit hc: HeaderCarrier): Unit = {
     val requestId = hc.requestId.map(_.value).getOrElse("")

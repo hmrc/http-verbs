@@ -2,6 +2,7 @@ package uk.gov.hmrc.play.http
 
 import play.api.http.HttpVerbs._
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.WithFakeApplication
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -11,7 +12,7 @@ class HttpDeleteSpec extends UnitSpec with WithFakeApplication with CommonHttpBe
 
   implicit val hc = HeaderCarrier()
 
-  class TestDelete(doDeleteResult: Future[HttpResponse] = defaultHttpResponse) extends HttpDelete with ConnectionTracingCapturing {
+  class TestDelete(doDeleteResult: Future[HttpResponse] = defaultHttpResponse) extends HttpDelete with ConnectionTracingCapturing with MockAuditing {
 
     override def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doDeleteResult
 

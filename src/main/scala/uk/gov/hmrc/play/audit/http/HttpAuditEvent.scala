@@ -1,14 +1,13 @@
 package uk.gov.hmrc.play.audit.http
 
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditProvider}
+import uk.gov.hmrc.play.audit.http.connector.AuditProvider
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.config.AppName
 
-trait HttpAuditEvent extends AppName {
+trait HttpAuditEvent {
 
   import play.api.mvc.RequestHeader
 
-  val auditConnector: AuditConnector = AuditConnector
+  def appName: String
 
   object auditDetailKeys {
     val Input = "input"

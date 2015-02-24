@@ -10,6 +10,7 @@ import org.webbitserver.netty.NettyWebServer
 import play.api.Play
 import play.api.test.FakeApplication
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -34,6 +35,8 @@ class HttpTimeoutSpec extends UnitSpec with ScalaFutures with BeforeAndAfterAll 
   "HttpCalls" should {
 
     "be gracefully timeout when no response is received within the 'timeout' frame" in {
+      val http = new WSHttp with MockAuditing
+
       // get an unused port
       val ss = new ServerSocket(0)
       ss.close()
@@ -49,7 +52,7 @@ class HttpTimeoutSpec extends UnitSpec with ScalaFutures with BeforeAndAfterAll 
         val start= System.currentTimeMillis()
         intercept[TimeoutException] {
           //make request to web server
-          await(WSHttp.doPost(s"$publicUri/test", "{name:'ping'}", Seq()))
+          await(http.doPost(s"$publicUri/test", "{name:'ping'}", Seq()))
         }
         val diff  = (System.currentTimeMillis() - start).toInt
         // there is test execution delay around 700ms

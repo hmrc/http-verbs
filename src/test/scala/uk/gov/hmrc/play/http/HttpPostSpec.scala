@@ -3,6 +3,7 @@ package uk.gov.hmrc.play.http
 import play.api.http.HttpVerbs._
 import play.api.libs.json.Writes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.WithFakeApplication
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -15,7 +16,7 @@ class HttpPostSpec extends UnitSpec with WithFakeApplication with CommonHttpBeha
                   doPostResult: Future[HttpResponse] = defaultHttpResponse,
                   doFormPostResult: Future[HttpResponse] = defaultHttpResponse,
                   doPostStringResult: Future[HttpResponse] = defaultHttpResponse,
-                  doPostEmptyResult: Future[HttpResponse] = defaultHttpResponse) extends HttpPost with ConnectionTracingCapturing {
+                  doPostEmptyResult: Future[HttpResponse] = defaultHttpResponse) extends HttpPost with ConnectionTracingCapturing with MockAuditing {
     override def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = doPostResult
 
     override def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = doFormPostResult

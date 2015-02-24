@@ -2,6 +2,8 @@ package uk.gov.hmrc.play.audit.model
 
 import org.scalatest.concurrent.Eventually
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.config.{Consumer, BaseUri, AuditingConfig}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit.OutputTransformer
 import uk.gov.hmrc.play.http.HeaderNames._
 import uk.gov.hmrc.play.http.logging.RequestId
@@ -11,7 +13,7 @@ import scala.concurrent.Future
 
 class AuditSpec extends UnitSpec with Eventually {
 
-  class MockAudit(appName: String) extends Audit(appName) {
+  class MockAudit(appName: String, connector: AuditConnector) extends Audit(appName, connector) {
 
     var capturedDataEvent: DataEvent = _
 
@@ -40,6 +42,9 @@ class AuditSpec extends UnitSpec with Eventually {
   val events = Audit.defaultEventTypes
   val exampleRequestId = "12345"
   implicit val hc = HeaderCarrier(requestId = Some(RequestId(exampleRequestId)))
+  val auditConnector = new AuditConnector {
+    override def auditingConfig: AuditingConfig = new AuditingConfig(consumer = Consumer(BaseUri("localhost", 11111)))
+  }
 
   "An Audit object" should {
     "be represented as an DataEvent when only passed an input" in {
@@ -53,7 +58,7 @@ class AuditSpec extends UnitSpec with Eventually {
       val inputs = Map(s"input$inputSuffixKey" -> "request body no key provided")
       val outputs = Map("output-transactionId" -> auditable.transaction, "output-event" -> auditable.event)
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
 
       audit.as[AuditableEvent](transactionName, "request body no key provided", transformer) { () => auditable}
 
@@ -75,7 +80,7 @@ class AuditSpec extends UnitSpec with Eventually {
       val inputs = Map(s"input$inputSuffixKey" -> "request body no key provided")
       val outputs = Map("output-transactionId" -> auditable.transaction, "output-event" -> auditable.event)
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
 
       audit.as[AuditableEvent](transactionName, Map("event-key" -> "request body no key provided"), transformer) { () => auditable}
 
@@ -96,7 +101,7 @@ class AuditSpec extends UnitSpec with Eventually {
       val failureReason: String = "Some error while mapping body result to transaction result"
       val outputs = Map("transactionFailureReason" -> s"Exception Generated: $failureReason")
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
       val failingTransformer: OutputTransformer[AuditableEvent] = (auditable: AuditableEvent) => {
         throw new RuntimeException(failureReason)
       }
@@ -123,7 +128,7 @@ class AuditSpec extends UnitSpec with Eventually {
       val inputs = Map(s"input$inputSuffixKey" -> "request body no key provided")
       val outputs = Map("output-transactionId" -> auditable.transaction, "output-event" -> auditable.event)
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
 
       await(audit.asyncAs[AuditableEvent](transactionName, "request body no key provided", transformer) { () => Future.successful(auditable)})
 
@@ -146,7 +151,7 @@ class AuditSpec extends UnitSpec with Eventually {
       val failureReason: String = "Some error while invoking body"
       val outputs = Map("transactionFailureReason" -> s"Exception Generated: $failureReason")
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
 
       audit.asyncAs[AuditableEvent](transactionName, "request body no key provided", transformer) { () => Future.failed(new RuntimeException(failureReason))}
 
@@ -169,7 +174,7 @@ class AuditSpec extends UnitSpec with Eventually {
       val failureReason = "Some error while mapping body result to transaction result"
       val outputs = Map("transactionFailureReason" -> s"Exception Generated: $failureReason")
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
       val failingTransformer: OutputTransformer[AuditableEvent] = (auditable: AuditableEvent) => {
         throw new RuntimeException(failureReason)
       }
@@ -197,7 +202,7 @@ class AuditSpec extends UnitSpec with Eventually {
 
       def throwException(): Future[AuditableEvent] = throw new RuntimeException(failureReason)
 
-      val audit = new MockAudit(appName)
+      val audit = new MockAudit(appName, auditConnector)
       audit.asyncAs[AuditableEvent](transactionName, "request body no key provided", transformer) { throwException }
 
       eventually {
