@@ -1,9 +1,8 @@
 package uk.gov.hmrc.play.http
 
 import play.api.libs.json
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
 import play.twirl.api.Html
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
 
 trait HttpReads[O] {
   def read(method: String, url: String, response: HttpResponse): O
@@ -38,7 +37,7 @@ object HttpReads extends HttpErrorFunctions {
 
   protected[http] def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) = {
     jsValue.validate[A].fold(
-      errs => throw new JsValidationException(method, url, Json.stringify(jsValue), mf.runtimeClass, errs),
+      errs => throw new JsValidationException(method, url, mf.runtimeClass, errs),
       valid => valid
     )
   }
