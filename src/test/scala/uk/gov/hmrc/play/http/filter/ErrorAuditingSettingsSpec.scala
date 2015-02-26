@@ -67,7 +67,7 @@ class ErrorAuditingSettingsSpec extends UnitSpec {
       val mockConnector = new MockAuditConnector()
       val auditing = new TestErrorAuditing(mockConnector)
 
-      val resultF = auditing.onError(new DummyRequestHeader(), new PlayException("", "", new JsValidationException("GET", "", "body", classOf[String], Seq.empty)))
+      val resultF = auditing.onError(new DummyRequestHeader(), new PlayException("", "", new JsValidationException("GET", "", classOf[String], Seq.empty)))
       await(resultF)
       mockConnector.recordedEvent shouldNot be(None)
       mockConnector.recordedEvent.map(_.auditType shouldBe EventTypes.ServerValidationError)
