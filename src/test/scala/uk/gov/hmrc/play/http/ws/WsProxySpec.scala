@@ -4,6 +4,8 @@ import com.github.tomakehurst.wiremock.client.VerificationException
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.ws.DefaultWSProxyServer
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.http.MockAuditing
 import uk.gov.hmrc.play.test.WithFakeApplication
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -15,7 +17,7 @@ class WsProxySpec extends UnitSpec with WithFakeApplication {
   "A proxied get request" should {
     "correctly make a request via the specified proxy server" in new Setup {
 
-      object ProxiedGet extends WSGet with WSProxy {
+      object ProxiedGet extends WSGet with WSProxy with MockAuditing {
         def wsProxyServer = Some(DefaultWSProxyServer(host = host, port = proxyPort))
       }
 
@@ -35,7 +37,7 @@ class WsProxySpec extends UnitSpec with WithFakeApplication {
   "A proxied get request, without a defined proxy configuration, i.e. for use in environments where a proxy does not exist" should {
     "still work by making the request without using a proxy server" in new Setup {
 
-      object ProxiedGet extends WSGet with WSProxy {
+      object ProxiedGet extends WSGet with WSProxy with MockAuditing {
         def wsProxyServer = None
       }
 
@@ -55,7 +57,7 @@ class WsProxySpec extends UnitSpec with WithFakeApplication {
   "A non-proxied get request" should {
     "not make a request via the proxy server" in new Setup {
 
-      object NonProxiedGet extends WSGet
+      object NonProxiedGet extends WSGet with MockAuditing
 
       withServers {
         setupEndpointExpectations()

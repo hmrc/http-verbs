@@ -12,7 +12,7 @@ class HttpPutSpec extends UnitSpec with WithFakeApplication with CommonHttpBehav
 
   implicit val hc = HeaderCarrier()
 
-  class TestPUT(doPutResult: Future[HttpResponse] = defaultHttpResponse) extends HttpPut with ConnectionTracingCapturing {
+  class TestPUT(doPutResult: Future[HttpResponse] = defaultHttpResponse) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
     override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = doPutResult
 
     override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {}

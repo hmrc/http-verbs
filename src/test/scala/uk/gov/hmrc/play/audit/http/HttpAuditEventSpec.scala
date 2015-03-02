@@ -36,7 +36,9 @@ class HttpAuditEventSpec extends UnitSpec with LoneElement {
 
   "The code to generate an audit event" should {
 
-    object HttpAuditEventForTest extends HttpAuditEvent
+    object HttpAuditEventForTest extends HttpAuditEvent {
+      override def appName: String = "my-test-app"
+    }
 
     "create a valid audit event with optional headers" in new WithApplication {
       val r = FakeRequest().withHeaders(("Foo" -> "Bar"), ("Ehh" -> "Meh"), ("Surrogate" -> "Cool"), ("Surrogate" -> "Cool"))

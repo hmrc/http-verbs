@@ -24,3 +24,12 @@ object Consumer {
 case class AuditingConfig(consumer : Consumer,
                           enabled : Boolean = true,
                           traceRequests : Boolean = true)
+
+object LoadAuditingConfig {
+  def apply(key: String): AuditingConfig = {
+    import com.typesafe.config.ConfigFactory
+    import net.ceedubs.ficus.Ficus._
+    import net.ceedubs.ficus.readers.ArbitraryTypeReader._
+    ConfigFactory.load().as[AuditingConfig](key)
+  }
+}

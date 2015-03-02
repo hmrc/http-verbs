@@ -1,26 +1,21 @@
 package uk.gov.hmrc.play.audit.http
 
 import org.joda.time.DateTime
-import play.api.Play
-import uk.gov.hmrc.play.audit.{EventTypes, EventKeys}
+import uk.gov.hmrc.play.audit.EventKeys._
+import uk.gov.hmrc.play.audit.EventTypes._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.{MergedDataEvent, DataCall}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.config.ServicesConfig._
-import EventKeys._
-import EventTypes._
+import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
 import uk.gov.hmrc.play.http.HttpResponse
 import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait HttpAuditing extends AppName with DateTimeUtils {
+trait HttpAuditing extends DateTimeUtils {
 
-  import play.api.Play.current
-  val auditDisabledForPattern = Play.configuration.getString(s"$env.http-client.audit.disabled-for").getOrElse("""http://.*\.service""").r
-
-  protected lazy val auditConnector: AuditConnector = AuditConnector
+  def auditConnector: AuditConnector
+  def appName: String
+  def auditDisabledForPattern = ("""http://.*\.service""").r
 
   protected def auditRequestWithResponseF(url: String, verb: String, body: Option[_], responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {
     val request = HttpRequest(url, verb, body, now)

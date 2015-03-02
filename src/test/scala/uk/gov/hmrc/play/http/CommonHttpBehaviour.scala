@@ -4,10 +4,10 @@ import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
 import org.scalatest.concurrent.ScalaFutures
-import play.api.libs.json.{Json, JsValue}
+import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.{LoggingDetails, ConnectionTracing}
-import uk.gov.hmrc.play.test.WithFakeApplication
+import uk.gov.hmrc.play.audit.http.connector.{MockAuditConnector, AuditConnector}
+import uk.gov.hmrc.play.http.logging.{ConnectionTracing, LoggingDetails}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.collection.mutable
@@ -64,4 +64,9 @@ trait ConnectionTracingCapturing extends ConnectionTracing {
     traceCalls += ((method, uri))
     body
   }
+}
+
+trait MockAuditing {
+  def auditConnector: AuditConnector = new MockAuditConnector
+  def appName: String = "test-app"
 }

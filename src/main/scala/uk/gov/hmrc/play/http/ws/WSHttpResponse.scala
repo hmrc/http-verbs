@@ -13,5 +13,4 @@ class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
   override def body = wsResponse.body
 }
 
-object WSHttp extends WSGet with WSPut with WSPost with WSDelete
-
+trait WSHttp extends WSGet with WSPut with WSPost with WSDelete

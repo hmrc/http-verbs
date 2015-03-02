@@ -1,15 +1,17 @@
 package uk.gov.hmrc.play.audit.http.connector
 
+import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.model.{MergedDataEvent, AuditEvent}
+import uk.gov.hmrc.play.audit.http.config.AuditingConfig
+import uk.gov.hmrc.play.audit.model.{AuditEvent, MergedDataEvent}
 import uk.gov.hmrc.play.connectors.Connector
-import uk.gov.hmrc.play.http.logging.ConnectionTracing
+import uk.gov.hmrc.play.http.HttpResponse
+import uk.gov.hmrc.play.http.logging.{ConnectionTracing, LoggingDetails}
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.ws.WSHttpResponse
 
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.Logger
-
-import scala.util.{Failure, Success}
 
 trait AuditEventFailureKeys {
   private val EventMissed = "DS_EventMissed"
@@ -26,20 +28,18 @@ object AuditResult {
   case class Failure(msg: String, nested: Option[Throwable] = None) extends Exception(msg, nested.orNull) with AuditResult
 }
 
-trait AuditConnector extends Connector with AuditEventFailureKeys{
-
-  import uk.gov.hmrc.play.audit.http.config.AuditingConfig
-  import uk.gov.hmrc.play.http.HttpResponse
-  import uk.gov.hmrc.play.http.logging.LoggingDetails
-  import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+trait AuditConnector extends Connector with AuditEventFailureKeys with ConnectionTracing {
 
   def auditingConfig: AuditingConfig
 
-  protected def callAuditConsumer(url: String, body: JsValue)(implicit hc: HeaderCarrier, ec : ExecutionContext): Future[HttpResponse]
+  protected def callAuditConsumer(url:String , body: JsValue)(implicit hc: HeaderCarrier, ec : ExecutionContext): Future[HttpResponse] =
+    withTracing("Post", url) {
+      buildRequest(url).post(body).map(new WSHttpResponse(_))(ec)
+    }
 
-  protected def logError(s: String)
+  protected def logError(s: String) = Logger.warn(s)
 
-  protected def logError(s: String, t: Throwable)
+  protected def logError(s: String, t: Throwable) = Logger.warn(s, t)
 
   def sendEvent(event: AuditEvent)(implicit hc: HeaderCarrier = HeaderCarrier(), ec : ExecutionContext): Future[AuditResult] =
     sendEvent(auditingConfig.consumer.singleEventUrl, Json.toJson(event))
@@ -82,23 +82,4 @@ trait AuditConnector extends Connector with AuditEventFailureKeys{
     if (response.status >= 300) Some(s"$LoggingAuditFailureResponseKey : status code : ${response.status} : audit item : $body")
     else None
   }
-}
-
-object AuditConnector extends AuditConnector with ConnectionTracing {
-
-  import play.api.Logger
-  import uk.gov.hmrc.play.config.ServicesConfig
-  import uk.gov.hmrc.play.http.HttpResponse
-  import uk.gov.hmrc.play.http.ws.WSHttpResponse
-
-  lazy val auditingConfig = ServicesConfig.auditingConfig
-
-  protected def callAuditConsumer(url:String , body: JsValue)(implicit hc: HeaderCarrier, ec : ExecutionContext): Future[HttpResponse] =
-    withTracing("Post", url) {
-      buildRequest(url).post(body).map(new WSHttpResponse(_))
-    }
-
-  protected def logError(s: String) = Logger.warn(s)
-
-  protected def logError(s: String, t: Throwable) = Logger.warn(s, t)
 }
