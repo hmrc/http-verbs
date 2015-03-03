@@ -19,7 +19,7 @@ libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.0.0"
 ```
 
 Request auditing is provided implicitly for all Http requests that are made using this library.  Each request results in an audit message being created and sent to an external auditing service for processing.  An auditing configuration is required in order to configure this service, this can be added to your Play configuration file:
-```json
+```javascript
 Prod {
   auditing {
     enabled = true
