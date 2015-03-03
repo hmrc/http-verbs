@@ -50,7 +50,7 @@ Create a HTTP GET client:
 
 #### GET JSON resource
 In most cases, where JSON is used, having an implicit `Reads[A]` for your class in scope allows automatic de-serialisation to occur.
-```
+```scala
   implicit val f = Json.reads[MyCaseClass]
   httpGet.GET[MyCaseClass](url) \\ Returns an MyCaseClass de-serialised from JSON
 
