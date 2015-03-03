@@ -1,10 +1,10 @@
 package uk.gov.hmrc.play.controllers
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.{JsSuccess, _}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class RestFormatsSpec extends UnitSpec {
+class RestFormatsSpec extends WordSpecLike with Matchers {
   "localDateTimeRead" should {
     "return a LocalDateTime for correctly formatted JsString" in {
       val testDate = new LocalDateTime(0)

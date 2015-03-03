@@ -1,14 +1,14 @@
 package uk.gov.hmrc.play.http
 
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import play.api.libs.json.Writes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.test.WithFakeApplication
-import uk.gov.hmrc.play.test.UnitSpec
-
+import uk.gov.hmrc.play.test.Concurrent.await
+import uk.gov.hmrc.play.test.Concurrent.liftFuture
 import scala.concurrent.Future
 
-class HttpPutSpec extends UnitSpec with WithFakeApplication with CommonHttpBehaviour {
+class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
   implicit val hc = HeaderCarrier()
 

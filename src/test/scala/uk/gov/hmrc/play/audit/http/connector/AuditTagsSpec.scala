@@ -1,13 +1,13 @@
 package uk.gov.hmrc.play.audit.http.connector
 
+import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.play.audit.EventKeys
+import uk.gov.hmrc.play.audit.EventKeys._
 import uk.gov.hmrc.play.audit.http.{HeaderCarrier, Token, UserId}
-import EventKeys._
 import uk.gov.hmrc.play.http.HeaderNames
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class AuditTagsSpec extends UnitSpec {
+class AuditTagsSpec extends WordSpecLike with Matchers {
 
   import uk.gov.hmrc.play.http.HeaderNames._
 

@@ -54,9 +54,7 @@ private object AppDependencies {
         "commons-codec" % "commons-codec" % "1.7" % scope,
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
         "org.pegdown" % "pegdown" % "1.4.2" % scope,
-        "com.github.tomakehurst" % "wiremock" % "1.46" % scope,
-
-        "uk.gov.hmrc" %% "hmrctest" % "0.2.0" % scope
+        "com.github.tomakehurst" % "wiremock" % "1.52" % scope
       )
     }.test
   }
@@ -76,42 +74,10 @@ object Collaborators {
         </license>
       </licenses>
       <scm>
-        <connection>scm:git@github.tools.tax.service.gov.uk:HMRC/play-microservice.git</connection>
-        <developerConnection>scm:git@github.tools.tax.service.gov.uk:HMRC/play-microservice.git</developerConnection>
-        <url>git@github.tools.tax.service.gov.uk:HMRC/play-microservice.git</url>
-      </scm>
-      <developers>
-        <developer>
-          <id>duncancrawford</id>
-          <name>Duncan Crawford</name>
-          <url>http://www.equalexperts.com</url>
-        </developer>
-        <developer>
-          <id>jakobgrunig</id>
-          <name>Jakob Grunig</name>
-          <url>http://www.equalexperts.com</url>
-        </developer>
-        <developer>
-          <id>xnejp03</id>
-          <name>Petr Nejedly</name>
-          <url>http://www.equalexperts.com</url>
-        </developer>
-        <developer>
-          <id>alvarovilaplana</id>
-          <name>Alvaro Vilaplana</name>
-          <url>http://www.equalexperts.com</url>
-        </developer>
-        <developer>
-          <id>vaughansharman</id>
-          <name>Vaughan Sharman</name>
-          <url>http://www.equalexperts.com</url>
-        </developer>
-        <developer>
-          <id>davesammut</id>
-          <name>Dave Sammut</name>
-          <url>http://www.equalexperts.com</url>
-        </developer>
-      </developers>)
+        <connection>scm:git@github.tools.tax.service.gov.uk:HMRC/http-verbs.git</connection>
+        <developerConnection>scm:git@github.tools.tax.service.gov.uk:HMRC/http-verbs.git</developerConnection>
+        <url>git@github.tools.tax.service.gov.uk:HMRC/http-verbs.git</url>
+      </scm>)
   }
 }
 

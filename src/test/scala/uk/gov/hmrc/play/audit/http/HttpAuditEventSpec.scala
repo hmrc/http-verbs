@@ -1,13 +1,9 @@
 package uk.gov.hmrc.play.audit.http
 
-import org.scalatest.LoneElement
+import org.scalatest.{LoneElement, Matchers, WordSpecLike}
 import play.api.test.{FakeRequest, WithApplication}
-import uk.gov.hmrc.play.audit.EventTypes
-import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.test.UnitSpec
 
-class HttpAuditEventSpec extends UnitSpec with LoneElement {
-
+class HttpAuditEventSpec extends WordSpecLike with Matchers with LoneElement {
 
   "The optional audit fields code" should {
 

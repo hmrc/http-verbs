@@ -4,17 +4,16 @@ import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.{MockAuditConnector, AuditConnector}
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, MockAuditConnector}
 import uk.gov.hmrc.play.http.logging.{ConnectionTracing, LoggingDetails}
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.collection.mutable
 import scala.concurrent.Future
 
-trait CommonHttpBehaviour extends ScalaFutures {
-  this: UnitSpec =>
+trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
   def response(returnValue: Option[String] = None, statusCode: Int = 200) = Future.successful(HttpResponse(statusCode, returnValue.map(Json.parse(_))))
 

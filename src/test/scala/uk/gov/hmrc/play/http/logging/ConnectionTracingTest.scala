@@ -1,18 +1,15 @@
 package uk.gov.hmrc.play.http.logging
 
 import org.mockito.Mockito
-import org.scalatest.BeforeAndAfterEach
+import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
-import org.specs2.specification.BeforeEach
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import play.api.Logger
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.http._
-import uk.gov.hmrc.play.test.UnitSpec
-import Mockito._
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
-class ConnectionTracingTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
+class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {
 
   val mockPlayLogger = mock[Logger]
 

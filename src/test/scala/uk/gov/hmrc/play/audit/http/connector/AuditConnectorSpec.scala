@@ -1,8 +1,8 @@
 package uk.gov.hmrc.play.audit.http.connector
 
 import org.joda.time.{DateTime, DateTimeZone}
-import org.scalatest.Tag
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{Matchers, Tag, WordSpecLike}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import uk.gov.hmrc.play.audit.EventTypes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
@@ -10,11 +10,10 @@ import uk.gov.hmrc.play.audit.http.config.{AuditingConfig, BaseUri}
 import uk.gov.hmrc.play.audit.model.{DataCall, DataEvent, ExtendedDataEvent, MergedDataEvent}
 import uk.gov.hmrc.play.http.HttpResponse
 import uk.gov.hmrc.play.http.logging.LoggingDetails
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuditConnectorSpec extends UnitSpec with ScalaFutures {
+class AuditConnectorSpec extends WordSpecLike with Matchers with ScalaFutures {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -202,7 +201,7 @@ class AuditConnectorSpec extends UnitSpec with ScalaFutures {
     "call data stream with extended event data converted to json" in {
       val response = Future.successful(HttpResponse(200))
 
-      val mockConnector = new MockAuditConnector(Future.successful(response))
+      val mockConnector = new MockAuditConnector(response)
       val detail = Json.parse( """{"some-event": "value", "some-other-event": "other-value"}""")
       val event: ExtendedDataEvent = ExtendedDataEvent(auditSource = "source", auditType = "type", detail = detail)
 

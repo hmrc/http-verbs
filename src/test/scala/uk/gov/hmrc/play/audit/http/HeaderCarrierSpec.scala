@@ -1,15 +1,15 @@
 package uk.gov.hmrc.play.audit.http
 
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.mvc.Session
 import play.api.test.FakeHeaders
 import uk.gov.hmrc.play.audit.http.HeaderCarrier.fromSessionAndHeaders
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 import uk.gov.hmrc.play.http.{HeaderNames, SessionKeys}
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.duration._
 
-class HeaderCarrierSpec extends UnitSpec {
+class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
 
   "Extracting the request timestamp from the session and headers" should {

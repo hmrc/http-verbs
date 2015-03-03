@@ -1,13 +1,12 @@
 package uk.gov.hmrc.play.http.ws
 
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfter, Matchers, WordSpecLike}
 import play.api.libs.ws.DefaultWSProxyServer
 import play.api.test.{FakeApplication, WithApplication}
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration.ProxyConfigurationException
-import uk.gov.hmrc.play.test.UnitSpec
 
 
-class WSProxyConfigurationSpec extends UnitSpec with BeforeAndAfter {
+class WSProxyConfigurationSpec extends WordSpecLike with Matchers with BeforeAndAfter {
 
   def proxyFlagConfiguredTo(value: Boolean): Map[String, Any] = Map("Dev.httpProxy.proxyRequiredForThisEnvironment" -> value)
 

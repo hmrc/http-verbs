@@ -2,17 +2,18 @@ package uk.gov.hmrc.play.http.ws
 
 import com.github.tomakehurst.wiremock.client.VerificationException
 import com.github.tomakehurst.wiremock.client.WireMock._
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import play.api.Play
 import play.api.libs.ws.DefaultWSProxyServer
+import play.api.test.FakeApplication
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.MockAuditing
-import uk.gov.hmrc.play.test.WithFakeApplication
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.test.Concurrent.await
 
-
-class WsProxySpec extends UnitSpec with WithFakeApplication {
-
+class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   implicit val hc = HeaderCarrier()
+
+  lazy val fakeApplication = FakeApplication()
 
   "A proxied get request" should {
     "correctly make a request via the specified proxy server" in new Setup {
@@ -103,4 +104,15 @@ class WsProxySpec extends UnitSpec with WithFakeApplication {
       a[VerificationException] should be thrownBy proxyMock.verifyThat(getRequestedFor(urlEqualTo(resourcePath)))
     }
   }
+
+  override def beforeAll() {
+    super.beforeAll()
+    Play.start(fakeApplication)
+  }
+
+  override def afterAll() {
+    super.afterAll()
+    Play.stop()
+  }
+
 }

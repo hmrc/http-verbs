@@ -2,16 +2,15 @@
 package uk.gov.hmrc.play.http
 
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import play.api.libs.json._
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.test.WithFakeApplication
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures with CommonHttpBehaviour {
+class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with CommonHttpBehaviour {
 
   class TestHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends MockHttpGet with ConnectionTracingCapturing {
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
@@ -97,6 +96,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
       }
       val result = testGet.GET[HttpResponse](url)
 
+      import uk.gov.hmrc.play.test.Concurrent.await
       await(result).body shouldBe testData
       await(result).header("X-Header") should contain ("Value")
     }
@@ -140,7 +140,7 @@ class HttpGetSpec extends UnitSpec with WithFakeApplication with ScalaFutures wi
   "GET iterable from property" should {
 
     val url: String = "http://some.nonexistent.url"
-    import HttpReads._
+    import uk.gov.hmrc.play.http.HttpReads._
 
     implicit val hc = HeaderCarrier()
 

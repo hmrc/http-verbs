@@ -1,12 +1,12 @@
 package uk.gov.hmrc.play.http.ws
 
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.{HeaderCarrier, Token}
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class WSRequestSpec extends UnitSpec {
+class WSRequestSpec extends WordSpecLike with Matchers {
 
   "buildRequest" should {
 

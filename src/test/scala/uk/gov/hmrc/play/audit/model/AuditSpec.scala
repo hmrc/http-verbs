@@ -1,17 +1,17 @@
 package uk.gov.hmrc.play.audit.model
 
 import org.scalatest.concurrent.Eventually
+import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.config.{Consumer, BaseUri, AuditingConfig}
+import uk.gov.hmrc.play.audit.http.config.{AuditingConfig, BaseUri, Consumer}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit.OutputTransformer
 import uk.gov.hmrc.play.http.HeaderNames._
 import uk.gov.hmrc.play.http.logging.RequestId
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class AuditSpec extends UnitSpec with Eventually {
+class AuditSpec extends WordSpecLike with Matchers with Eventually {
 
   class MockAudit(appName: String, connector: AuditConnector) extends Audit(appName, connector) {
 
@@ -130,6 +130,7 @@ class AuditSpec extends UnitSpec with Eventually {
 
       val audit = new MockAudit(appName, auditConnector)
 
+      import uk.gov.hmrc.play.test.Concurrent.await
       await(audit.asyncAs[AuditableEvent](transactionName, "request body no key provided", transformer) { () => Future.successful(auditable)})
 
       eventually {

@@ -1,13 +1,13 @@
 package uk.gov.hmrc.play.connectors
 
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.{HeaderCarrier, Token}
 import uk.gov.hmrc.play.http.HeaderNames
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class ConnectorSpec extends UnitSpec {
+class ConnectorSpec extends WordSpecLike with Matchers {
 
   "AuthConnector.buildRequest" should {
     "add expected headers to the request" in running(FakeApplication()){

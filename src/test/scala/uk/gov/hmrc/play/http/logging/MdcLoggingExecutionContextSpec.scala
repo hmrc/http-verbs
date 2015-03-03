@@ -5,10 +5,9 @@ import java.util.concurrent.{CountDownLatch, Executors}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.AppenderBase
-import org.scalatest.{BeforeAndAfter, Inspectors, LoneElement}
+import org.scalatest._
 import org.slf4j.{LoggerFactory, MDC}
 import play.core.NamedThreadFactory
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -16,7 +15,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect._
 
-class MdcLoggingExecutionContextSpec extends UnitSpec with LoneElement with Inspectors with BeforeAndAfter {
+class MdcLoggingExecutionContextSpec extends WordSpecLike with Matchers with LoneElement with Inspectors with BeforeAndAfter {
 
   before {
     MDC.clear()
