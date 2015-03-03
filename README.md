@@ -1,53 +1,127 @@
 http-verbs
 ==========
 
-Library which encapsulates common concerns for calling other HTTP services. This includes:
+http-verbs is a Scala library providing an interface to make asynchronous HTTP calls.  The underlying implementation uses [Play WS](https://www.playframework.com/documentation/latest/ScalaWS).
 
-* Auditing
-* Tracing
-* Propagation of headers from the external caller
+It encapsulates some common concerns for calling other HTTP services on the HMRC Tax Platform, including:
+
+* Auditing HTTP calls
+* Logging HTTP calls
+* Propagation of headers
 * Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be automatically propagated to the caller
 * Request & Response de-serialization
 
-### Usage
+## Usage
 
-Using each of the verbs is natural. In most cases, where JSON is used, have an implicit `Reads[A]` for your class in scope:
-
+Include the following dependency in your SBT build
 ```
-implicit val f = Json.reads[MyCaseClass]
-httpGet.GET[MyCaseClass](url) \\ Returns an MyCaseClass 
-                              \\ deserialised from JSON using 
-                              \\ readToHtml
+libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.0.0"
 ```
 
-When it is expected that the resource may not be found or have no content, you can make the type optional:
+Request auditing is provided implicitly for all Http requests that are made using this library.  Each request results in an audit message being created and sent to an external auditing service for processing.  An auditing configuration is required in order to configure this service, this can be added to your Play configuration file:
+```
+Prod {
+  auditing {
+    enabled = true
+    traceRequests = true
+    consumer {
+      baseUri {
+        host = datastream.service
+        port = 80
+      }
+    }
+  }
+}
+```
+
+An implicit `HeaderCarrier` must be in scope for all HTTP requests made.  These header parameters are proxied through to every request made.
+
+### HTTP GET
+
+Create a HTTP GET client:
+```
+  val httpGet = new WSGet {
+    override def appName: String = "my-app-name"
+    override def auditConnector: Auditing = new Auditing {
+      override def auditingConfig: AuditingConfig = LoadAuditingConfig(s"Prod.auditing")
+    }
+  }
+```
+
+#### GET JSON resource
+In most cases, where JSON is used, having an implicit `Reads[A]` for your class in scope allows automatic de-serialisation to occur.
+```
+  implicit val f = Json.reads[MyCaseClass]
+  httpGet.GET[MyCaseClass](url) \\ Returns an MyCaseClass de-serialised from JSON
+
+  // Or if the resource is optional (204, 404 response codes are mapped to an Option value of None)
+  httpGet.GET[Option[MyCaseClass]](url) \\ Returns an Option[MyCaseClass] de-serialised from JSON
 
 ```
-implicit val f = Json.reads[MyCaseClass]
-httpGet.GET[Option[MyCaseClass]](url) \\ Returns an Option[MyCaseClass] 
-                                      \\ deserialised from JSON using 
-                                      \\ readOptionOf(readToHtml)
+
+#### GET Generic Http response
+If access to the status code, raw body and headers are required without de-serialisation, the `HttpResponse` type can be used
+```
+  val response = httpGet.GET[HttpResponse](url) \\ Returns the Raw Http Response
+  response.status
+  response.body
+  response.allHeaders
 ```
 
+#### GET HTML resource
 For HTML responses, Play's `Html` type can be used:
-
 ```                                      
-httpGet.GET[Html](url) \\ Returns an Html using readToHtml
-
-httpGet.GET[Option[Html]](url) \\ Returns an Option[Html] using 
-                               \\ readOptionOf(readToHtml)
+  httpGet.GET[Html](url) \\ Returns a Play Html type
 ```
 
+#### GET JSON Collection
 Collections can be read using the following technique:
+```
+httpGet.GET(url)(HttpReads.readSeqFromJsonProperty[MyCaseClass]("items"), hc) \\ Returns a Seq[MyCaseClass] from the "items" json property
+```
+
+### HTTP POST
+Create a HTTP POST client:
 
 ```
-httpGet.GET(url)(readSeqFromJsonProperty[MyCaseClass]("items"), hc) 
-                                      \\ Returns a Seq[MyCaseClass] read
-                                      \\ from the "items" json property 
-``` 
+  val httpPost = new WSPost {
+    override def appName: String = "my-app"
+    override def auditConnector: Auditing = new Auditing {
+      override def auditingConfig: AuditingConfig = LoadAuditingConfig(s"Prod.auditing")
+    }
+  }
+```
 
-### Implementation & Extension
+#### POST a JSON resource
+Having an implicit `Reads[A]` for your class in scope allows automatic serialisation to occur.  Headers can be provided as a sequence of string tuples.
+```
+  implicit val f = Json.reads[MyCaseClass]
+  val postBody = MyCaseClass("user", 10)
+  httpPost.doPost(url, postBody, headers)
+```
 
+### Error Handling
+Exceptions will be thrown for common error status code responses.
+
+Status Code   | Exception
+------------- | -------------
+400           | `BadRequestException`
+404           | `NotFoundException`
+4xx           | `Upstream4xxResponse`
+5xx           | `Upstream5xxResponse`
+
+The future result will fail if an exception is thrown.  These can be handled using recover, for example
+```
+  httpGet.GET[MyCaseClass]("url") map {
+    response =>
+      //success
+  } recover {
+    case notFound: Upstream4xxResponse => {}
+    case serverError: Upstream5xxResponse => {}
+  }
+```
+
+## Implementation & Extension
 We have abstracted away from using the JSON-specific `play.api.libs.json.Reads[A]`, instead an `HttpReads[A]` is required: 
 
 ```

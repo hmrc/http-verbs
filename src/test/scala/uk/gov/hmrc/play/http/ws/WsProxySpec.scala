@@ -1,18 +1,35 @@
+/*
+ * Copyright 2015 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.play.http.ws
 
 import com.github.tomakehurst.wiremock.client.VerificationException
 import com.github.tomakehurst.wiremock.client.WireMock._
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import play.api.Play
 import play.api.libs.ws.DefaultWSProxyServer
+import play.api.test.FakeApplication
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.MockAuditing
-import uk.gov.hmrc.play.test.WithFakeApplication
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.test.Concurrent.await
 
-
-class WsProxySpec extends UnitSpec with WithFakeApplication {
-
+class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   implicit val hc = HeaderCarrier()
+
+  lazy val fakeApplication = FakeApplication()
 
   "A proxied get request" should {
     "correctly make a request via the specified proxy server" in new Setup {
@@ -103,4 +120,15 @@ class WsProxySpec extends UnitSpec with WithFakeApplication {
       a[VerificationException] should be thrownBy proxyMock.verifyThat(getRequestedFor(urlEqualTo(resourcePath)))
     }
   }
+
+  override def beforeAll() {
+    super.beforeAll()
+    Play.start(fakeApplication)
+  }
+
+  override def afterAll() {
+    super.afterAll()
+    Play.stop()
+  }
+
 }

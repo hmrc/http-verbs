@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http
+package uk.gov.hmrc.play.test
 
-import play.api.libs.json.JsPath
-import play.api.data.validation.ValidationError
+object Concurrent {
+  import scala.concurrent.{Await, Future}
+  import scala.concurrent.duration._
 
-class JsValidationException(val method: String,
-                            val url: String,
-                            val readingAs: Class[_],
-                            val errors: Seq[(JsPath, Seq[ValidationError])]) extends Exception {
-  override def getMessage: String = {
-    s"$method of '$url' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
-  }
+  val defaultTimeout = 5 seconds
+
+  implicit def extractAwait[A](future: Future[A]) = await[A](future)
+  implicit def liftFuture[A](v: A) = Future.successful(v)
+
+  def await[A](future: Future[A]) = Await.result(future, defaultTimeout)
 }

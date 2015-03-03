@@ -1,25 +1,41 @@
+/*
+ * Copyright 2015 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.play.audit.http
 
 import org.joda.time.DateTime
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import play.api.Play
 import play.api.test.FakeApplication
-import uk.gov.hmrc.play.audit.{EventTypes, EventKeys}
+import uk.gov.hmrc.play.audit.EventKeys._
+import uk.gov.hmrc.play.audit.EventTypes._
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, MockAuditConnector}
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import EventKeys._
-import EventTypes._
 import uk.gov.hmrc.play.http.HeaderNames._
 import uk.gov.hmrc.play.http.test.logging.LogCapturing
 import uk.gov.hmrc.play.http.{DummyHttpResponse, HttpResponse}
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.test.Concurrent.await
+import uk.gov.hmrc.play.test.Concurrent.liftFuture
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class HttpAuditingSpec extends UnitSpec with Eventually with LogCapturing with BeforeAndAfterAll {
+class HttpAuditingSpec extends WordSpecLike with Matchers with Eventually with LogCapturing with BeforeAndAfterAll {
 
   implicit def mockDatastreamConnector(ds: AuditConnector) : MockAuditConnector = ds.asInstanceOf[MockAuditConnector]
 
