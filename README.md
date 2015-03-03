@@ -14,12 +14,12 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 ## Usage
 
 Include the following dependency in your SBT build
-```
+```scala
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.0.0"
 ```
 
 Request auditing is provided implicitly for all Http requests that are made using this library.  Each request results in an audit message being created and sent to an external auditing service for processing.  An auditing configuration is required in order to configure this service, this can be added to your Play configuration file:
-```
+```json
 Prod {
   auditing {
     enabled = true
@@ -39,7 +39,7 @@ An implicit `HeaderCarrier` must be in scope for all HTTP requests made.  These 
 ### HTTP GET
 
 Create a HTTP GET client:
-```
+```scala
   val httpGet = new WSGet {
     override def appName: String = "my-app-name"
     override def auditConnector: Auditing = new Auditing {
@@ -52,17 +52,17 @@ Create a HTTP GET client:
 In most cases, where JSON is used, having an implicit `Reads[A]` for your class in scope allows automatic de-serialisation to occur.
 ```scala
   implicit val f = Json.reads[MyCaseClass]
-  httpGet.GET[MyCaseClass](url) \\ Returns an MyCaseClass de-serialised from JSON
+  httpGet.GET[MyCaseClass](url) // Returns an MyCaseClass de-serialised from JSON
 
   // Or if the resource is optional (204, 404 response codes are mapped to an Option value of None)
-  httpGet.GET[Option[MyCaseClass]](url) \\ Returns an Option[MyCaseClass] de-serialised from JSON
+  httpGet.GET[Option[MyCaseClass]](url) // Returns an Option[MyCaseClass] de-serialised from JSON
 
 ```
 
 #### GET Generic Http response
 If access to the status code, raw body and headers are required without de-serialisation, the `HttpResponse` type can be used
-```
-  val response = httpGet.GET[HttpResponse](url) \\ Returns the Raw Http Response
+```scala
+  val response = httpGet.GET[HttpResponse](url) // Returns the Raw Http Response
   response.status
   response.body
   response.allHeaders
@@ -70,20 +70,20 @@ If access to the status code, raw body and headers are required without de-seria
 
 #### GET HTML resource
 For HTML responses, Play's `Html` type can be used:
-```                                      
-  httpGet.GET[Html](url) \\ Returns a Play Html type
+```scala                                      
+  httpGet.GET[Html](url) // Returns a Play Html type
 ```
 
 #### GET JSON Collection
 Collections can be read using the following technique:
-```
-httpGet.GET(url)(HttpReads.readSeqFromJsonProperty[MyCaseClass]("items"), hc) \\ Returns a Seq[MyCaseClass] from the "items" json property
+```scala
+httpGet.GET(url)(HttpReads.readSeqFromJsonProperty[MyCaseClass]("items"), hc) // Returns a Seq[MyCaseClass] from the "items" json property
 ```
 
 ### HTTP POST
 Create a HTTP POST client:
 
-```
+```scala
   val httpPost = new WSPost {
     override def appName: String = "my-app"
     override def auditConnector: Auditing = new Auditing {
@@ -94,7 +94,7 @@ Create a HTTP POST client:
 
 #### POST a JSON resource
 Having an implicit `Reads[A]` for your class in scope allows automatic serialisation to occur.  Headers can be provided as a sequence of string tuples.
-```
+```scala
   implicit val f = Json.reads[MyCaseClass]
   val postBody = MyCaseClass("user", 10)
   httpPost.doPost(url, postBody, headers)
@@ -111,7 +111,7 @@ Status Code   | Exception
 5xx           | `Upstream5xxResponse`
 
 The future result will fail if an exception is thrown.  These can be handled using recover, for example
-```
+```scala
   httpGet.GET[MyCaseClass]("url") map {
     response =>
       //success
@@ -124,7 +124,7 @@ The future result will fail if an exception is thrown.  These can be handled usi
 ## Implementation & Extension
 We have abstracted away from using the JSON-specific `play.api.libs.json.Reads[A]`, instead an `HttpReads[A]` is required: 
 
-```
+```scala
 def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier)
 ```
 This new reader is responsible for converting the raw response into either an exception or the requested type.
