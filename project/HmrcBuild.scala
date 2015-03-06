@@ -31,6 +31,8 @@ object HmrcBuild extends Build {
     .settings(version := appVersion)
     .settings(scalaSettings: _*)
     .settings(defaultSettings(): _*)
+    .settings(publishArtifact := true)
+    .settings(sbtPlugin := true)
     .settings(
       targetJvm := "jvm-1.7",
       shellPrompt := ShellPrompt(appVersion),
@@ -80,10 +82,8 @@ private object AppDependencies {
 
 object SonatypeBuild {
 
-  import xerial.sbt.Sonatype._
-
-  def apply() = {
-    sonatypeSettings ++ Seq(
+  def apply() =
+    Seq(
       pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
@@ -97,5 +97,5 @@ object SonatypeBuild {
           <url>scm:git@github.com:hmrc/http-verbs.git</url>
         </scm>)
     )
-  }
+
 }
