@@ -22,8 +22,6 @@ object HmrcBuild extends Build {
   import uk.gov.hmrc._
   import DefaultBuildSettings._
   import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
-  import PublishingSettings._
-  import NexusPublishing._
   import scala.util.Properties.envOrElse
 
   val appName = "http-verbs"
@@ -37,12 +35,14 @@ object HmrcBuild extends Build {
       targetJvm := "jvm-1.7",
       shellPrompt := ShellPrompt(appVersion),
       libraryDependencies ++= AppDependencies(),
-      Collaborators(),
+      resolvers := Seq(
+        Opts.resolver.sonatypeReleases,
+        Opts.resolver.sonatypeSnapshots
+      ),
       crossScalaVersions := Seq("2.11.5")
     )
-    .settings(publishAllArtefacts : _*)
-    .settings(nexusPublishingSettings : _*)
     .settings(SbtBuildInfo(): _*)
+    .settings(SonatypeBuild(): _*)
 }
 
 private object AppDependencies {
@@ -78,22 +78,24 @@ private object AppDependencies {
   def apply() = compile ++ Test()
 }
 
+object SonatypeBuild {
 
-object Collaborators {
+  import xerial.sbt.Sonatype._
 
   def apply() = {
-    pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
-      <licenses>
-        <license>
-          <name>Apache 2</name>
-          <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-      </licenses>
-      <scm>
-        <connection>scm:git@github.tools.tax.service.gov.uk:HMRC/http-verbs.git</connection>
-        <developerConnection>scm:git@github.tools.tax.service.gov.uk:HMRC/http-verbs.git</developerConnection>
-        <url>git@github.tools.tax.service.gov.uk:HMRC/http-verbs.git</url>
-      </scm>)
+    sonatypeSettings ++ Seq(
+      pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
+        <licenses>
+          <license>
+            <name>Apache 2</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+          </license>
+        </licenses>
+        <scm>
+          <connection>scm:git@github.com:hmrc/http-verbs.git</connection>
+          <developerConnection>scm:git@github.com:hmrc/http-verbs.git</developerConnection>
+          <url>scm:git@github.com:hmrc/http-verbs.git</url>
+        </scm>)
+    )
   }
 }
-
