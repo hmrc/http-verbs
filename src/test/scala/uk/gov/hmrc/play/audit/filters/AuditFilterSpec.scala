@@ -35,43 +35,6 @@ class AuditFilterSpec extends WordSpecLike with Matchers with Eventually with Sc
 
   "AuditFilter" should {
     val applicationName = "app-name"
-    "send only one audit event combining request/response information" in {
-
-//      implicit val hc = HeaderCarrier
-//      val request = FakeRequest()
-//      val mockDatastream = new MockDatastreamConnector {
-//
-//        var devent: List[DataEvent] = List.empty[DataEvent]
-//
-//        override def sendEvent(event: DataEvent)(implicit hc: HeaderCarrier = HeaderCarrier()): Unit = {
-//          devent = devent :+ event
-//        }
-//      }
-//
-//      def a(request: RequestHeader): Iteratee[Array[Byte], Result] = {
-//        import scala.concurrent.ExecutionContext.Implicits.global
-//
-//        Iteratee.fold[Array[Byte], Result](new Results.Status(404)) {
-//          (length, bytes) => new Results.Status(200)
-//        }
-//      }
-//      val nextAction = EssentialAction(a)
-//
-//      val auditFilter = new AuditFilter {
-//        override val dataStreamConnector: DatastreamConnector = mockDatastream
-//      }
-//
-//      val iteratee = auditFilter.withAudit(nextAction, request)
-//      await(iteratee.run)
-
-//      val event = DataEvent("","")
-//      eventually {
-//        val devent = mockDatastream.devent
-//        devent.length shouldBe 1
-//        devent(0) shouldBe event
-//        println("++ recieved "+ devent)
-//      }
-    }
 
     "audit a request with both session and header information" in running(FakeApplication()) {
       val xRequestId = "A_REQUEST_ID"
