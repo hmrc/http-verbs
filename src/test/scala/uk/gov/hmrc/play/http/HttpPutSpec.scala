@@ -28,34 +28,27 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
   implicit val hc = HeaderCarrier()
 
-  class TestPUT(doPutResult: Future[HttpResponse] = defaultHttpResponse) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
-    override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = doPutResult
-
-    override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {}
+  class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
+    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
   }
   
-  lazy val testPUT = new TestPUT()
-
-  "handlePUTResponse" should {
+  "HttpPut" should {
 
     val testBody = "testBody"
+    val url = "http://some.nonexistent.url"
 
     "return the endpoint's response when the returned status code is in the 2xx range" in {
       (200 to 299).foreach { status =>
         val response = new DummyHttpResponse(testBody, status)
-        val result = testPUT.handleResponse(PUT, "http://some.url")(response)
-
-        await(result) shouldBe response
+        val result = new StubbedHttpPut(response).PUT("http://some.url", testBody).futureValue
+        result shouldBe response
       }
     }
 
     "throw an NotFoundException when the response has 404 status" in {
       val response = new DummyHttpResponse(testBody, 404)
 
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[NotFoundException] {
-        await(testPUT.handleResponse(PUT, url)(response))
-      }
+      val e = new StubbedHttpPut(response).PUT(url, testBody).failed.futureValue
 
       e.getMessage should startWith(PUT)
       e.getMessage should include(url)
@@ -67,10 +60,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     "throw an BadRequestException when the response has 400 status" in {
       val response = new DummyHttpResponse(testBody, 400)
 
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[BadRequestException] {
-        await(testPUT.handleResponse(PUT, url)(response))
-      }
+      val e = new StubbedHttpPut(response).PUT(url, testBody).failed.futureValue
 
       e.getMessage should startWith(PUT)
       e.getMessage should include(url)
@@ -78,17 +68,14 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       e.getMessage should include(testBody)
     }
 
-    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new TestPUT(responseF).PUT[String](url, "testString"))
-    behave like aTracingHttpCall(PUT, "PUT", new TestPUT) { _.PUT[String]("http://some.url", "body")}
+    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT[String](url, "testString"))
+    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT[String]("http://some.url", "body")}
 
     "throw a Exception when the response has an arbitrary status" in {
       val status = 500
       val response = new DummyHttpResponse(testBody, status)
 
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[Exception] {
-        await(testPUT.handleResponse(PUT, url)(response))
-      }
+      val e = new StubbedHttpPut(response).PUT(url, testBody).failed.futureValue
 
       e.getMessage should startWith(PUT)
       e.getMessage should include(url)
