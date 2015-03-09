@@ -29,42 +29,42 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
 
   "Extracting the request timestamp from the session and headers" should {
-    "Find it in the header if present and a valid Long" in {
+    "find it in the header if present and a valid Long" in {
       fromSessionAndHeaders(Session(), headers(HeaderNames.xRequestTimestamp -> "12345")).nsStamp shouldBe 12345
     }
 
-    "Ignore it in the header if present but not a valid Long" in {
+    "ignore it in the header if present but not a valid Long" in {
       fromSessionAndHeaders(Session(), headers(HeaderNames.xRequestTimestamp -> "13:14")).nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
     }
   }
 
   "Extracting the forwarded information from the session and headers" should {
-    "Copy it from the X-Forwarded-For header if there is no True-Client-IP header" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.xForwardedFor -> "192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1")))
+    "copy it from the X-Forwarded-For header if there is no True-Client-IP header" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.xForwardedFor -> "192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
 
-    "Copy it from the X-Forwarded-For header if there is an empty True-Client-IP header" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "", HeaderNames.xForwardedFor -> "192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1")))
+    "copy it from the X-Forwarded-For header if there is an empty True-Client-IP header" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "", HeaderNames.xForwardedFor -> "192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
 
-    "Be blank if the True-Client-IP header and the X-Forwarded-For header if both exist but are empty" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "", HeaderNames.xForwardedFor -> "")).forwarded shouldBe Some(ForwardedFor("")))
+    "be blank if the True-Client-IP header and the X-Forwarded-For header if both exist but are empty" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "", HeaderNames.xForwardedFor -> "")).forwarded shouldBe Some(ForwardedFor(""))
     }
 
-    "Copy it from the True-Client-IP header if there is no X-Forwarded-For header" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1")))
+    "copy it from the True-Client-IP header if there is no X-Forwarded-For header" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
 
-    "Merge the True-Client-IP header and the X-Forwarded-For header if both exist" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.2")).forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2")))
+    "merge the True-Client-IP header and the X-Forwarded-For header if both exist" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.2")).forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
     }
 
-    "Do not add the True-Client-IP header if it's already at the beginning of X-Forwarded-For" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.1, 192.168.0.2")).forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2")))
+    "do not add the True-Client-IP header if it's already at the beginning of X-Forwarded-For" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.1, 192.168.0.2")).forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
     }
 
-    "Merge the True-Client-IP header if it already exists, but is not at the front ofthe X-Forwarded-For header" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.2, 192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2, 192.168.0.1")))
+    "merge the True-Client-IP header if it already exists, but is not at the front ofthe X-Forwarded-For header" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.2, 192.168.0.1")).forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2, 192.168.0.1"))
     }
   }
 
@@ -72,29 +72,37 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
   "Extracting the remaining header carrier values from the session and headers" should {
 
-    "Find nothing with a blank request" in {
+    "find nothing with a blank request" in {
       val hc = fromSessionAndHeaders(Session(), FakeHeaders())
       hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
     }
 
-    "Find the userId from the session" in {
-      (fromSessionAndHeaders(Session(Map(SessionKeys.userId -> "beeblebrox")), headers()).userId shouldBe Some(UserId("beeblebrox")))
+    "find the userId from the session" in {
+      fromSessionAndHeaders(Session(Map(SessionKeys.userId -> "beeblebrox")), headers()).userId shouldBe Some(UserId("beeblebrox"))
     }
 
-    "Find the token from the session" in {
-      (fromSessionAndHeaders(Session(Map(SessionKeys.token -> "THE_ONE_RING")), headers()).token shouldBe Some(Token("THE_ONE_RING")))
+    "find the token from the session" in {
+      fromSessionAndHeaders(Session(Map(SessionKeys.token -> "THE_ONE_RING")), headers()).token shouldBe Some(Token("THE_ONE_RING"))
     }
 
-    "Find the authorization from the session" in {
-      (fromSessionAndHeaders(Session(Map(SessionKeys.authToken -> "let me in!")), headers()).authorization shouldBe Some(Authorization("let me in!")))
+    "find the authorization from the session" in {
+      fromSessionAndHeaders(Session(Map(SessionKeys.authToken -> "let me in!")), headers()).authorization shouldBe Some(Authorization("let me in!"))
     }
 
-    "Find the sessionId from the session" in {
-      (fromSessionAndHeaders(Session(Map(SessionKeys.sessionId -> "Bob")), headers()).sessionId shouldBe Some(SessionId("Bob")))
+    "find the requestId from the headers" in {
+      fromSessionAndHeaders(Session(), headers(HeaderNames.xRequestId -> "18476239874162")).requestId shouldBe Some(RequestId("18476239874162"))
     }
 
-    "Find the requestId from the headers" in {
-      (fromSessionAndHeaders(Session(), headers(HeaderNames.xRequestId -> "18476239874162")).requestId shouldBe Some(RequestId("18476239874162")))
+    "find the sessionId from the session" in {
+      fromSessionAndHeaders(Session(Map(SessionKeys.sessionId -> "sesssionIdFromSession")), headers()).sessionId shouldBe Some(SessionId("sesssionIdFromSession"))
+    }
+
+    "find the sessionId from the headers when not present in the session" in {
+      fromSessionAndHeaders(Session(Map.empty), headers(HeaderNames.xSessionId -> "sessionIdFromHeader")).sessionId shouldBe Some(SessionId("sessionIdFromHeader"))
+    }
+
+    "ignore the sessionId when it is not present in the headers nor session" in {
+      fromSessionAndHeaders(Session(Map.empty), headers()).sessionId shouldBe None
     }
   }
 }

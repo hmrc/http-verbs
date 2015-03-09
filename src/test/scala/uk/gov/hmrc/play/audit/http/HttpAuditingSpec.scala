@@ -320,7 +320,6 @@ class HttpAuditingSpec extends WordSpecLike with Matchers with Eventually with L
       httpWithAudit.auditRequestWithException(request, "An exception occured when calling sendevent datastream")
 
       httpWithAudit.auditConnector.recordedMergedEvent shouldBe None
-
     }
 
   }
