@@ -18,6 +18,7 @@ package uk.gov.hmrc.play.http
 
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
+import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import scala.concurrent.Future
@@ -41,6 +42,7 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour
       (200 to 299).foreach { status =>
         val response = new DummyHttpResponse(testBody, status)
         val testDelete = new StubbedHttpDelete(Future.successful(response))
+
         testDelete.DELETE(url).futureValue shouldBe response
       }
     }

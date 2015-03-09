@@ -187,7 +187,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
 
   "GET of non-Json payload" should {
     val exampleHtml = "<h1>Hello Mum</h1>"
-    "read HTML" in {
+    "read HTML" in new HtmlHttpReads {
 
       val httpGet = new MockHttpGet with ConnectionTracingCapturing {
         protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse(exampleHtml, 200))
@@ -197,7 +197,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
         be (an [Html]) and have ('text (exampleHtml))
       )
     }
-    "throw an NotFound exception when the response has 404 status" in {
+    "throw an NotFound exception when the response has 404 status" in new HtmlHttpReads {
       val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(exampleHtml, 404))
       }
@@ -210,7 +210,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       e.getMessage should include("404")
       e.getMessage should include(exampleHtml)
     }
-    "read optional HTML" in {
+    "read optional HTML" in new HtmlHttpReads {
 
       val httpGet = new MockHttpGet with ConnectionTracingCapturing {
         protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse(exampleHtml, 200))
@@ -220,7 +220,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       html.get  should be (an[Html])
       html.get.toString should be (exampleHtml)
     }
-    "read empty optional HTML" in {
+    "read empty optional HTML" in new HtmlHttpReads {
 
       val httpGet = new MockHttpGet with ConnectionTracingCapturing {
         protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(new DummyHttpResponse("", 404))
@@ -229,7 +229,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       httpGet.GET[Option[Html]](url).futureValue should be( a[None.type])
     }
 
-    "throw an BadRequestException when the response has 400 status" in {
+    "throw an BadRequestException when the response has 400 status" in new HtmlHttpReads {
       val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(exampleHtml, 400))
       }
@@ -246,7 +246,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     behave like anErrorMappingHttpCall(GET, (url, result) => new StubbedHttpGet(result).GET[String](url))
     behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
 
-    "throw an Exception when the response has an arbitrary status" in {
+    "throw an Exception when the response has an arbitrary status" in new HtmlHttpReads {
       val httpGet = new MockHttpGet {
         def doGet(url: String)(implicit hc: HeaderCarrier) = Future.successful(new DummyHttpResponse(exampleHtml, 699))
       }

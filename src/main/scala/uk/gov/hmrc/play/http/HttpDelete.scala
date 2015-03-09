@@ -26,12 +26,10 @@ trait HttpDelete extends HttpVerb with ConnectionTracing with HttpAuditing {
 
   protected def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  def DELETE(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    withTracing(DELETE_VERB, url) {
-      val httpResponse = doDelete(url)
-      auditRequestWithResponseF(url, DELETE_VERB, None, httpResponse)
-      mapErrors(DELETE_VERB, url, httpResponse).map(handleResponse(DELETE_VERB, url))
-    }
+  def DELETE[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier): Future[O] = withTracing(DELETE_VERB, url) {
+    val httpResponse = doDelete(url)
+    auditRequestWithResponseF(url, DELETE_VERB, None, httpResponse)
+    mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
   }
 }
 
