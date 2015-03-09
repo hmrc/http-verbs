@@ -41,10 +41,11 @@ object HmrcBuild extends Build {
         Opts.resolver.sonatypeReleases,
         Opts.resolver.sonatypeSnapshots
       ),
-      crossScalaVersions := Seq("2.11.5")
+      crossScalaVersions := Seq("2.11.6", "2.11.5")
     )
     .settings(SbtBuildInfo(): _*)
-    .settings(SonatypeBuild(): _*)
+    .settings(BintraySettings(Some("HMRC")): _*)
+    .settings(BuildDescriptionSettings(): _*)
 }
 
 private object AppDependencies {
@@ -80,7 +81,20 @@ private object AppDependencies {
   def apply() = compile ++ Test()
 }
 
-object SonatypeBuild {
+object BintraySettings {
+
+  import bintray.Plugin._
+  import bintray.Keys._
+
+  def apply(org : Option[String]) = bintrayPublishSettings ++ Seq (
+    publishMavenStyle := false,
+    repository in bintray := "releases",
+    bintrayOrganization in bintray := org,
+    licenses += "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
+  )
+}
+
+object BuildDescriptionSettings {
 
   def apply() =
     Seq(

@@ -1,6 +1,8 @@
 http-verbs
 ==========
 
+[![Build Status](https://travis-ci.org/hmrc/http-verbs.svg)](https://travis-ci.org/hmrc/http-verbs)
+
 http-verbs is a Scala library providing an interface to make asynchronous HTTP calls.  The underlying implementation uses [Play WS](https://www.playframework.com/documentation/latest/ScalaWS).
 
 It encapsulates some common concerns for calling other HTTP services on the HMRC Tax Platform, including:
