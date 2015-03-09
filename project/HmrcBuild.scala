@@ -25,7 +25,7 @@ object HmrcBuild extends Build {
   import scala.util.Properties.envOrElse
 
   val appName = "http-verbs"
-  val appVersion = envOrElse("HTTP_VERBS_VERSION", "999-SNAPSHOT")
+  val appVersion = envOrElse("HTTP_VERBS_VERSION", "1.1.0-SNAPSHOT")
 
   lazy val microservice = Project(appName, file("."))
     .settings(version := appVersion)
