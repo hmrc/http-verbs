@@ -28,12 +28,11 @@ import scala.concurrent.Future
 
 class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with CommonHttpBehaviour {
 
-  class TestHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends MockHttpGet with ConnectionTracingCapturing {
+  class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends MockHttpGet with ConnectionTracingCapturing {
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
-
     override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier)= {}
   }
-  lazy val TestGET = new TestHttpGet()
+  lazy val TestGET = new StubbedHttpGet()
 
   case class TestClass(foo: String, bar: Int)
 
@@ -84,8 +83,8 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       e.getMessage should include(testBody)
     }
 
-    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET[String](url))
-    behave like aTracingHttpCall(GET, "GET", new TestHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
+    behave like anErrorMappingHttpCall(GET, (url, result) => new StubbedHttpGet(result).GET[String](url))
+    behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
 
     "throw an Exception when the response has an arbitrary status" in {
       val httpGet = new MockHttpGet {
@@ -121,39 +120,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
   case class Value(value: String)
   implicit val readValue = Json.reads[Value]
 
-  "GET collection" should {
-
-    val url: String = "http://some.nonexistent.url"
-
-    implicit val hc = HeaderCarrier()
-
-    "Allow a collection of values to be deserialised" in {
-      val response = Some(Json.parse("""{ "values" : [{"value" : "something"}]}"""))
-
-      val testGet = new MockHttpGet {
-        override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
-      }
-
-      val values: Seq[Value] = testGet.GET_Collection[Value](url, "values").futureValue
-
-      values shouldBe Seq(Value("something"))
-    }
-
-    "Allow an empty collection to be deserialised" in {
-      val response = None
-
-      val testGet = new MockHttpGet {
-        override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
-      }
-      val values = testGet.GET_Collection[Value](url, "values").futureValue
-
-      values shouldBe Seq.empty
-    }
-    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET_Collection[String](url, "values"))
-    behave like aTracingHttpCall(GET, "GET_Collection", new TestHttpGet(response(Some("""{"values" : [] }""")))) {_.GET_Collection[String](url, "values")}
-  }
-
-  "GET iterable from property" should {
+  "GET seq from property" should {
 
     val url: String = "http://some.nonexistent.url"
     import uk.gov.hmrc.play.http.HttpReads._
@@ -167,7 +134,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
       }
 
-      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readSeqFromJsonProperty("values"), hc).futureValue
+      val values: Seq[Value] = testGet.GET(url)(readSeqFromJsonProperty[Value]("values"), hc).futureValue
 
       values shouldBe Seq(Value("something"))
     }
@@ -178,43 +145,12 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       val testGet = new MockHttpGet {
         override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
       }
-      val values: Seq[Value] = testGet.GET[Seq[Value]](url)(readSeqFromJsonProperty("values"), hc).futureValue
+      val values: Seq[Value] = testGet.GET(url)(readSeqFromJsonProperty[Value]("values"), hc).futureValue
 
       values shouldBe Seq.empty
     }
-    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET_Collection[String](url, "values"))
-    behave like aTracingHttpCall(GET, "GET_Collection", new TestHttpGet(response(Some("""{"values" : [] }""")))) {_.GET_Collection[String](url, "values")}
-  }
-
-  "GET optional" should {
-    val url: String = "http://some.nonexistent.url"
-
-    implicit val hc = HeaderCarrier()
-
-    "Allow a value to be deserialised" in {
-      val response = Some(Json.parse("""{"value" : "something"}"""))
-
-      val testGet = new MockHttpGet {
-        override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(200, response))
-      }
-
-      val values: Option[Value] = testGet.GET_Optional[Value](url).futureValue
-
-      values shouldBe Some(Value("something"))
-    }
-
-    "Allow no value to be deserialised" in {
-      val response = None
-
-      val testGet = new MockHttpGet {
-        override protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = Future.successful(HttpResponse(404, response))
-      }
-      val values = testGet.GET_Optional[Value](url).futureValue
-
-      values shouldBe None
-    }
-    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET_Optional[String](url))
-    behave like aTracingHttpCall(GET, "GET_Optional", new TestHttpGet(response(None, 204))) {_.GET_Optional[String](url)}
+    behave like anErrorMappingHttpCall(GET, (url, result) => new StubbedHttpGet(result).GET(url)(readSeqFromJsonProperty[String]("values"), hc))
+    behave like aTracingHttpCall(GET, "GET_Collection", new StubbedHttpGet(response(Some("""{"values" : [] }""")))) {_.GET(url)(readSeqFromJsonProperty[String]("values"), hc)}
   }
 
   "GET[Option[_]]" should {
@@ -245,8 +181,8 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
 
       values shouldBe None
     }
-    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET[Option[String]](url))
-    behave like aTracingHttpCall(GET, "GET[Option[_]]", new TestHttpGet(response(None, 204))) {_.GET[Option[String]](url)}
+    behave like anErrorMappingHttpCall(GET, (url, result) => new StubbedHttpGet(result).GET[Option[String]](url))
+    behave like aTracingHttpCall(GET, "GET[Option[_]]", new StubbedHttpGet(response(None, 204))) {_.GET[Option[String]](url)}
   }
 
   "GET of non-Json payload" should {
@@ -281,7 +217,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       }
 
       val html = httpGet.GET[Option[Html]](url).futureValue
-      html should be(an[Some[Html]])
+      html.get  should be (an[Html])
       html.get.toString should be (exampleHtml)
     }
     "read empty optional HTML" in {
@@ -307,8 +243,8 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       e.getMessage should include(exampleHtml)
     }
 
-    behave like anErrorMappingHttpCall(GET, (url, result) => new TestHttpGet(result).GET[String](url))
-    behave like aTracingHttpCall(GET, "GET", new TestHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
+    behave like anErrorMappingHttpCall(GET, (url, result) => new StubbedHttpGet(result).GET[String](url))
+    behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(response(Some(""""test"""")))) {_.GET[String](url)}
 
     "throw an Exception when the response has an arbitrary status" in {
       val httpGet = new MockHttpGet {

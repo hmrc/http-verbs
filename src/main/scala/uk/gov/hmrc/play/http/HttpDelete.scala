@@ -30,7 +30,7 @@ trait HttpDelete extends HttpVerb with ConnectionTracing with HttpAuditing {
     withTracing(DELETE_VERB, url) {
       val httpResponse = doDelete(url)
       auditRequestWithResponseF(url, DELETE_VERB, None, httpResponse)
-      mapErrors(DELETE_VERB, url, httpResponse).map(handleResponse(url, DELETE_VERB))
+      mapErrors(DELETE_VERB, url, httpResponse).map(handleResponse(DELETE_VERB, url))
     }
   }
 }

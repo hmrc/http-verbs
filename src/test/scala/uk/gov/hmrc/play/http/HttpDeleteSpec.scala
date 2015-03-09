@@ -19,43 +19,36 @@ package uk.gov.hmrc.play.http
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.test.Concurrent.await
-import uk.gov.hmrc.play.test.Concurrent.liftFuture
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import scala.concurrent.Future
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
   implicit val hc = HeaderCarrier()
 
-  class TestDelete(doDeleteResult: Future[HttpResponse] = defaultHttpResponse) extends HttpDelete with ConnectionTracingCapturing with MockAuditing {
+  class StubbedHttpDelete(response: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
+    def auditConnector: AuditConnector = ???
+    def appName: String = ???
 
-    override def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doDeleteResult
-
-    override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {}
+    def doDelete(url: String)(implicit hc: HeaderCarrier) = response
   }
 
-  lazy val testDelete = new TestDelete()
-
-  "handleDELETEResponse" should {
+  "HttpDelete" should {
     val testBody = "testBody"
+    val url = "http://some.url"
 
     "return the endpoint's response when the returned status code is in the 2xx range" in {
       (200 to 299).foreach { status =>
         val response = new DummyHttpResponse(testBody, status)
-
-        val result = testDelete.handleResponse(DELETE, "http://some.url")(response)
-        await(result) shouldBe response
+        val testDelete = new StubbedHttpDelete(Future.successful(response))
+        testDelete.DELETE(url).futureValue shouldBe response
       }
     }
 
     "throw an NotFoundException when the response has 404 status" in {
-      val response = new DummyHttpResponse(testBody, 404)
+      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 404)))
 
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[NotFoundException] {
-        await(testDelete.handleResponse(DELETE, url)(response))
-      }
-
+      val e = testDelete.DELETE(url).failed.futureValue
       e.getMessage should startWith(DELETE)
       e.getMessage should include(url)
       e.getMessage should include("404")
@@ -63,31 +56,22 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour
     }
 
     "throw an BadRequestException when the response has 400 status" in {
-      val response = new DummyHttpResponse(testBody, 400)
+      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 400)))
 
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[BadRequestException] {
-        await(testDelete.handleResponse(DELETE, url)(response))
-      }
-
+      val e = testDelete.DELETE(url).failed.futureValue
       e.getMessage should startWith(DELETE)
       e.getMessage should include(url)
       e.getMessage should include("400")
       e.getMessage should include(testBody)
     }
 
-    behave like anErrorMappingHttpCall(DELETE, (url, responseF) => new TestDelete(responseF).DELETE(url))
-    behave like aTracingHttpCall(DELETE, "DELETE", new TestDelete) { _.DELETE("http://some.url") }
+    behave like anErrorMappingHttpCall(DELETE, (url, responseF) => new StubbedHttpDelete(responseF).DELETE(url))
+    behave like aTracingHttpCall(DELETE, "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }
 
     "throw a Exception when the response has an arbitrary status" in {
-      val status = 500
-      val response = new DummyHttpResponse(testBody, status)
+      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 500)))
 
-      val url: String = "http://some.nonexistent.url"
-      val e = intercept[Exception] {
-        await(testDelete.handleResponse(DELETE, url)(response))
-      }
-
+      val e = testDelete.DELETE(url).failed.futureValue
       e.getMessage should startWith(DELETE)
       e.getMessage should include(url)
       e.getMessage should include("500")
