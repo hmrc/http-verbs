@@ -1,5 +1,5 @@
-resolvers ++= Seq("bintray-sbt-plugin-releases" at "https://dl.bintray.com/content/sbt/sbt-plugin-releases",
-    "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/")
+resolvers ++= Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
+					"bintray-sbt-plugin-releases" at "https://dl.bintray.com/content/sbt/sbt-plugin-releases")
 
 addSbtPlugin("uk.gov.hmrc" % "sbt-utils" % "2.1.0")
 

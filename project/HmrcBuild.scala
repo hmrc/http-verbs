@@ -39,7 +39,9 @@ object HmrcBuild extends Build {
       libraryDependencies ++= AppDependencies(),
       resolvers := Seq(
         Opts.resolver.sonatypeReleases,
-        Opts.resolver.sonatypeSnapshots
+        Opts.resolver.sonatypeSnapshots,
+        "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
+        "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
       ),
       crossScalaVersions := Seq("2.11.6", "2.11.5")
     )
