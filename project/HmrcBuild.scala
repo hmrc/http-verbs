@@ -71,6 +71,7 @@ private object AppDependencies {
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
         "commons-codec" % "commons-codec" % "1.7" % scope,
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
+        "org.scalacheck" %% "scalacheck" % "1.12.2" % scope,
         "org.pegdown" % "pegdown" % "1.4.2" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope
       )
