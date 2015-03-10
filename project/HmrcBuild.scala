@@ -25,14 +25,13 @@ object HmrcBuild extends Build {
   import scala.util.Properties.envOrElse
 
   val appName = "http-verbs"
-  val appVersion = envOrElse("HTTP_VERBS_VERSION", "1.1.0-SNAPSHOT")
+  val appVersion = envOrElse("HTTP_VERBS_VERSION", "1.2.0-SNAPSHOT")
 
   lazy val microservice = Project(appName, file("."))
     .settings(version := appVersion)
     .settings(scalaSettings: _*)
     .settings(defaultSettings(): _*)
     .settings(publishArtifact := true)
-    .settings(sbtPlugin := true)
     .settings(
       targetJvm := "jvm-1.7",
       shellPrompt := ShellPrompt(appVersion),
@@ -111,7 +110,29 @@ object BuildDescriptionSettings {
           <connection>scm:git@github.com:hmrc/http-verbs.git</connection>
           <developerConnection>scm:git@github.com:hmrc/http-verbs.git</developerConnection>
           <url>scm:git@github.com:hmrc/http-verbs.git</url>
-        </scm>)
+        </scm>
+        <developers>
+          <developer>
+            <id>charleskubicek</id>
+            <name>Charles Kubicek</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+          <developer>
+            <id>duncancrawford</id>
+            <name>Duncan Crawford</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+          <developer>
+            <id>xnejp03</id>
+            <name>Petr Nejedly</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+          <developer>
+            <id>rama-nallamilli</id>
+            <name>Rama Nallamilli</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+        </developers>)
     )
 
 }
