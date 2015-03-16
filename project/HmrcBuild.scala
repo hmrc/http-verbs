@@ -56,7 +56,7 @@ private object AppDependencies {
 
   val compile = Seq(
     "com.typesafe.play" %% "play" % PlayVersion.current,
-    ws % "provided",
+    ws,
     "net.ceedubs" %% "ficus" % "1.1.1",
     "uk.gov.hmrc" %% "time" % "1.1.0",
     "uk.gov.hmrc" %% "http-exceptions" % "0.3.0"
