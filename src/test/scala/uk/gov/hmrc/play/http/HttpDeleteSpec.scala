@@ -25,8 +25,6 @@ import scala.concurrent.Future
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  implicit val hc = HeaderCarrier()
-
   class StubbedHttpDelete(response: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
     def auditConnector: AuditConnector = ???
     def appName: String = ???
@@ -35,49 +33,20 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour
   }
 
   "HttpDelete" should {
-    val testBody = "testBody"
-    val url = "http://some.url"
-
-    "return the endpoint's response when the returned status code is in the 2xx range" in {
-      (200 to 299).foreach { status =>
-        val response = new DummyHttpResponse(testBody, status)
-        val testDelete = new StubbedHttpDelete(Future.successful(response))
-
-        testDelete.DELETE(url).futureValue shouldBe response
-      }
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testDelete = new StubbedHttpDelete(Future.successful(response))
+      testDelete.DELETE(url).futureValue shouldBe response
     }
-
-    "throw an NotFoundException when the response has 404 status" in {
-      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 404)))
-
-      val e = testDelete.DELETE(url).failed.futureValue
-      e.getMessage should startWith(DELETE)
-      e.getMessage should include(url)
-      e.getMessage should include("404")
-      e.getMessage should include(testBody)
+    "be able to return HTML responses" in new HtmlHttpReads {
+      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testDelete.DELETE(url).futureValue should be (an [Html])
     }
-
-    "throw an BadRequestException when the response has 400 status" in {
-      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 400)))
-
-      val e = testDelete.DELETE(url).failed.futureValue
-      e.getMessage should startWith(DELETE)
-      e.getMessage should include(url)
-      e.getMessage should include("400")
-      e.getMessage should include(testBody)
+    "be able to return objects deserialised from JSON" in {
+      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testDelete.DELETE[TestClass](url).futureValue should be (TestClass("t", 10))
     }
-
     behave like anErrorMappingHttpCall(DELETE, (url, responseF) => new StubbedHttpDelete(responseF).DELETE(url))
     behave like aTracingHttpCall(DELETE, "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }
-
-    "throw a Exception when the response has an arbitrary status" in {
-      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 500)))
-
-      val e = testDelete.DELETE(url).failed.futureValue
-      e.getMessage should startWith(DELETE)
-      e.getMessage should include(url)
-      e.getMessage should include("500")
-      e.getMessage should include(testBody)
-    }
   }
 }

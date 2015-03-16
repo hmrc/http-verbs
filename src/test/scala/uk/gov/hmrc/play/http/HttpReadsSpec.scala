@@ -8,6 +8,16 @@ import play.api.libs.json.Json
 import play.twirl.api.Html
 
 class HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Matchers {
+  "RawReads" should {
+    "return the bare response if returned" in {
+      val reads = new RawReads with StubThatReturnsTheResponse
+      reads.readRaw.read(exampleVerb, exampleUrl, exampleResponse) should be (exampleResponse)
+    }
+    "pass through any failure" in {
+      val reads = new RawReads with StubThatThrowsAnException
+      an [Exception] should be thrownBy reads.readRaw.read(exampleVerb, exampleUrl, exampleResponse)
+    }
+  }
   "OptionHttpReads" should {
     val reads = new OptionHttpReads with StubThatShouldNotBeCalled
     "return None if the status code is 204 or 404" in {
@@ -115,7 +125,12 @@ class HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
   val exampleVerb = "GET"
   val exampleUrl = "http://example.com/something"
   val exampleBody = "this is the string body"
-  val exampleResponse = HttpResponse(0)
+  val exampleResponse = HttpResponse(
+    responseStatus = 0,
+    responseJson = Some(Json.parse("""{"test":1}""")),
+    responseHeaders = Map("X-something" -> Seq("some value")),
+    responseString = Some(exampleBody)
+  )
 
   trait StubThatShouldNotBeCalled extends HttpErrorFunctions {
     override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) = {

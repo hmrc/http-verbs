@@ -25,10 +25,18 @@ trait HttpReads[O] {
 }
 
 object HttpReads extends HtmlHttpReads with OptionHttpReads with JsonHttpReads {
+  // readRaw is brought in like this rather than in a trait as this gives it
+  // compilation priority during implicit resolution. This means, unless
+  // specified otherwise a verb call will return a plain HttpResponse
+  implicit val readRaw: HttpReads[HttpResponse] = RawReads.readRaw
+}
+
+trait RawReads extends HttpErrorFunctions {
   implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
     def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
   }
 }
+object RawReads extends RawReads
 
 trait OptionHttpReads extends HttpErrorFunctions {
   implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
