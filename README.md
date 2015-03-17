@@ -18,7 +18,7 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 Include the following dependency in your SBT build
 
 ```scala
-libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.0.0"
+libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.2.0"
 ```
 
 Request auditing is provided for all HTTP requests that are made using this library. Each request/response pair results in an audit message being created and sent to an external auditing service for processing.  To configure this service, your Play configuration file needs to include:
