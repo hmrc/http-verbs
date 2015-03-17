@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -98,6 +98,9 @@ object HeaderCarrier {
   }
 
   def fromSessionAndHeaders(session: Session, headers: Headers) = {
+
+    def getSessionId: Option[String] = session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
+
     HeaderCarrier(
       authorization = session.get(SessionKeys.authToken).map(Authorization),
       userId = session.get(SessionKeys.userId).map(UserId),
@@ -108,7 +111,7 @@ object HeaderCarrier {
         case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
         case (Some(tcip), Some(xff)) => Some(s"$tcip, $xff")
       }).map(ForwardedFor),
-      sessionId = session.get(SessionKeys.sessionId).map(SessionId),
+      sessionId = getSessionId.map(SessionId),
       requestId = headers.get(HeaderNames.xRequestId).map(RequestId),
       requestChain = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
       nsStamp = requestTimestamp(headers)
