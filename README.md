@@ -20,7 +20,7 @@ Include the following dependency in your SBT build
 ```scala
 resolvers += Resolver.bintrayRepo("hmrc", "releases")
 
-libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.2.0"
+libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.3.0"
 ```
 
 Request auditing is provided for all HTTP requests that are made using this library. Each request/response pair results in an audit message being created and sent to an external auditing service for processing.  To configure this service, your Play configuration file needs to include:
