@@ -26,8 +26,6 @@ import scala.concurrent.Future
 
 class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  implicit val hc = HeaderCarrier()
-
   class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
     def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
   }

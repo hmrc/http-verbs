@@ -26,16 +26,12 @@ import scala.concurrent.Future
 
 class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  implicit val hc = HeaderCarrier()
   class StubbedHttpPost(doPostResult: Future[HttpResponse]) extends HttpPost with ConnectionTracingCapturing with MockAuditing {
     def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier) = doPostResult
     def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult
     def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doPostResult
     def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
   }
-
-  val url = "http://some.url"
-  val testBody = "test body"
 
   "HttpPost" should {
 

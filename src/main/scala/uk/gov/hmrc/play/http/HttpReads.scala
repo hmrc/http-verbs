@@ -24,24 +24,38 @@ trait HttpReads[O] {
   def read(method: String, url: String, response: HttpResponse): O
 }
 
-object HttpReads extends HttpErrorFunctions {
+object HttpReads extends HtmlHttpReads with OptionHttpReads with JsonHttpReads {
+  // readRaw is brought in like this rather than in a trait as this gives it
+  // compilation priority during implicit resolution. This means, unless
+  // specified otherwise a verb call will return a plain HttpResponse
+  implicit val readRaw: HttpReads[HttpResponse] = RawReads.readRaw
+}
+
+trait RawReads extends HttpErrorFunctions {
+  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
+    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
+  }
+}
+object RawReads extends RawReads
+
+trait OptionHttpReads extends HttpErrorFunctions {
   implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
     def read(method: String, url: String, response: HttpResponse) = response.status match {
       case 204 | 404 => None
       case _ => Some(rds.read(method, url, response))
     }
   }
+}
 
+trait HtmlHttpReads extends HttpErrorFunctions {
   implicit val readToHtml: HttpReads[Html] = new HttpReads[Html] {
     def read(method: String, url: String, response: HttpResponse) = Html(handleResponse(method, url)(response).body)
   }
+}
 
+trait JsonHttpReads extends HttpErrorFunctions {
   implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) = readJson(method, url, handleResponse(method, url)(response).json)
-  }
-
-  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
   }
 
   def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
@@ -51,7 +65,7 @@ object HttpReads extends HttpErrorFunctions {
     }
   }
 
-  protected[http] def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) = {
+  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) = {
     jsValue.validate[A].fold(
       errs => throw new JsValidationException(method, url, mf.runtimeClass, errs),
       valid => valid

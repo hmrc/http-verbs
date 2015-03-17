@@ -38,17 +38,10 @@ trait HttpResponse {
 }
 
 object HttpResponse {
-
-  def apply(responseStatus: Int, responseJson: Option[JsValue] = None, responseHeaders: Map[String, Seq[String]] = Map.empty) = {
-    new HttpResponse {
-      override def allHeaders: Map[String, Seq[String]] = responseHeaders
-
-      override def body: String = if(responseJson.isDefined) Json.prettyPrint(responseJson.get) else null
-
-      override def json: JsValue = responseJson.getOrElse(null)
-
-      override def status: Int = responseStatus
-    }
+  def apply(responseStatus: Int, responseJson: Option[JsValue] = None, responseHeaders: Map[String, Seq[String]] = Map.empty, responseString: Option[String] = None) = new HttpResponse {
+    override def allHeaders: Map[String, Seq[String]] = responseHeaders
+    override def body: String = responseString orElse responseJson.map(Json.prettyPrint) orNull
+    override def json: JsValue = responseJson.orNull
+    override def status: Int = responseStatus
   }
-
 }

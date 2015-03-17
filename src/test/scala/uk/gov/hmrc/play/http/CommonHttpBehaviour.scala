@@ -31,6 +31,13 @@ import scala.concurrent.Future
 
 trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
+  case class TestClass(foo: String, bar: Int)
+
+  implicit val reads = Json.format[TestClass]
+  implicit val hc = HeaderCarrier()
+  val testBody = "testBody"
+  val url = "http://some.url"
+
   def response(returnValue: Option[String] = None, statusCode: Int = 200) = Future.successful(HttpResponse(statusCode, returnValue.map(Json.parse(_))))
 
   val defaultHttpResponse = response()
