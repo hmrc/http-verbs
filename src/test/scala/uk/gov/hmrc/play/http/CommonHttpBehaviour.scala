@@ -32,8 +32,11 @@ import scala.concurrent.Future
 trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
   case class TestClass(foo: String, bar: Int)
+  implicit val tcreads = Json.format[TestClass]
 
-  implicit val reads = Json.format[TestClass]
+  case class TestRequestClass(baz: String, bar: Int)
+  implicit val trcreads = Json.format[TestRequestClass]
+
   implicit val hc = HeaderCarrier()
   val testBody = "testBody"
   val testRequestBody = "testRequestBody"

@@ -26,7 +26,7 @@ import scala.concurrent.Future
 
 trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
 
-  protected def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
+  protected def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit wts: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
 
   protected def doPostString(url: String, body: String, headers: Seq[(String,String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
   
@@ -34,50 +34,35 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
 
   protected def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  private def defaultHandler(implicit hc: HeaderCarrier): ProcessingFunction =
-    (responseF: Future[HttpResponse], url: String) => responseF.map { response => handleResponse(POST_VERB, url)(response)}
-
-  def POST[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    POST(url, body, defaultHandler)
-  }
-
-  def POST[A](url: String, body: A, responseHandler: ProcessingFunction, headers: Seq[(String,String)] = Seq.empty)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+  def POST[I, O](url: String, body: I, headers: Seq[(String,String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doPost(url, body, headers)
-      auditRequestWithResponseF(url, POST_VERB, Option(Json.stringify(rds.writes(body))), httpResponse)
-      responseHandler(mapErrors(POST_VERB, url, httpResponse), url)
+      auditRequestWithResponseF(url, POST_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
+      mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
   }
 
-  def POSTString(url: String, body: String, headers: Seq[(String,String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    POSTString(url = url, body = body, responseHandler = defaultHandler, headers = headers)
-  }
-
-  def POSTString(url: String, body: String, responseHandler: ProcessingFunction, headers: Seq[(String,String)] = Seq.empty, auditRequestBody: Boolean = true, auditResponseBody: Boolean = true)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def POSTString[O](url: String, body: String, headers: Seq[(String,String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doPostString(url, body, headers)
       auditRequestWithResponseF(url, POST_VERB, Option(body), httpResponse)
-      responseHandler(mapErrors(POST_VERB, url, httpResponse), url)
+      mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
   }
 
-  def POSTForm(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    POSTForm(url, body, defaultHandler)
-  }
-
-  def POSTForm(url: String, body: Map[String, Seq[String]], responseHandler: ProcessingFunction)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def POSTForm[O](url: String, body: Map[String, Seq[String]])(implicit rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doFormPost(url, body)
       auditRequestWithResponseF(url, POST_VERB, Option(body), httpResponse)
-      responseHandler(mapErrors(POST_VERB, url, httpResponse), url)
+      mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
   }
 
-  def POSTEmpty(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def POSTEmpty[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doEmptyPost(url)
       auditRequestWithResponseF(url, POST_VERB, None, httpResponse)
-      defaultHandler(hc)(mapErrors(POST_VERB, url, httpResponse), url)
+      mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
   }
 
