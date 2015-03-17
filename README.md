@@ -18,6 +18,8 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 Include the following dependency in your SBT build
 
 ```scala
+resolvers += Resolver.bintrayRepo("hmrc", "releases")
+
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.2.0"
 ```
 
