@@ -1,0 +1,15 @@
+language: scala
+scala:
+- 2.11.5
+- 2.11.6
+jdk:
+- oraclejdk7
+#branches:
+#  only:
+#  - master
+notifications:
+  email:
+    recipients:
+    - platform-engineering@digital.hmrc.gov.uk
+#after_success:
+#- '[[ $TRAVIS_BRANCH == "master" ]] && { sbt publish; };'

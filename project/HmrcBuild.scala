@@ -16,35 +16,38 @@
 
 import sbt._
 import sbt.Keys._
+import uk.gov.hmrc.PublishingSettings._
 
 object HmrcBuild extends Build {
 
   import uk.gov.hmrc._
   import DefaultBuildSettings._
   import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
-  import scala.util.Properties.envOrElse
+  import uk.gov.hmrc.PublishingSettings._
 
   val appName = "http-verbs"
-  val appVersion = envOrElse("HTTP_VERBS_VERSION", "999-SNAPSHOT")
+  val appVersion = "1.4.0-SNAPSHOT"
 
   lazy val microservice = Project(appName, file("."))
     .settings(version := appVersion)
-    .settings(scalaSettings: _*)
-    .settings(defaultSettings(): _*)
-    .settings(publishArtifact := true)
-    .settings(sbtPlugin := true)
+    .settings(scalaSettings : _*)
+    .settings(defaultSettings() : _*)
     .settings(
       targetJvm := "jvm-1.7",
       shellPrompt := ShellPrompt(appVersion),
       libraryDependencies ++= AppDependencies(),
+      crossScalaVersions := Seq("2.11.6"),
       resolvers := Seq(
         Opts.resolver.sonatypeReleases,
-        Opts.resolver.sonatypeSnapshots
-      ),
-      crossScalaVersions := Seq("2.11.5")
+        Opts.resolver.sonatypeSnapshots,
+        "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
+        "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
+      )
     )
+    .settings(publishAllArtefacts: _*)
     .settings(SbtBuildInfo(): _*)
-    .settings(SonatypeBuild(): _*)
+    .settings(POMMetadata(): _*)
+    .settings(Headers(): _ *)
 }
 
 private object AppDependencies {
@@ -54,7 +57,7 @@ private object AppDependencies {
 
   val compile = Seq(
     "com.typesafe.play" %% "play" % PlayVersion.current,
-    ws % "provided",
+    ws,
     "net.ceedubs" %% "ficus" % "1.1.1",
     "uk.gov.hmrc" %% "time" % "1.1.0",
     "uk.gov.hmrc" %% "http-exceptions" % "0.3.0"
@@ -81,11 +84,11 @@ private object AppDependencies {
   def apply() = compile ++ Test()
 }
 
-object SonatypeBuild {
+object POMMetadata {
 
-  def apply() =
-    Seq(
-      pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
+  def apply() = {
+    pomExtra :=
+      <url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
             <name>Apache 2</name>
@@ -95,8 +98,55 @@ object SonatypeBuild {
         <scm>
           <connection>scm:git@github.com:hmrc/http-verbs.git</connection>
           <developerConnection>scm:git@github.com:hmrc/http-verbs.git</developerConnection>
-          <url>scm:git@github.com:hmrc/http-verbs.git</url>
-        </scm>)
-    )
-
+          <url>git@github.com:hmrc/http-verbs.git</url>
+        </scm>
+        <developers>
+          <developer>
+            <id>duncancrawford</id>
+            <name>Duncan Crawford</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+          <developer>
+            <id>xnejp03</id>
+            <name>Petr Nejedly</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+          <developer>
+            <id>rama-nallamilli</id>
+            <name>Rama Nallamilli</name>
+            <url>http://www.equalexperts.com</url>
+          </developer>
+        </developers>
+  }
 }
+
+object Headers {
+  import de.heikoseeberger.sbtheader.SbtHeader.autoImport._
+  def apply() = Seq(
+    headers := Map(
+      "scala" ->(
+        HeaderPattern.cStyleBlockComment,
+        """|/*
+          | * Copyright 2015 HM Revenue & Customs
+          | *
+          | * Licensed under the Apache License, Version 2.0 (the "License");
+          | * you may not use this file except in compliance with the License.
+          | * You may obtain a copy of the License at
+          | *
+          | *   http://www.apache.org/licenses/LICENSE-2.0
+          | *
+          | * Unless required by applicable law or agreed to in writing, software
+          | * distributed under the License is distributed on an "AS IS" BASIS,
+          | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+          | * See the License for the specific language governing permissions and
+          | * limitations under the License.
+          | */
+          |
+          |""".stripMargin
+        )
+    ),
+    (compile in Compile) <<= (compile in Compile) dependsOn (createHeaders in Compile),
+    (compile in Test) <<= (compile in Test) dependsOn (createHeaders in Test)
+  )
+}
+
