@@ -34,11 +34,10 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
 
   protected def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  private def defaultHandler(implicit hc: HeaderCarrier): ProcessingFunction =
-    (responseF: Future[HttpResponse], url: String) => responseF.map { response => handleResponse(POST_VERB, url)(response)}
-
-  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
-  def POST[A](url: String, body: A, responseHandler: ProcessingFunction, headers: Seq[(String,String)] = Seq.empty)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
+  def POST[A](url: String, body: A, responseHandler: ProcessingFunction)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = POST[A](url, body, responseHandler, Seq())
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
+  def POST[A](url: String, body: A, responseHandler: ProcessingFunction, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doPost(url, body, headers)
       auditRequestWithResponseF(url, POST_VERB, Option(Json.stringify(rds.writes(body))), httpResponse)
@@ -46,8 +45,10 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
     }
   }
 
-  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
-  def POSTString(url: String, body: String, responseHandler: ProcessingFunction, headers: Seq[(String,String)] = Seq.empty, auditRequestBody: Boolean = true, auditResponseBody: Boolean = true)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
+  def POSTString(url: String, body: String, responseHandler: ProcessingFunction)(implicit hc: HeaderCarrier): Future[HttpResponse] = POSTString(url, body, responseHandler)
+  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead. ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
+  def POSTString(url: String, body: String, responseHandler: ProcessingFunction, headers: Seq[(String,String)], auditRequestBody: Boolean, auditResponseBody: Boolean)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doPostString(url, body, headers)
       auditRequestWithResponseF(url, POST_VERB, Option(body), httpResponse)
@@ -55,7 +56,7 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
     }
   }
 
-  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
   def POSTForm(url: String, body: Map[String, Seq[String]], responseHandler: ProcessingFunction)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doFormPost(url, body)

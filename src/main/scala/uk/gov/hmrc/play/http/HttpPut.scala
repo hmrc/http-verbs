@@ -38,12 +38,12 @@ trait HttpPut extends HttpVerb with ConnectionTracing with HttpAuditing {
     }
   }
 
-  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead")
+  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead", "18/03/2015")
   def PUT[A](url: String, body: A, auditRequestBody: Boolean, auditResponseBody: Boolean)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     PUT(url, body, defaultHandler, auditRequestBody, auditResponseBody)
   }
 
-  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead. ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
+  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead. ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
   def PUT[A](url: String, body: A, responseHandler: ProcessingFunction,  auditRequestBody: Boolean = true, auditResponseBody: Boolean = true)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     withTracing(PUT_VERB, url) {
       val httpResponse = doPut(url, body)
