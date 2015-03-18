@@ -34,6 +34,36 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
 
   protected def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse]
 
+  private def defaultHandler(implicit hc: HeaderCarrier): ProcessingFunction =
+    (responseF: Future[HttpResponse], url: String) => responseF.map { response => handleResponse(POST_VERB, url)(response)}
+
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
+  def POST[A](url: String, body: A, responseHandler: ProcessingFunction, headers: Seq[(String,String)] = Seq.empty)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+    withTracing(POST_VERB, url) {
+      val httpResponse = doPost(url, body, headers)
+      auditRequestWithResponseF(url, POST_VERB, Option(Json.stringify(rds.writes(body))), httpResponse)
+      responseHandler(mapErrors(POST_VERB, url, httpResponse), url)
+    }
+  }
+
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
+  def POSTString(url: String, body: String, responseHandler: ProcessingFunction, headers: Seq[(String,String)] = Seq.empty, auditRequestBody: Boolean = true, auditResponseBody: Boolean = true)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    withTracing(POST_VERB, url) {
+      val httpResponse = doPostString(url, body, headers)
+      auditRequestWithResponseF(url, POST_VERB, Option(body), httpResponse)
+      responseHandler(mapErrors(POST_VERB, url, httpResponse), url)
+    }
+  }
+
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead")
+  def POSTForm(url: String, body: Map[String, Seq[String]], responseHandler: ProcessingFunction)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    withTracing(POST_VERB, url) {
+      val httpResponse = doFormPost(url, body)
+      auditRequestWithResponseF(url, POST_VERB, Option(body), httpResponse)
+      responseHandler(mapErrors(POST_VERB, url, httpResponse), url)
+    }
+  }
+
   def POST[I, O](url: String, body: I, headers: Seq[(String,String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
     withTracing(POST_VERB, url) {
       val httpResponse = doPost(url, body, headers)
@@ -65,5 +95,4 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
   }
-
 }
