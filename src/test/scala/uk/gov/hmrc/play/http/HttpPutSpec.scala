@@ -32,21 +32,22 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
   }
 
   "HttpPut" should {
+    val testObject = TestRequestClass("a", 1)
     "be able to return plain responses" in {
       val response = new DummyHttpResponse(testBody, 200)
       val testPut = new StubbedHttpPut(Future.successful(response))
-      testPut.PUT(url, testRequestBody).futureValue shouldBe response
+      testPut.PUT(url, testObject).futureValue shouldBe response
     }
     "be able to return HTML responses" in new HtmlHttpReads {
       val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testPut.PUT(url, testRequestBody).futureValue should be (an [Html])
+      testPut.PUT(url, testObject).futureValue should be (an [Html])
     }
     "be able to return objects deserialised from JSON" in {
       val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testPut.PUT[String, TestClass](url, testRequestBody).futureValue should be (TestClass("t", 10))
+      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testRequestBody))
-    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testRequestBody) }
+    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
+    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
   }
 }
