@@ -1,9 +1,16 @@
+# Use docker-based build environment (instead of openvz)
+sudo: false
 language: scala
 scala:
-- 2.11.5
 - 2.11.6
 jdk:
 - oraclejdk7
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
+    - '$HOME/.ivy2/cache'
+
 #branches:
 #  only:
 #  - master
