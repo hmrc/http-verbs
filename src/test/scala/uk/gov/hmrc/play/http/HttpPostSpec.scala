@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import play.api.libs.json.Writes
+import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.test.Concurrent.await
 import uk.gov.hmrc.play.test.Concurrent.liftFuture
@@ -33,63 +34,81 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
   }
 
-  "HttpPost" should {
-
-    "return the endpoint's response when the returned status code is in the 2xx range" in {
-      (200 to 299).foreach {
-        status =>
-          val response = new DummyHttpResponse("", status)
-
-          val result = new StubbedHttpPost(response).POST(url, testBody).futureValue
-          await(result) shouldBe response
-      }
+  "HttpPost.POST" should {
+    val testObject = TestRequestClass("a", 1)
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testPOST = new StubbedHttpPost(Future.successful(response))
+      testPOST.POST(url, testObject).futureValue shouldBe response
+    }
+    "be able to return HTML responses" in new HtmlHttpReads {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testPOST.POST(url, testObject).futureValue should be (an [Html])
+    }
+    "be able to return objects deserialised from JSON" in {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPOST.POST[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
     }
 
-    "throw an NotFoundException when the response has 404 status" in {
-      val response = new DummyHttpResponse(testBody, 404)
-
-      val e = new StubbedHttpPost(response).POST(url, testBody).failed.futureValue
-
-      e.getMessage should startWith(POST)
-      e.getMessage should include(url)
-      e.getMessage should include("404")
-      e.getMessage should include(testBody)
-    }
-
-    "throw an BadRequestException when the response has 400 status" in {
-      val response = new DummyHttpResponse(testBody, 400)
-
-      val e = new StubbedHttpPost(response).POST(url, testBody).failed.futureValue
-
-      e.getMessage should startWith(POST)
-      e.getMessage should include(url)
-      e.getMessage should include("400")
-      e.getMessage should include(testBody)
-    }
-
-    behave like anErrorMappingHttpCall(POST, (url, responseF) => new StubbedHttpPost(responseF).POST(url, "anyString"))
-    behave like aTracingHttpCall[StubbedHttpPost](POST, "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POST(url, "anyString") }
-
-    "throw a Exception when the response has an arbitrary status" in {
-      val response = new DummyHttpResponse(testBody, 500)
-
-      val e = new StubbedHttpPost(response).POST(url, testBody).failed.futureValue
-
-      e.getMessage should startWith(POST)
-      e.getMessage should include(url)
-      e.getMessage should include("500")
-      e.getMessage should include(testBody)
-    }
+    behave like anErrorMappingHttpCall(POST, (url, responseF) => new StubbedHttpPost(responseF).POST(url, testObject))
+    behave like aTracingHttpCall(POST, "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POST(url, testObject) }
   }
 
-  "POSTForm" should {
+  "HttpPost.POSTForm" should {
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testPOST = new StubbedHttpPost(Future.successful(response))
+      testPOST.POSTForm(url, Map()).futureValue shouldBe response
+    }
+    "be able to return HTML responses" in new HtmlHttpReads {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testPOST.POSTForm(url, Map()).futureValue should be (an [Html])
+    }
+    "be able to return objects deserialised from JSON" in {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPOST.POSTForm[TestClass](url, Map()).futureValue should be (TestClass("t", 10))
+    }
+
     behave like anErrorMappingHttpCall(POST, (url, responseF) => new StubbedHttpPost(responseF).POSTForm(url, Map()))
-    behave like aTracingHttpCall[StubbedHttpPost](POST, "POSTForm", new StubbedHttpPost(defaultHttpResponse)) { _.POSTForm(url, Map()) }
+    behave like aTracingHttpCall(POST, "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTForm(url, Map()) }
   }
 
-  "POSTString"  should {
-    behave like anErrorMappingHttpCall(POST, (url, responseF) => new StubbedHttpPost(responseF).POSTString(url, "body", Seq.empty))
-    behave like aTracingHttpCall[StubbedHttpPost](POST, "POSTString", new StubbedHttpPost(defaultHttpResponse)) { _.POSTString(url, "body", Seq.empty) }
+  "HttpPost.POSTString" should {
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testPOST = new StubbedHttpPost(Future.successful(response))
+      testPOST.POSTString(url, testRequestBody).futureValue shouldBe response
+    }
+    "be able to return HTML responses" in new HtmlHttpReads {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testPOST.POSTString(url, testRequestBody).futureValue should be (an [Html])
+    }
+    "be able to return objects deserialised from JSON" in {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPOST.POSTString[TestClass](url, testRequestBody).futureValue should be (TestClass("t", 10))
+    }
+
+    behave like anErrorMappingHttpCall(POST, (url, responseF) => new StubbedHttpPost(responseF).POSTString(url, testRequestBody))
+    behave like aTracingHttpCall(POST, "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTString(url, testRequestBody) }
+  }
+
+  "HttpPost.POSTEmpty" should {
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testPOST = new StubbedHttpPost(Future.successful(response))
+      testPOST.POSTEmpty(url).futureValue shouldBe response
+    }
+    "be able to return HTML responses" in new HtmlHttpReads {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testPOST.POSTEmpty(url).futureValue should be (an [Html])
+    }
+    "be able to return objects deserialised from JSON" in {
+      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPOST.POSTEmpty[TestClass](url).futureValue should be (TestClass("t", 10))
+    }
+
+    behave like anErrorMappingHttpCall(POST, (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty(url))
+    behave like aTracingHttpCall(POST, "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTEmpty(url) }
   }
 
   "POSTEmpty"  should {

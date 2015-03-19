@@ -30,14 +30,20 @@ trait HttpPut extends HttpVerb with ConnectionTracing with HttpAuditing {
 
   private def defaultHandler(responseF: Future[HttpResponse], url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = responseF.map(handleResponse(PUT_VERB, url))
 
-  def PUT[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    PUT(url, body, defaultHandler)
+  def PUT[I, O](url: String, body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
+    withTracing(PUT_VERB, url) {
+      val httpResponse = doPut(url, body)
+      auditRequestWithResponseF(url, PUT_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
+      mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
+    }
   }
 
+  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead", "18/03/2015")
   def PUT[A](url: String, body: A, auditRequestBody: Boolean, auditResponseBody: Boolean)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     PUT(url, body, defaultHandler, auditRequestBody, auditResponseBody)
   }
 
+  @deprecated("auditRequestBody/auditResponseBody are no longer supported, use PUT(url, body) and configuration instead. ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
   def PUT[A](url: String, body: A, responseHandler: ProcessingFunction,  auditRequestBody: Boolean = true, auditResponseBody: Boolean = true)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     withTracing(PUT_VERB, url) {
       val httpResponse = doPut(url, body)

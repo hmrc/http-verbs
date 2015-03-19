@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import play.api.libs.json.Writes
+import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.test.Concurrent.await
 import uk.gov.hmrc.play.test.Concurrent.liftFuture
@@ -29,56 +30,24 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
   class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
     def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
   }
-  
+
   "HttpPut" should {
-
-    val testBody = "testBody"
-    val url = "http://some.nonexistent.url"
-
-    "return the endpoint's response when the returned status code is in the 2xx range" in {
-      (200 to 299).foreach { status =>
-        val response = new DummyHttpResponse(testBody, status)
-        val result = new StubbedHttpPut(response).PUT("http://some.url", testBody).futureValue
-        result shouldBe response
-      }
+    val testObject = TestRequestClass("a", 1)
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testPut = new StubbedHttpPut(Future.successful(response))
+      testPut.PUT(url, testObject).futureValue shouldBe response
+    }
+    "be able to return HTML responses" in new HtmlHttpReads {
+      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testPut.PUT(url, testObject).futureValue should be (an [Html])
+    }
+    "be able to return objects deserialised from JSON" in {
+      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
     }
 
-    "throw an NotFoundException when the response has 404 status" in {
-      val response = new DummyHttpResponse(testBody, 404)
-
-      val e = new StubbedHttpPut(response).PUT(url, testBody).failed.futureValue
-
-      e.getMessage should startWith(PUT)
-      e.getMessage should include(url)
-      e.getMessage should include("404")
-      e.getMessage should include(testBody)
-      e.getMessage should include(testBody)
-    }
-
-    "throw an BadRequestException when the response has 400 status" in {
-      val response = new DummyHttpResponse(testBody, 400)
-
-      val e = new StubbedHttpPut(response).PUT(url, testBody).failed.futureValue
-
-      e.getMessage should startWith(PUT)
-      e.getMessage should include(url)
-      e.getMessage should include("400")
-      e.getMessage should include(testBody)
-    }
-
-    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT[String](url, "testString"))
-    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT[String]("http://some.url", "body")}
-
-    "throw a Exception when the response has an arbitrary status" in {
-      val status = 500
-      val response = new DummyHttpResponse(testBody, status)
-
-      val e = new StubbedHttpPut(response).PUT(url, testBody).failed.futureValue
-
-      e.getMessage should startWith(PUT)
-      e.getMessage should include(url)
-      e.getMessage should include("500")
-      e.getMessage should include(testBody)
-    }
+    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
+    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
   }
 }

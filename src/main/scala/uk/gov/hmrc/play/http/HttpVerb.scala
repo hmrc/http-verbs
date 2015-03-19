@@ -19,7 +19,6 @@ package uk.gov.hmrc.play.http
 import scala.concurrent.Future
 
 trait HttpVerb extends HttpErrorFunctions {
-
+  @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
   type ProcessingFunction = (Future[HttpResponse], String) => Future[HttpResponse]
-
 }
