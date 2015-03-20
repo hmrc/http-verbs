@@ -1,5 +1,6 @@
 package uk.gov.hmrc.play
 
+import uk.gov.hmrc.play.audit.http.HeaderCarrier
 
 
 object Examples {
@@ -28,11 +29,11 @@ object Examples {
   trait VerbExamples {
     val http: HttpGet with HttpPost with HttpPut with HttpDelete
 
+    implicit val hc = HeaderCarrier()
+
     http.GET("http://gov.uk/hmrc")
     http.DELETE("http://gov.uk/hmrc")
     http.POST("http://gov.uk/hmrc", body = "hi there")
     http.PUT("http://gov.uk/hmrc", body = "hi there")
-
-
   }
 }

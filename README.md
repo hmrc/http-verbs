@@ -105,42 +105,41 @@ or special [response readers]() are available.
 
 http-verbs can automatically map responses into richer types.
 
-#### JSON responses
-In most cases, where JSON is used, having an implicit `play.api.libs.json.Reads[A]` for your class in scope allows automatic de-serialisation to occur.
+##### JSON responses
+If you have an implicit `play.api.libs.json.Reads[A]` for your type in scope, just specify that type and it will be automatically deserialised.
 
 ```scala
-  implicit val f = Json.reads[MyCaseClass]
-  httpGet.GET[MyCaseClass](url) // Returns an MyCaseClass de-serialised from JSON
+implicit val f = Json.reads[MyCaseClass]
+httpGet.GET[MyCaseClass](url) // Returns an MyCaseClass de-serialised from JSON
 ```
 
-#### HTML responses
-For HTML responses, Play's `Html` type can be used:
+##### HTML responses
+If you wish to use HTML responses, Play's `Html` type can be used:
+
 ```scala                                      
-  httpGet.GET[Html](url) // Returns a Play Html type
+httpGet.GET[Html](url) // Returns a Play Html type
 ```
 
 #### Potentially empty responses
 If you expect to receive a `204` or `404` response in some circumstances, then you can add `Option[...]` to your return type:
 
 ```scala
-  httpGet.GET[Option[MyCaseClass]](url) // Returns a None, or Some[MyCaseClass] de-serialised from JSON
-  httpGet.GET[Option[Html]](url) // Returns a None, or a Play Html type
-
+httpGet.GET[Option[MyCaseClass]](url) // Returns None, or Some[MyCaseClass] de-serialised from JSON
+httpGet.GET[Option[Html]](url) // Returns a None, or a Play Html type
 ```
 
 #### Plain HTTP response
 If access to the status code, raw body and headers are required without de-serialisation, the `HttpResponse` type can be used:
 
 ```scala
-  val response = httpGet.GET[HttpResponse](url) // Returns the Http Response
-  response.status
-  response.body
-  response.allHeaders
+val r1 = httpGet.GET[HttpResponse](url) // Returns the Http Response
+val r2 = httpGet.GET(url) // Also returns the Http Response
+r1.status
+r1.body
+r1.allHeaders
 ```
 
 <!--- How to influence which implicit is used - mixin vs import vs directly by type --->
-
-<!--- _Talk about HTTP Readers & Error Handling in detail_ --->
 
 <!--- _Talk about special methods in POST_ --->
 
