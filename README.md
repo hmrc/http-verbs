@@ -53,13 +53,15 @@ object ConnectorWithHttpValues extends ConnectorWithHttpValues {
 }
 ```
 
-In both cases, you'll need to supply an [auditing configuration](#Configuration). 
+In both cases, you'll need to supply an [auditing configuration](#configuration). 
 
 #### Making HTTP Calls
 
 Each verb supplies a single matching method, which takes a URL, and a request body if appropriate:
 
 ```scala
+implicit val hc = HeaderCarrier()
+
 http.GET("http://gov.uk/hmrc")
 http.DELETE("http://gov.uk/hmrc")
 http.POST("http://gov.uk/hmrc", body = "hi there")
@@ -99,7 +101,7 @@ httpGet.GET("url") recover {
 }
 ```
 
-or special [response readers]() are available.
+or if you expect responses which indicate no content, you can use an [`Option[...]` return type](#potentially-empty-responses).
 
 ### Response Types
 
@@ -139,9 +141,9 @@ r1.body
 r1.allHeaders
 ```
 
-<!--- How to influence which implicit is used - mixin vs import vs directly by type --->
+<!--- TODO: How to influence which implicit is used - mixin vs import vs directly by type --->
 
-<!--- _Talk about special methods in POST_ --->
+<!--- TODO: Talk about special methods POSTString, POSTForm etc. --->
 
 ## Extension & Customisation
 Response handling is implemented via the `HttpReads[A]` typeclass, which is responsible for converting the raw response into either an exception or the specified type. Default implementations of `HttpReads[A]` have been provided in its companion object to cover common use cases, but clients may provide their own implementations if required. 
