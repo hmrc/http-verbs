@@ -90,7 +90,7 @@ Status Code   | Exception
 4xx           | `Upstream4xxResponse`
 5xx           | `Upstream5xxResponse`
 
-_For all possible exception types, see the #hmrc/http-exceptions project_
+_For all possible exception types, see the [hmrc/http-exceptions](https://github.com/hmrc/http-exceptions) project_
 
 If some failure status codes are expected in normal flow, `recover` can be used: 
 
