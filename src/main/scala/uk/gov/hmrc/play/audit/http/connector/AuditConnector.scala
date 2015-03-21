@@ -99,3 +99,6 @@ trait AuditConnector extends Connector with AuditEventFailureKeys with Connectio
     else None
   }
 }
+object AuditConnector {
+  def apply(config: AuditingConfig) = new AuditConnector { def auditingConfig = config }
+}
