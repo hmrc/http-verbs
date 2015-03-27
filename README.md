@@ -32,7 +32,14 @@ _All examples show below are available in [Examples.scala](src/test/scala/uk/gov
 Each verb is available as both an agnostic `Http___` trait and a play-specific `WS___` trait. They can be used as mixins:
 
 ```scala
-trait ConnectorWithMixins extends HttpGet with HttpPost
+import uk.gov.hmrc.play.http._
+import uk.gov.hmrc.play.http.ws._
+import audit.http.config._
+import audit.http.connector._
+
+trait ConnectorWithMixins extends HttpGet with HttpPost {
+  
+}
 object ConnectorWithMixins extends ConnectorWithMixins with WSGet with WSPost {
   val appName = "my-app-name"
   val auditConnector = AuditConnector(LoadAuditingConfig(key = "auditing"))
@@ -42,6 +49,11 @@ object ConnectorWithMixins extends ConnectorWithMixins with WSGet with WSPost {
 or as `val`s:
 
 ```scala
+import uk.gov.hmrc.play.http._
+import uk.gov.hmrc.play.http.ws._
+import audit.http.config._
+import audit.http.connector._
+
 trait ConnectorWithHttpValues {
   val http: HttpGet with HttpPost
 }
@@ -77,7 +89,17 @@ Headers from the carrier are added to every request. Depending on how you scope 
 
 ## Response Handling
 
-By default, all verbs return `HttpResponse` for successful responses, and exceptions for failures, but this can be customised. 
+All verbs return `Future`s. By default, a `HttpResponse` is returned for successful responses, which gives access to the status code, raw body and headers:
+
+```scala
+val r1 = http.GET("http://gov.uk/hmrc") // Returns an HttpResponse
+val r2 = http.GET[HttpResponse]("http://gov.uk/hmrc") // Can specify this explicitly
+r1.map { r =>
+  r.status
+  r.body
+  r.allHeaders
+}
+```
 
 ### Errors
 
@@ -111,34 +133,26 @@ http-verbs can automatically map responses into richer types.
 If you have an implicit `play.api.libs.json.Reads[A]` for your type in scope, just specify that type and it will be automatically deserialised.
 
 ```scala
+import play.api.libs.json._
+case class MyCaseClass(a: String, b: Int)
 implicit val f = Json.reads[MyCaseClass]
-httpGet.GET[MyCaseClass](url) // Returns an MyCaseClass de-serialised from JSON
+http.GET[MyCaseClass]("http://gov.uk/hmrc") // Returns an MyCaseClass de-serialised from JSON
 ```
 
 ##### HTML responses
 If you wish to use HTML responses, Play's `Html` type can be used:
 
 ```scala                                      
-httpGet.GET[Html](url) // Returns a Play Html type
+import play.twirl.api.Html
+http.GET[Html]("http://gov.uk/hmrc") // Returns a Play Html type
 ```
 
 #### Potentially empty responses
 If you expect to receive a `204` or `404` response in some circumstances, then you can add `Option[...]` to your return type:
 
 ```scala
-httpGet.GET[Option[MyCaseClass]](url) // Returns None, or Some[MyCaseClass] de-serialised from JSON
-httpGet.GET[Option[Html]](url) // Returns a None, or a Play Html type
-```
-
-#### Plain HTTP response
-If access to the status code, raw body and headers are required without de-serialisation, the `HttpResponse` type can be used:
-
-```scala
-val r1 = httpGet.GET[HttpResponse](url) // Returns the Http Response
-val r2 = httpGet.GET(url) // Also returns the Http Response
-r1.status
-r1.body
-r1.allHeaders
+http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
+http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
 ```
 
 <!--- TODO: How to influence which implicit is used - mixin vs import vs directly by type --->
