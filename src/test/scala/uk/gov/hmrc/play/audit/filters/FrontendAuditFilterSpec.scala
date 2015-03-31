@@ -16,16 +16,22 @@
 
 package uk.gov.hmrc.play.audit.filters
 
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.{Matchers, WordSpecLike}
-import play.api.mvc.{Cookie, ResponseHeader}
+import play.api.libs.iteratee.Enumerator
+import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test.{FakeApplication, FakeRequest}
 import uk.gov.hmrc.play.audit.EventTypes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, MockAuditConnector}
-import uk.gov.hmrc.play.audit.model.DeviceFingerprint
+import uk.gov.hmrc.play.audit.http.connector.MockAuditConnector
+import uk.gov.hmrc.play.audit.model.{DataEvent, DeviceFingerprint}
+import uk.gov.hmrc.play.test.Concurrent
 
-class FrontendAuditFilterSpec extends WordSpecLike with Matchers {
+import scala.concurrent.ExecutionContext.Implicits.global
+
+
+class FrontendAuditFilterSpec extends WordSpecLike with Matchers  with Eventually with ScalaFutures with FilterFlowMock {
 
   val filter = new FrontendAuditFilter {
 
@@ -33,7 +39,7 @@ class FrontendAuditFilterSpec extends WordSpecLike with Matchers {
 
     override val applicationPort: Option[Int] = Some(80)
 
-    override val auditConnector: AuditConnector = new MockAuditConnector
+    override val auditConnector = new MockAuditConnector
 
     override val appName: String = "app"
 
@@ -71,17 +77,24 @@ class FrontendAuditFilterSpec extends WordSpecLike with Matchers {
 
     "generate audit events without passwords" in {
 
-      val request = FakeRequest("POST", "/foo").withHeaders("Content-Type" -> "application/x-www-form-urlencoded")
       val body = "csrfToken=acb" +
         "&userId=113244018119" +
         "&password=123456789" +
         "&key1="
 
-      implicit val hc = new HeaderCarrier()
-      val event = filter.buildAuditRequestEvent(EventTypes.ServiceSentResponse, request, body)
-      event.detail should contain("requestBody" -> "csrfToken=acb&userId=113244018119&password=#########&key1=")
-    }
+      var requestBody = Enumerator(body.getBytes) andThen Enumerator.eof
 
+      val request = FakeRequest("POST", "/foo").withHeaders("Content-Type" -> "application/x-www-form-urlencoded")
+
+      val iteratee = requestBody |>>> filter.audit(request, nextAction)
+      Concurrent.await(iteratee)
+
+      eventually {
+        val event = filter.auditConnector.recordedEvent.get.asInstanceOf[DataEvent]
+        event.auditType shouldBe "ServiceReceivedRequest"
+        event.detail should contain("requestBody" -> "csrfToken=acb&userId=113244018119&password=#########&key1=")
+      }
+    }
 
     "generate audit events with the device finger print when it is supplied in a request cookie" in {
       val encryptedFingerprint = "eyJ1c2VyQWdlbnQiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMF84XzUpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGx" +
@@ -92,38 +105,61 @@ class FrontendAuditFilterSpec extends WordSpecLike with Matchers {
 
       val request = FakeRequest("GET", "/foo").withCookies(Cookie(DeviceFingerprint.deviceFingerprintCookieName, encryptedFingerprint))
 
-      implicit val hc = new HeaderCarrier()
-      val event = filter.buildAuditRequestEvent(EventTypes.ServiceSentResponse, request, "")
-      event.detail should contain("deviceFingerprint" -> (
-        """{"userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.48 Safari/537.36",""" +
-          """"language":"en-US","colorDepth":24,"resolution":"800x1280","timezone":0,"sessionStorage":true,"localStorage":true,"indexedDB":true,"platform":"MacIntel",""" +
-          """"doNotTrack":true,"numberOfPlugins":5,"plugins":["Shockwave Flash","Chrome Remote Desktop Viewer","Native Client","Chrome PDF Viewer","QuickTime Plug-in 7.7.1"]}""")
-      )
+      val iteratee = filter.audit(request, nextAction)
+      Concurrent.await(iteratee.run)
+
+      eventually {
+        val event = filter.auditConnector.recordedEvent.get.asInstanceOf[DataEvent]
+        event.auditType shouldBe "ServiceReceivedRequest"
+        event.detail should contain("deviceFingerprint" -> (
+          """{"userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.48 Safari/537.36",""" +
+            """"language":"en-US","colorDepth":24,"resolution":"800x1280","timezone":0,"sessionStorage":true,"localStorage":true,"indexedDB":true,"platform":"MacIntel",""" +
+            """"doNotTrack":true,"numberOfPlugins":5,"plugins":["Shockwave Flash","Chrome Remote Desktop Viewer","Native Client","Chrome PDF Viewer","QuickTime Plug-in 7.7.1"]}""")
+        )
+      }
     }
 
     "generate audit events without the device finger print when it is not supplied in a request cookie" in {
       val request = FakeRequest("GET", "/foo")
 
-      implicit val hc = new HeaderCarrier()
-      val event = filter.buildAuditRequestEvent(EventTypes.ServiceSentResponse, request, "")
-      event.detail should contain("deviceFingerprint" -> "-")
+      val iteratee = filter.audit(request, nextAction)
+      Concurrent.await(iteratee.run)
+
+      eventually {
+        val event = filter.auditConnector.recordedEvent.get.asInstanceOf[DataEvent]
+        event.auditType shouldBe "ServiceReceivedRequest"
+        event.detail should contain("deviceFingerprint" -> "-")
+      }
     }
 
     "generate audit events without the device finger print when the value supplied in the request cookie is invalid" in {
       val request = FakeRequest("GET", "/foo").withCookies(Cookie(DeviceFingerprint.deviceFingerprintCookieName, "THIS IS SOME JUST THAT SHOULDN'T BE DECRYPTABLE *!@&£$)B__!@£$"))
 
-      implicit val hc = new HeaderCarrier()
-      val event = filter.buildAuditRequestEvent(EventTypes.ServiceSentResponse, request, "")
-      event.detail should contain("deviceFingerprint" -> "-")
+      val iteratee = filter.audit(request, nextAction)
+      Concurrent.await(iteratee.run)
+
+      eventually {
+        val event = filter.auditConnector.recordedEvent.get.asInstanceOf[DataEvent]
+        event.auditType shouldBe "ServiceReceivedRequest"
+        event.detail should contain("deviceFingerprint" -> "-")
+
+      }
     }
 
-    "use the session to read Authorization and token" in running(FakeApplication()) {
-      val request = FakeRequest("GET", "/foo").withSession("token" -> "aToken", "authToken" -> "Bearer fNAao9C4kTby8cqa6g75emw1DZIyA5B72nr9oKHHetE=")
+    "use the session to read Authorization, session Id and token" in running(FakeApplication()) {
+      val request = FakeRequest("GET", "/foo").withSession("token" -> "aToken", "authToken" -> "Bearer fNAao9C4kTby8cqa6g75emw1DZIyA5B72nr9oKHHetE=",
+        "sessionId" -> "mySessionId")
 
-      implicit val hcWithoutSessionData = new HeaderCarrier()
-      val event = filter.buildAuditRequestEvent(EventTypes.ServiceSentResponse, request, "")
-      event.detail should contain("Authorization" -> "Bearer fNAao9C4kTby8cqa6g75emw1DZIyA5B72nr9oKHHetE=")
-      event.detail should contain("token" -> "aToken")
+      val iteratee = filter.audit(request, nextAction)
+      Concurrent.await(iteratee.run)
+
+      eventually {
+        val event = filter.auditConnector.recordedEvent.get.asInstanceOf[DataEvent]
+        event.auditType shouldBe "ServiceReceivedRequest"
+        event.detail should contain("Authorization" -> "Bearer fNAao9C4kTby8cqa6g75emw1DZIyA5B72nr9oKHHetE=")
+        event.detail should contain("token" -> "aToken")
+        event.tags should contain("X-Session-ID" -> "mySessionId")
+      }
     }
 
     "add the Location header to the details if available" in {

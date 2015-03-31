@@ -30,9 +30,11 @@ trait FrontendAuditFilter extends AuditFilter {
 
   def applicationPort: Option[Int]
 
+  override def buildAuditedHeaders(request: RequestHeader) = HeaderCarrier.fromSessionAndHeaders(request.session, request.headers)
+
   override def buildAuditRequestEvent(eventType: EventTypes.EventType, request: RequestHeader, requestBody: String)(implicit hc: HeaderCarrier): DataEvent = {
 
-    super.buildAuditRequestEvent(eventType, request, stripPasswords(request.contentType, requestBody, maskedFormFields))(HeaderCarrier.fromSessionAndHeaders(request.session, request.headers))
+    super.buildAuditRequestEvent(eventType, request, stripPasswords(request.contentType, requestBody, maskedFormFields))
       .withDetail(buildRequestDetails(request).toSeq: _*)
   }
 

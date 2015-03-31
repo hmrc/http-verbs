@@ -36,10 +36,16 @@ trait AuditFilter extends EssentialFilter with HttpAuditEvent {
 
   def apply(nextAction: EssentialAction): EssentialAction = new EssentialAction {
     def apply(request: RequestHeader): Iteratee[Array[Byte], Result] = {
-
-      if (needsAuditing(request)) withAuditedResponse(withAuditedRequest(nextAction, request), request)
-      else nextAction(request)
+      audit(request, nextAction)
     }
+  }
+
+  def buildAuditedHeaders(request: RequestHeader) = HeaderCarrier.fromHeaders(request.headers)
+
+  def audit(request: RequestHeader, nextAction: EssentialAction) = {
+    implicit val hc = buildAuditedHeaders(request)
+    if (needsAuditing(request)) withAuditedResponse(withAuditedRequest(nextAction, request), request)
+    else nextAction(request)
   }
 
   def needsAuditing(request: RequestHeader): Boolean = {
@@ -48,18 +54,16 @@ trait AuditFilter extends EssentialFilter with HttpAuditEvent {
     } yield controllerNeedsAuditing(controllerName)).getOrElse(true)
   }
 
-  def withAuditedRequest(nextAction: EssentialAction, request: RequestHeader): Iteratee[Array[Byte], Result] = {
+  def withAuditedRequest(nextAction: EssentialAction, request: RequestHeader)(implicit hc: HeaderCarrier): Iteratee[Array[Byte], Result] = {
     readRequestBody(nextAction, request) {
       body => {
-        implicit val hc = HeaderCarrier.fromSessionAndHeaders(request.session, request.headers)
         val event = buildAuditRequestEvent(EventTypes.ServiceReceivedRequest, request, new String(body))
         auditConnector.sendEvent(event)
       }
     }
   }
 
-  def withAuditedResponse(iteratee: Iteratee[Array[Byte], Result], request: RequestHeader): Iteratee[Array[Byte], Result] = {
-    implicit val hc = HeaderCarrier.fromSessionAndHeaders(request.session, request.headers)
+  def withAuditedResponse(iteratee: Iteratee[Array[Byte], Result], request: RequestHeader)(implicit hc: HeaderCarrier): Iteratee[Array[Byte], Result] = {
     iteratee.map {
       result =>
         var collectedBody = new Array[Byte](0)
@@ -86,7 +90,7 @@ trait AuditFilter extends EssentialFilter with HttpAuditEvent {
 
   def readRequestBody(nextA: EssentialAction, request: RequestHeader)(bodyHandler: (Array[Byte]) => Unit): Iteratee[Array[Byte], Result] = {
 
-    def step(body: Array[Byte], nextI: Iteratee[Array[Byte], Result])(input: Input[Array[Byte]]): Iteratee[Array[Byte], Result] =
+    def step(body: Array[Byte], nextI: Iteratee[Array[Byte], Result])(input: Input[Array[Byte]]): Iteratee[Array[Byte], Result] = {
       input match {
 
         case Input.EOF => {
@@ -101,6 +105,7 @@ trait AuditFilter extends EssentialFilter with HttpAuditEvent {
           Cont[Array[Byte], Result](step(curBody, Iteratee.flatten(nextI.feed(Input.El(e)))))
         }
       }
+    }
 
     val nextIteratee: Iteratee[Array[Byte], Result] = nextA(request)
 
