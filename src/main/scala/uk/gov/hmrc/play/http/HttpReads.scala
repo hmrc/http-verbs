@@ -80,12 +80,23 @@ trait JsonHttpReads extends HttpErrorFunctions {
     def read(method: String, url: String, response: HttpResponse) = readJson(method, url, handleResponse(method, url)(response).json)
   }
 
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
-    def read(method: String, url: String, response: HttpResponse) = response.status match {
-      case 204 | 404 => Seq.empty
-      case _ => readJson[Seq[O]](method, url, handleResponse(method, url)(response).json \ name)
-    }
+  def atPath[O](path: String)(implicit rds: HttpReads[O]): HttpReads[O] = new HttpReads[O] {
+    override def read(method: String, url: String, response: HttpResponse) = rds.read(method, url, new HttpResponse {
+      override def allHeaders = response.allHeaders
+      override def header(key: String) = response.header(key)
+      override def status = response.status
+      override def json = response.json \ path
+      override def body = response.body
+    })
   }
+
+  def emptyOn(status: Int): PartialHttpReads[Seq[Nothing]] = new PartialHttpReads[Seq[Nothing]] {
+    override def read(method: String, url: String, response: HttpResponse) =
+      if (response.status == status) Some(Seq.empty) else None
+  }
+
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) =
+    emptyOn(204) or emptyOn(404) or atPath(name)(readFromJson[Seq[O]])
 
   private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) = {
     jsValue.validate[A].fold(
