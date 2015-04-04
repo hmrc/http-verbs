@@ -59,12 +59,12 @@ trait OptionHttpReads extends HttpErrorFunctions {
       if (response.status == status) Some(None) else None
   }
 
-  def alwaysSome[P](rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
+  def alwaysSome[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
     def read(method: String, url: String, response: HttpResponse) = Some(rds.read(method, url, response))
   }
 
   implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = 
-    noneOn(status = 204) or noneOn(status = 404) or alwaysSome(rds)
+    noneOn(status = 204) or noneOn(status = 404) or alwaysSome[P]
 }
 object OptionHttpReads extends OptionHttpReads
 
@@ -73,6 +73,7 @@ trait HtmlHttpReads extends HttpErrorFunctions {
     def read(method: String, url: String, response: HttpResponse) = Html(handleResponse(method, url)(response).body)
   }
 }
+object HtmlHttpReads extends HtmlHttpReads
 
 trait JsonHttpReads extends HttpErrorFunctions {
   implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
