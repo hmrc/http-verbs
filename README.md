@@ -148,7 +148,7 @@ http.GET[Html]("http://gov.uk/hmrc") // Returns a Play Html type
 ```
 
 #### Potentially empty responses
-If you expect to receive a `204` or `404` response in some circumstances, then http-verbs supports an `Option[...]` on your return type. You'll need to mix-in or import `OptionHttpReads`:
+If you expect to sometimes receive empty responses, then http-verbs supports an `Option[...]` on your return type. You'll need to mix-in or import `OptionHttpReads`:
 
 ```scala
 
@@ -160,6 +160,14 @@ object MyConnector extends OptionHttpReads {
 import OptionHttpReads._
 http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
 http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
+```
+
+The default behaviour is that `204` or `404` status become `None`, and everything else is a `Some` of the type specified. You can tweak this though, using the HttpReads mini-DSL:
+
+```scala
+import OptionHttpReads.{noneOn, alwaysSome}
+implicit val reads: HttpReads[Option[Html]] = noneOn(status=204) or alwaysSome[Html]
+http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
 ```
 
 <!--- TODO: How to influence which implicit is used - mixin vs import vs directly by type --->
