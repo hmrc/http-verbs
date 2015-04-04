@@ -51,6 +51,9 @@ object PartialHttpReads {
   def apply[O](readF: (String, String, HttpResponse) => Option[O]): PartialHttpReads[O] = new PartialHttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) = readF(method, url, response)
   }
+  def byStatus[O](statusF: PartialFunction[Int, O]): PartialHttpReads[O] = new PartialHttpReads[O] {
+    def read(method: String, url: String, response: HttpResponse) = statusF.lift(response.status)
+  }
 }
 
 trait RawReads extends HttpErrorFunctions {
@@ -67,8 +70,8 @@ trait OptionHttpReads extends HttpErrorFunctions {
     Some(rds.read(method, url, response))
   }
 
-  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = 
-    noneOn(status = 204) or noneOn(status = 404) or some[P]
+  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] =
+    PartialHttpReads.byStatus { case 204 | 404 => None } or some[P]
 }
 object OptionHttpReads extends OptionHttpReads
 
@@ -100,5 +103,5 @@ trait JsonHttpReads extends HttpErrorFunctions {
   }
 
   def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) =
-    emptyOn(204) or emptyOn(404) or atPath(name)(readFromJson[Seq[O]])
+    PartialHttpReads.byStatus { case 204 | 404 => Seq.empty } or atPath(name)(readFromJson[Seq[O]])
 }
