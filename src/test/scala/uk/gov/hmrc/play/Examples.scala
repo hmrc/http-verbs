@@ -82,8 +82,8 @@ object Examples {
     }
 
     {
-      import OptionHttpReads.{noneOn, alwaysSome}
-      implicit val reads: HttpReads[Option[Html]] = noneOn(status = 204) or alwaysSome[Html]
+      import OptionHttpReads.{noneOn, some}
+      implicit val reads: HttpReads[Option[Html]] = noneOn(status = 204) or some[Html]
       http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
     }
   }

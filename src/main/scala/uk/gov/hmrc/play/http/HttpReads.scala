@@ -23,13 +23,22 @@ import play.twirl.api.Html
 trait HttpReads[O] {
   def read(method: String, url: String, response: HttpResponse): O
 }
+object HttpReads extends HtmlHttpReads with JsonHttpReads {
+  // readRaw is brought in like this rather than in a trait as this gives it
+  // compilation priority during implicit resolution. This means, unless
+  // specified otherwise a verb call will return a plain HttpResponse
+  implicit val readRaw: HttpReads[HttpResponse] = RawReads.readRaw
+
+  def apply[O](readF: (String, String, HttpResponse) => O): HttpReads[O] = new HttpReads[O] {
+    def read(method: String, url: String, response: HttpResponse) = readF(method, url, response)
+  }
+}
+
 trait PartialHttpReads[O] {
   def read(method: String, url: String, response: HttpResponse): Option[O]
 
-  def or[P >: O](rds: HttpReads[P]): HttpReads[P] = new HttpReads[P] {
-    override def read(method: String, url: String, response: HttpResponse): P = {
-      PartialHttpReads.this.read(method, url, response) getOrElse rds.read(method, url, response)
-    }
+  def or[P >: O](rds: HttpReads[P]): HttpReads[P] = HttpReads[P] { (method, url, response) =>
+    PartialHttpReads.this.read(method, url, response) getOrElse rds.read(method, url, response)
   }
 
   def or[P >: O](rds: PartialHttpReads[P]): PartialHttpReads[P] = new PartialHttpReads[P] {
@@ -38,50 +47,46 @@ trait PartialHttpReads[O] {
     }
   }
 }
-
-object HttpReads extends HtmlHttpReads with JsonHttpReads {
-  // readRaw is brought in like this rather than in a trait as this gives it
-  // compilation priority during implicit resolution. This means, unless
-  // specified otherwise a verb call will return a plain HttpResponse
-  implicit val readRaw: HttpReads[HttpResponse] = RawReads.readRaw
+object PartialHttpReads {
+  def apply[O](readF: (String, String, HttpResponse) => Option[O]): PartialHttpReads[O] = new PartialHttpReads[O] {
+    def read(method: String, url: String, response: HttpResponse) = readF(method, url, response)
+  }
 }
 
 trait RawReads extends HttpErrorFunctions {
-  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
-  }
+  implicit val readRaw = HttpReads[HttpResponse] { (method, url, response) => handleResponse(method, url)(response) }
 }
 object RawReads extends RawReads
 
 trait OptionHttpReads extends HttpErrorFunctions {
-  def noneOn(status: Int): PartialHttpReads[None.type] = new PartialHttpReads[None.type] {
-    override def read(method: String, url: String, response: HttpResponse) =
-      if (response.status == status) Some(None) else None
+  def noneOn(status: Int) = PartialHttpReads[None.type] { (method, url, response) =>
+    if (response.status == status) Some(None) else None
   }
 
-  def alwaysSome[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
-    def read(method: String, url: String, response: HttpResponse) = Some(rds.read(method, url, response))
+  def some[P](implicit rds: HttpReads[P]) = HttpReads[Option[P]] { (method, url, response) =>
+    Some(rds.read(method, url, response))
   }
 
   implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = 
-    noneOn(status = 204) or noneOn(status = 404) or alwaysSome[P]
+    noneOn(status = 204) or noneOn(status = 404) or some[P]
 }
 object OptionHttpReads extends OptionHttpReads
 
 trait HtmlHttpReads extends HttpErrorFunctions {
-  implicit val readToHtml: HttpReads[Html] = new HttpReads[Html] {
-    def read(method: String, url: String, response: HttpResponse) = Html(handleResponse(method, url)(response).body)
-  }
+  implicit val readToHtml = HttpReads[Html] { (method, url, response) => Html(handleResponse(method, url)(response).body) }
 }
 object HtmlHttpReads extends HtmlHttpReads
 
 trait JsonHttpReads extends HttpErrorFunctions {
-  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
-    def read(method: String, url: String, response: HttpResponse) = readJson(method, url, handleResponse(method, url)(response).json)
+  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = HttpReads { (method, url, response) =>
+    handleResponse(method, url)(response).json.validate[O].fold(
+      errs => throw new JsValidationException(method, url, mf.runtimeClass, errs),
+      valid => valid
+    )
   }
 
-  def atPath[O](path: String)(implicit rds: HttpReads[O]): HttpReads[O] = new HttpReads[O] {
-    override def read(method: String, url: String, response: HttpResponse) = rds.read(method, url, new HttpResponse {
+  def atPath[O](path: String)(implicit rds: HttpReads[O]) = HttpReads[O] { (method, url, response) =>
+    rds.read(method, url, new HttpResponse {  // TODO Move this to HttpResponse.copy
       override def allHeaders = response.allHeaders
       override def header(key: String) = response.header(key)
       override def status = response.status
@@ -90,18 +95,10 @@ trait JsonHttpReads extends HttpErrorFunctions {
     })
   }
 
-  def emptyOn(status: Int): PartialHttpReads[Seq[Nothing]] = new PartialHttpReads[Seq[Nothing]] {
-    override def read(method: String, url: String, response: HttpResponse) =
-      if (response.status == status) Some(Seq.empty) else None
+  def emptyOn(status: Int) = PartialHttpReads[Seq[Nothing]] { (method, url, response) =>
+    if (response.status == status) Some(Seq.empty) else None
   }
 
   def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) =
     emptyOn(204) or emptyOn(404) or atPath(name)(readFromJson[Seq[O]])
-
-  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) = {
-    jsValue.validate[A].fold(
-      errs => throw new JsValidationException(method, url, mf.runtimeClass, errs),
-      valid => valid
-    )
-  }
 }
