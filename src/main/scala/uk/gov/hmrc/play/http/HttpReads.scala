@@ -23,6 +23,21 @@ import play.twirl.api.Html
 trait HttpReads[O] {
   def read(method: String, url: String, response: HttpResponse): O
 }
+trait PartialHttpReads[O] {
+  def read(method: String, url: String, response: HttpResponse): Option[O]
+
+  def or[P >: O](rds: HttpReads[P]): HttpReads[P] = new HttpReads[P] {
+    override def read(method: String, url: String, response: HttpResponse): P = {
+      PartialHttpReads.this.read(method, url, response) getOrElse rds.read(method, url, response)
+    }
+  }
+
+  def or[P >: O](rds: PartialHttpReads[P]): PartialHttpReads[P] = new PartialHttpReads[P] {
+    override def read(method: String, url: String, response: HttpResponse) = {
+      PartialHttpReads.this.read(method, url, response) orElse rds.read(method, url, response)
+    }
+  }
+}
 
 object HttpReads extends HtmlHttpReads with JsonHttpReads {
   // readRaw is brought in like this rather than in a trait as this gives it
@@ -39,12 +54,17 @@ trait RawReads extends HttpErrorFunctions {
 object RawReads extends RawReads
 
 trait OptionHttpReads extends HttpErrorFunctions {
-  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
-    def read(method: String, url: String, response: HttpResponse) = response.status match {
-      case 204 | 404 => None
-      case _ => Some(rds.read(method, url, response))
-    }
+  def noneOn(status: Int): PartialHttpReads[None.type] = new PartialHttpReads[None.type] {
+    override def read(method: String, url: String, response: HttpResponse) =
+      if (response.status == status) Some(None) else None
   }
+
+  def alwaysSome[P](rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
+    def read(method: String, url: String, response: HttpResponse) = Some(rds.read(method, url, response))
+  }
+
+  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = 
+    noneOn(status = 204) or noneOn(status = 404) or alwaysSome(rds)
 }
 object OptionHttpReads extends OptionHttpReads
 
