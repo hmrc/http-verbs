@@ -17,7 +17,6 @@
 package uk.gov.hmrc.play.http
 
 import play.api.libs.json
-import play.api.libs.json.JsValue
 import play.twirl.api.Html
 
 trait HttpReads[O] {
@@ -34,17 +33,15 @@ object HttpReads extends HtmlHttpReads with JsonHttpReads {
   }
 }
 
-trait PartialHttpReads[O] {
+trait PartialHttpReads[+O] {
   def read(method: String, url: String, response: HttpResponse): Option[O]
 
   def or[P >: O](rds: HttpReads[P]): HttpReads[P] = HttpReads[P] { (method, url, response) =>
     PartialHttpReads.this.read(method, url, response) getOrElse rds.read(method, url, response)
   }
 
-  def or[P >: O](rds: PartialHttpReads[P]): PartialHttpReads[P] = new PartialHttpReads[P] {
-    override def read(method: String, url: String, response: HttpResponse) = {
-      PartialHttpReads.this.read(method, url, response) orElse rds.read(method, url, response)
-    }
+  def or[P >: O](rds: PartialHttpReads[P]): PartialHttpReads[P] = PartialHttpReads[P] { (method, url, response) =>
+    PartialHttpReads.this.read(method, url, response) orElse rds.read(method, url, response)
   }
 }
 object PartialHttpReads {
@@ -60,6 +57,32 @@ trait RawReads extends HttpErrorFunctions {
   implicit val readRaw = HttpReads[HttpResponse] { (method, url, response) => handleResponse(method, url)(response) }
 }
 object RawReads extends RawReads
+
+trait ErrorReads extends HttpErrorFunctions {
+  def convertFailuresToExceptions: PartialHttpReads[Nothing] =
+    convert400ToBadRequest or
+    convert404ToNotFound or
+    convert4xxToUpstream4xxResponse or
+    convert5xxToUpstream5xxResponse or
+    convertLessThan200GreaterThan599ToException
+
+  // TODO not sure that this is a good thing. should be generalised out or more strictly typed
+  private def convert(statusMatches: Int => Boolean)(f: (String, String, HttpResponse) => Exception): PartialHttpReads[Nothing] = PartialHttpReads { (method, url, response) =>
+    if (statusMatches(response.status)) throw f(method, url, response) else None
+  }
+  def convert400ToBadRequest = convert(_ == 400) { (m, u, r) => new BadRequestException(s"$m of '$u' returned 400 (Bad Request). Response body '${r.body}'") }
+  def convert404ToNotFound = convert(_ == 404) { (m, u, r) => new NotFoundException(s"$m of '$u' returned 404 (Not Found). Response body: '${r.body}'") }
+  def convert4xxToUpstream4xxResponse = convert(400 to 499 contains _) { (m, u, r) =>
+    new Upstream4xxResponse(s"$m of '$u' returned ${r.status}. Response body: '${r.body}'", r.status, 500, r.allHeaders)
+  }
+  def convert5xxToUpstream5xxResponse = convert(500 to 599 contains _) { (m, u, r) =>
+    new Upstream5xxResponse(s"$m of '$u' returned ${r.status}. Response body: '${r.body}'", r.status, 502)
+  }
+  def convertLessThan200GreaterThan599ToException = convert(status => status < 200 || status >= 600) { (m, u, r) =>
+    new Exception(s"$m to $u failed with status ${r.status}. Response body: '${r.body}'")
+  }
+}
+object ErrorReads extends ErrorReads
 
 trait OptionHttpReads extends HttpErrorFunctions {
   def noneOn(status: Int) = PartialHttpReads[None.type] { (method, url, response) =>
