@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http
+package uk.gov.hmrc.play.http.reads
 
 import org.scalacheck.Gen
-import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
-import org.scalatest.{Matchers, TryValues, WordSpec}
-import uk.gov.hmrc.play.http.reads.ErrorReads
+import org.scalatest.{TryValues, Matchers}
+import org.scalatest.prop.{TableDrivenPropertyChecks, GeneratorDrivenPropertyChecks}
+import uk.gov.hmrc.play.http._
 
-import scala.util.Try
-
-class HttpErrorFunctionsSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks with TableDrivenPropertyChecks with TryValues {
-
-  "HttpErrorFunctions" should {
-    "return the response if the status code is between 200 and 299" in new HttpErrorFunctions {
+class ErrorReadsSpec extends HttpReadsSpec with Matchers with GeneratorDrivenPropertyChecks with TableDrivenPropertyChecks with TryValues {
+  "ErrorReads" should {
+    "return None if the status code is between 200 and 299" in new HttpErrorFunctions {
       forAll (Gen.choose(200, 299)) { statusCode: Int =>
         val expectedResponse = HttpResponse(statusCode)
-        handleResponse(exampleVerb, exampleUrl)(expectedResponse) should be (expectedResponse)
+        ErrorReads.convertFailuresToExceptions.read(exampleVerb, exampleUrl, expectedResponse) should be (None)
       }
     }
     "return the correct exception if the status code is 400" in { expectA[BadRequestException](forStatus = 400) }
@@ -42,17 +39,13 @@ class HttpErrorFunctionsSpec extends WordSpec with Matchers with GeneratorDriven
     }
 
     def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None): Unit = new HttpErrorFunctions {
-      val e = Try(handleResponse(exampleVerb, exampleUrl)(HttpResponse(forStatus, responseString = Some(exampleBody)))).failure.exception
+      val e = the [Exception] thrownBy ErrorReads.convertFailuresToExceptions.read(exampleVerb, exampleUrl, HttpResponse(forStatus, responseString = Some(exampleBody)))
       e should be (a [T])
       e.getMessage should (include (exampleUrl) and include (exampleVerb) and include (exampleBody))
-      reportStatus.map { s =>
+      reportStatus.foreach { s =>
         e should have ('upstreamResponseCode (forStatus))
         e should have ('reportAs (s))
       }
     }
   }
-
-  val exampleVerb = "GET"
-  val exampleUrl = "http://example.com/something"
-  val exampleBody = "this is the string body"
 }

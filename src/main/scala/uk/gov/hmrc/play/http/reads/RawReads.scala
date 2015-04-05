@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play
+package uk.gov.hmrc.play.http.reads
 
-import uk.gov.hmrc.play.http.logging.ConnectionTracing
+import uk.gov.hmrc.play.http.{HttpResponse, HttpErrorFunctions}
 
-package object http {
-  @deprecated("Re-named to ConnectionTracing", "23/04/2014")
-  type ConnectionLogging = ConnectionTracing
+object RawReads extends RawReads
 
-  // TODO do we really need to keep this?
-  @deprecated("moved to uk.gov.hmrc.play.http.reads", "5/4/15")
-  type HttpReads[O] = reads.HttpReads[O]
-  @deprecated("moved to uk.gov.hmrc.play.http.reads", "5/4/15")
-  val HttpReads = reads.HttpReads
-}
+trait RawReads extends HttpErrorFunctions {
+   implicit val readRaw = HttpReads[HttpResponse] { (method, url, response) => handleResponse(method, url)(response) }
+ }

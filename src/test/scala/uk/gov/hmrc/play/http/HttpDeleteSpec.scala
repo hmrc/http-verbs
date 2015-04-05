@@ -21,6 +21,7 @@ import play.api.http.HttpVerbs._
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.http.reads.HtmlHttpReads
 import scala.concurrent.Future
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {

@@ -21,6 +21,7 @@ import play.api.http.HttpVerbs._
 import play.api.libs.json.Writes
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.reads.HtmlHttpReads
 import uk.gov.hmrc.play.test.Concurrent.await
 import uk.gov.hmrc.play.test.Concurrent.liftFuture
 import scala.concurrent.Future

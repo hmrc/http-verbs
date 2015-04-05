@@ -70,20 +70,20 @@ object Examples {
     import play.twirl.api.Html
     http.GET[Html]("http://gov.uk/hmrc") // Returns a Play Html type
 
-    object ExampleWithOptionReadsAsMixin extends OptionHttpReads {
+    object ExampleWithOptionReadsAsMixin extends reads.OptionHttpReads {
       http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
       http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
     }
 
     {
-      import OptionHttpReads._
+      import reads.OptionHttpReads._
       http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
       http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
     }
 
     {
-      import OptionHttpReads.{noneOn, some}
-      implicit val reads: HttpReads[Option[Html]] = noneOn(status = 204) or some[Html]
+      import reads.OptionHttpReads.{noneOn, some}
+      implicit val myReads: reads.HttpReads[Option[Html]] = noneOn(status = 204) or some[Html]
       http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
     }
   }
