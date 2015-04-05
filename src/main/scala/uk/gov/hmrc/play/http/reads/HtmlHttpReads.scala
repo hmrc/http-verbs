@@ -17,12 +17,11 @@
 package uk.gov.hmrc.play.http.reads
 
 import play.twirl.api.Html
-import uk.gov.hmrc.play.http.HttpErrorFunctions
 
+trait HtmlHttpReads {
+  def bodyToHtml = HttpReads[Html] { (method, url, response) => Html(response.body) }
+
+  //TODO this shouldn't have to be a def, look at initialisation order to solve
+  implicit def readToHtml: HttpReads[Html] = ErrorReads.convertFailuresToExceptions or bodyToHtml
+}
 object HtmlHttpReads extends HtmlHttpReads
-
-trait HtmlHttpReads extends HttpErrorFunctions {
-   implicit val readToHtml = HttpReads[Html] { (method, url, response) =>
-     Html(handleResponse(method, url)(response).body)
-   }
- }

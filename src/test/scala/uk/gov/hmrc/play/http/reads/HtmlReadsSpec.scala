@@ -21,16 +21,11 @@ import uk.gov.hmrc.play.http.HttpResponse
 
 class HtmlReadsSpec extends HttpReadsSpec {
   "HtmlHttpReads" should {
-    "convert a successful response body to HTML" in {
-      val reads = new HtmlHttpReads with StubThatReturnsTheResponse
-
-      reads.readToHtml.read(exampleVerb, exampleUrl, HttpResponse(0, responseString = Some("<p>hello</p>"))) should (
+    "convert a successful response body to HTML" in forAll(successStatusCodes) { status =>
+      HtmlHttpReads.readToHtml.read(exampleVerb, exampleUrl, HttpResponse(status, responseString = Some("<p>hello</p>"))) should (
         be (an[Html]) and have('text("<p>hello</p>"))
       )
     }
-    "pass through any failure" in {
-      val reads = new HtmlHttpReads with StubThatThrowsAnException
-      an[Exception] should be thrownBy reads.readToHtml.read(exampleVerb, exampleUrl, exampleResponse)
-    }
+    behave like theStandardErrorHandling(HtmlHttpReads.readToHtml)
   }
 }

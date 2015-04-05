@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.play.http.reads
 
+import uk.gov.hmrc.play.http.HttpResponse
+
 class RawReadsSpec extends HttpReadsSpec {
   "RawReads" should {
-    "return the bare response if returned" in {
-      val reads = new RawReads with StubThatReturnsTheResponse
-      reads.readRaw.read(exampleVerb, exampleUrl, exampleResponse) should be (exampleResponse)
+    val reads = RawReads.readRaw
+
+    "return the bare response if returned" in forAll(successStatusCodes) { status =>
+      val response = HttpResponse(status)
+      reads.read(exampleVerb, exampleUrl, response) should be (response)
     }
-    "pass through any failure" in {
-      val reads = new RawReads with StubThatThrowsAnException
-      an [Exception] should be thrownBy reads.readRaw.read(exampleVerb, exampleUrl, exampleResponse)
-    }
+    behave like theStandardErrorHandling (reads)
   }
 }
