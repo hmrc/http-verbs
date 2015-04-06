@@ -19,7 +19,6 @@ package uk.gov.hmrc.play.http
 import org.scalacheck.Gen
 import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
 import org.scalatest.{Matchers, TryValues, WordSpec}
-import uk.gov.hmrc.play.http.reads.ErrorReads
 
 import scala.util.Try
 

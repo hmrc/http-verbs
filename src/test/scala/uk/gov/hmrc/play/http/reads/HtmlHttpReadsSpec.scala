@@ -16,9 +16,16 @@
 
 package uk.gov.hmrc.play.http.reads
 
-class ErrorReadsSpec extends HttpReadsSpec {
-  "ErrorReads" should {
-    behave like theStandardErrorHandling (ErrorReads.convertFailuresToExceptions or failTheTest)
-    behave like aPassthroughForSuccessCodes (ErrorReads.convertFailuresToExceptions)
+import play.twirl.api.Html
+import uk.gov.hmrc.play.http.HttpResponse
+
+class HtmlHttpReadsSpec extends HttpReadsSpec {
+  "HtmlHttpReads" should {
+    "convert a successful response body to HTML" in forAll(successStatusCodes) { status =>
+      HtmlHttpReads.readToHtml.read(exampleVerb, exampleUrl, HttpResponse(status, responseString = Some("<p>hello</p>"))) should (
+        be (an[Html]) and have('text("<p>hello</p>"))
+      )
+    }
+    behave like theStandardErrorHandling(HtmlHttpReads.readToHtml)
   }
 }

@@ -19,7 +19,7 @@ package uk.gov.hmrc.play.http.reads
 import org.scalacheck.Gen
 import uk.gov.hmrc.play.http.HttpResponse
 
-class OptionReadsSpec extends HttpReadsSpec {
+class OptionHttpReadsSpec extends HttpReadsSpec {
   "OptionHttpReads" should {
     val reads = new OptionHttpReads with StubThatShouldNotBeCalled
     "return None if the status code is 204 or 404" in {

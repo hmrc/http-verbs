@@ -18,17 +18,16 @@ package uk.gov.hmrc.play.http.reads
 
 import uk.gov.hmrc.play.http.HttpErrorFunctions
 
-object OptionHttpReads extends OptionHttpReads
-
 trait OptionHttpReads extends HttpErrorFunctions {
-   def noneOn(status: Int) = PartialHttpReads[None.type] { (method, url, response) =>
-     if (response.status == status) Some(None) else None
-   }
+  def noneOn(status: Int) = PartialHttpReads[None.type] { (method, url, response) =>
+    if (response.status == status) Some(None) else None
+  }
 
-   def some[P](implicit rds: HttpReads[P]) = HttpReads[Option[P]] { (method, url, response) =>
-     Some(rds.read(method, url, response))
-   }
+  def some[P](implicit rds: HttpReads[P]) = HttpReads[Option[P]] { (method, url, response) =>
+    Some(rds.read(method, url, response))
+  }
 
-   implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] =
-     PartialHttpReads.byStatus { case 204 | 404 => None } or some[P]
- }
+  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] =
+    PartialHttpReads.byStatus { case 204 | 404 => None } or some[P]
+}
+object OptionHttpReads extends OptionHttpReads

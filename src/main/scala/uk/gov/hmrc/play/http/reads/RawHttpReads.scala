@@ -18,11 +18,9 @@ package uk.gov.hmrc.play.http.reads
 
 import uk.gov.hmrc.play.http.HttpResponse
 
-object RawReads extends RawReads
-
-trait RawReads {
+trait RawHttpReads {
   def returnTheResponse = HttpReads[HttpResponse] { (m, u, r) => r }
 
-  //FIXME this shouldn't have to be a def
-  implicit def readRaw: HttpReads[HttpResponse] = ErrorReads.convertFailuresToExceptions or returnTheResponse
+  implicit def readRaw: HttpReads[HttpResponse] = ErrorHttpReads.convertFailuresToExceptions or returnTheResponse
 }
+object RawHttpReads extends RawHttpReads

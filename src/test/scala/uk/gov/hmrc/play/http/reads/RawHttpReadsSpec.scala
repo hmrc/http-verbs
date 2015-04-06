@@ -18,9 +18,9 @@ package uk.gov.hmrc.play.http.reads
 
 import uk.gov.hmrc.play.http.HttpResponse
 
-class RawReadsSpec extends HttpReadsSpec {
+class RawHttpReadsSpec extends HttpReadsSpec {
   "RawReads" should {
-    val reads = RawReads.readRaw
+    val reads = RawHttpReads.readRaw
 
     "return the bare response if returned" in forAll(successStatusCodes) { status =>
       val response = HttpResponse(status)

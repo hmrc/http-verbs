@@ -16,16 +16,12 @@
 
 package uk.gov.hmrc.play.http.reads
 
-import play.twirl.api.Html
-import uk.gov.hmrc.play.http.HttpResponse
+import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
+import org.scalatest.{Matchers, TryValues}
 
-class HtmlReadsSpec extends HttpReadsSpec {
-  "HtmlHttpReads" should {
-    "convert a successful response body to HTML" in forAll(successStatusCodes) { status =>
-      HtmlHttpReads.readToHtml.read(exampleVerb, exampleUrl, HttpResponse(status, responseString = Some("<p>hello</p>"))) should (
-        be (an[Html]) and have('text("<p>hello</p>"))
-      )
-    }
-    behave like theStandardErrorHandling(HtmlHttpReads.readToHtml)
+class ErrorHttpReadsSpec extends HttpReadsSpec with Matchers with GeneratorDrivenPropertyChecks with TableDrivenPropertyChecks with TryValues {
+  "ErrorReads" should {
+    behave like theStandardErrorHandling (ErrorHttpReads.convertFailuresToExceptions or failTheTest)
+    behave like aPassthroughForSuccessCodes (ErrorHttpReads.convertFailuresToExceptions)
   }
 }

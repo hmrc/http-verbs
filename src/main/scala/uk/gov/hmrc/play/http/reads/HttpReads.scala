@@ -25,7 +25,7 @@ object HttpReads extends HtmlHttpReads with JsonHttpReads {
   // readRaw is brought in like this rather than in a trait as this gives it
   // compilation priority during implicit resolution. This means, unless
   // specified otherwise a verb call will return a plain HttpResponse
-  implicit val readRaw: HttpReads[HttpResponse] = RawReads.readRaw
+  implicit val readRaw: HttpReads[HttpResponse] = RawHttpReads.readRaw
 
   def apply[O](readF: (String, String, HttpResponse) => O): HttpReads[O] = new HttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) = readF(method, url, response)

@@ -19,7 +19,7 @@ package uk.gov.hmrc.play.http.reads
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.http.{JsValidationException, HttpResponse}
 
-class JsonReadsSpec extends HttpReadsSpec {
+class JsonHttpReadsSpec extends HttpReadsSpec {
   implicit val r = Json.reads[Example]
   "JsonHttpReads.readFromJson" should {
     "convert a successful response body to the given class" in {
