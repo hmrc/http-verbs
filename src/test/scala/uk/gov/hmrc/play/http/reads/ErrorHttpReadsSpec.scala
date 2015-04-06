@@ -16,10 +16,7 @@
 
 package uk.gov.hmrc.play.http.reads
 
-import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
-import org.scalatest.{Matchers, TryValues}
-
-class ErrorHttpReadsSpec extends HttpReadsSpec with Matchers with GeneratorDrivenPropertyChecks with TableDrivenPropertyChecks with TryValues {
+class ErrorHttpReadsSpec extends HttpReadsSpec {
   "ErrorReads" should {
     behave like theStandardErrorHandling (ErrorHttpReads.convertFailuresToExceptions or failTheTest)
     behave like aPassthroughForSuccessCodes (ErrorHttpReads.convertFailuresToExceptions)

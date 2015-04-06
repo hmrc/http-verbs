@@ -19,9 +19,12 @@ package uk.gov.hmrc.play.http.reads
 import play.api.libs.json
 import uk.gov.hmrc.play.http.{HttpErrorFunctions, JsValidationException, HttpResponse}
 
-trait JsonHttpReads extends HttpErrorFunctions {
-  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = HttpReads { (method, url, response) =>
-    handleResponse(method, url)(response).json.validate[O].fold(
+trait JsonHttpReads {
+  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] =
+    ErrorHttpReads.convertFailuresToExceptions or jsonBodyDeserialisedTo[O]
+
+  def jsonBodyDeserialisedTo[O](implicit rds: json.Reads[O], mf: Manifest[O]) = HttpReads[O] { (method, url, response) =>
+    response.json.validate[O].fold(
       errs => throw new JsValidationException(method, url, mf.runtimeClass, errs),
       valid => valid
     )
@@ -42,7 +45,15 @@ trait JsonHttpReads extends HttpErrorFunctions {
     if (response.status == status) Some(Seq.empty) else None
   }
 
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) =
-    PartialHttpReads.byStatus { case 204 | 404 => Seq.empty } or atPath(name)(readFromJson[Seq[O]])
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = {
+    import ErrorHttpReads._
+    emptyOn(204) or
+    emptyOn(404) or
+    convert400ToBadRequest or
+    convert4xxToUpstream4xxResponse or
+    convert5xxToUpstream5xxResponse or
+    convertLessThan200GreaterThan599ToException or
+    atPath(name)(jsonBodyDeserialisedTo[Seq[O]])
+  }
 }
 object JsonHttpReads extends JsonHttpReads

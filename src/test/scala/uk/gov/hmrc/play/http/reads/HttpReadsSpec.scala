@@ -61,24 +61,40 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
     }
   }
 
-  def theStandardErrorHandling(httpReads: HttpReads[_]) {
-    "throw the correct exception if the status code is 400" in { expectA[BadRequestException](forStatus = 400) }
-    "throw the correct exception if the status code is 404" in { expectA[NotFoundException]  (forStatus = 404) }
-    "throw the correct exception for all other status codes" in {
-      forAll (Gen.choose(0, 199))                                        (expectA[Exception](_))
-      forAll (Gen.choose(400, 499).suchThat(!Seq(400, 404).contains(_))) (expectA[Upstream4xxResponse](_, Some(500)))
-      forAll (Gen.choose(500, 599))                                      (expectA[Upstream5xxResponse](_, Some(502)))
-      forAll (Gen.choose(600, 1000))                                     (expectA[Exception](_))
-    }
+  def theStandardErrorHandling(reads: HttpReads[_]) {
+    theStandardErrorHandlingFor400(reads)
+    theStandardErrorHandlingFor404(reads)
+    theStandardErrorHandlingForOtherCodes(reads)
+  }
 
-    def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None): Unit = new HttpErrorFunctions {
-      val e = the [Exception] thrownBy httpReads.read(exampleVerb, exampleUrl, HttpResponse(forStatus, responseString = Some(exampleBody)))
-      e should be (a [T])
-      e.getMessage should (include (exampleUrl) and include (exampleVerb) and include (exampleBody))
-      reportStatus.foreach { s =>
-        e should have ('upstreamResponseCode (forStatus))
-        e should have ('reportAs (s))
-      }
+  def theStandardErrorHandlingForOtherCodes(reads: http.HttpReads[_]): Unit = {
+    "throw the correct exception for all other status codes" in {
+      forAll(Gen.choose(0, 199))(expectA[Exception](_)(reads))
+      forAll(Gen.choose(400, 499).suchThat(!Seq(400, 404).contains(_)))(expectA[Upstream4xxResponse](_, Some(500))(reads))
+      forAll(Gen.choose(500, 599))(expectA[Upstream5xxResponse](_, Some(502))(reads))
+      forAll(Gen.choose(600, 1000))(expectA[Exception](_)(reads))
+    }
+  }
+
+  def theStandardErrorHandlingFor404(reads: http.HttpReads[_]): Unit = {
+    "throw the correct exception if the status code is 404" in {
+      expectA[NotFoundException](forStatus = 404)(reads)
+    }
+  }
+
+  def theStandardErrorHandlingFor400(reads: http.HttpReads[_]): Unit = {
+    "throw the correct exception if the status code is 400" in {
+      expectA[BadRequestException](forStatus = 400)(reads)
+    }
+  }
+
+  def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None)(httpReads: HttpReads[_]): Unit = new HttpErrorFunctions {
+    val e = the [Exception] thrownBy httpReads.read(exampleVerb, exampleUrl, HttpResponse(forStatus, responseString = Some(exampleBody)))
+    e should be (a [T])
+    e.getMessage should (include (exampleUrl) and include (exampleVerb) and include (exampleBody))
+    reportStatus.foreach { s =>
+      e should have ('upstreamResponseCode (forStatus))
+      e should have ('reportAs (s))
     }
   }
 
