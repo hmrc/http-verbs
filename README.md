@@ -20,7 +20,7 @@ In your SBT build add:
 ```scala
 resolvers += Resolver.bintrayRepo("hmrc", "releases")
 
-libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "1.4.1"
+libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "x.x.x"
 ```
 
 ## Usage
