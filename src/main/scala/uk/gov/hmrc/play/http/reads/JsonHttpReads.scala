@@ -31,21 +31,18 @@ trait JsonHttpReads {
   }
 
   def atPath[O](path: String)(implicit rds: HttpReads[O]) = HttpReads[O] { (method, url, response) =>
-    rds.read(method, url, new HttpResponse {
-      // TODO Move this to HttpResponse.copy
-      override def allHeaders = response.allHeaders
-      override def header(key: String) = response.header(key)
-      override def status = response.status
-      override def json = response.json \ path
-      override def body = response.body
-    })
+    rds.read(method, url, HttpResponse(
+      responseStatus = response.status,
+      responseHeaders = response.allHeaders,
+      responseJson = Some(response.json \ path)
+    ))
   }
 
   def emptyOn(status: Int) = PartialHttpReads[Seq[Nothing]] { (method, url, response) =>
     if (response.status == status) Some(Seq.empty) else None
   }
 
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = {
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[Seq[O]] = {
     import ErrorHttpReads._
     emptyOn(204) or
     emptyOn(404) or
