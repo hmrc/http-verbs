@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.play.http.reads
 
-import uk.gov.hmrc.play.http.HttpErrorFunctions
-
-trait OptionHttpReads extends HttpErrorFunctions {
+trait OptionHttpReads {
   def noneOn(status: Int) = PartialHttpReads[None.type] { (method, url, response) =>
     if (response.status == status) Some(None) else None
   }

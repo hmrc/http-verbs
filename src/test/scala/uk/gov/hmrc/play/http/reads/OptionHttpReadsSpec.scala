@@ -21,7 +21,7 @@ import uk.gov.hmrc.play.http.HttpResponse
 
 class OptionHttpReadsSpec extends HttpReadsSpec {
   "OptionHttpReads" should {
-    val reads = new OptionHttpReads with StubThatShouldNotBeCalled
+    val reads = OptionHttpReads
     "return None if the status code is 204 or 404" in {
       val otherReads = new HttpReads[String] {
         def read(method: String, url: String, response: HttpResponse) = fail("called the nested reads")
@@ -40,7 +40,7 @@ class OptionHttpReadsSpec extends HttpReadsSpec {
       }
     }
     "pass through any failure" in {
-      val reads = new OptionHttpReads with StubThatThrowsAnException
+      val reads = OptionHttpReads
       an[Exception] should be thrownBy reads.readOptionOf.read(exampleVerb, exampleUrl, exampleResponse)
     }
   }

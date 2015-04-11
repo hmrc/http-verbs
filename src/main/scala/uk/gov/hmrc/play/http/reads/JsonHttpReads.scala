@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play.http.reads
 
 import play.api.libs.json
-import uk.gov.hmrc.play.http.{HttpErrorFunctions, JsValidationException, HttpResponse}
+import uk.gov.hmrc.play.http.{JsValidationException, HttpResponse}
 
 trait JsonHttpReads {
   implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] =

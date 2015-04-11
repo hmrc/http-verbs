@@ -35,25 +35,11 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
     responseString = Some(exampleBody)
   )
 
-  trait StubThatShouldNotBeCalled extends HttpErrorFunctions {
-    override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) = {
-      fail("called handleResponse when not expected to")
-    }
-  }
-
-  trait StubThatReturnsTheResponse extends HttpErrorFunctions {
-    override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) = response
-  }
-
-  trait StubThatThrowsAnException extends HttpErrorFunctions {
-    override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) = throw new Exception
-  }
-
   val statusCodes = Gen.choose(0, 599)
   val successStatusCodes = Gen.choose(200, 299)
 
   def aPassthroughForSuccessCodes(httpReads: PartialHttpReads[_]) {
-    "return None if the status code is between 200 and 299" in new HttpErrorFunctions {
+    "return None if the status code is between 200 and 299" in {
       forAll(successStatusCodes) { statusCode: Int =>
         val expectedResponse = HttpResponse(statusCode)
         httpReads.read(exampleVerb, exampleUrl, expectedResponse) should be(None)
@@ -88,7 +74,7 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
     }
   }
 
-  def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None)(httpReads: HttpReads[_]): Unit = new HttpErrorFunctions {
+  def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None)(httpReads: HttpReads[_]) {
     val e = the [Exception] thrownBy httpReads.read(exampleVerb, exampleUrl, HttpResponse(forStatus, responseString = Some(exampleBody)))
     e should be (a [T])
     e.getMessage should (include (exampleUrl) and include (exampleVerb) and include (exampleBody))

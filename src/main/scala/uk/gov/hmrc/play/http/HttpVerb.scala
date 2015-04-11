@@ -16,9 +16,27 @@
 
 package uk.gov.hmrc.play.http
 
-import scala.concurrent.Future
+import java.net.ConnectException
+import java.util.concurrent.TimeoutException
 
-trait HttpVerb extends HttpErrorFunctions {
+import scala.concurrent.{ExecutionContext, Future}
+
+trait HttpVerb {
+
+  private def badGatewayMessage(verbName: String, url: String, e: Exception): String = {
+    s"$verbName of '$url' failed. Caused by: '${e.getMessage}'"
+  }
+
+  private def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String = {
+    s"$verbName of '$url' timed out with message '${e.getMessage}'"
+  }
+
+  def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(implicit ec: ExecutionContext): Future[HttpResponse] =
+    f.recover {
+      case e: TimeoutException => throw new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e))
+      case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
+    }
+
   @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
   type ProcessingFunction = (Future[HttpResponse], String) => Future[HttpResponse]
 }
