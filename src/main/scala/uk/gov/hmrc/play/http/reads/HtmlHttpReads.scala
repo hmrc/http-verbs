@@ -21,7 +21,6 @@ import play.twirl.api.Html
 trait HtmlHttpReads {
   def bodyToHtml = HttpReads[Html] { (method, url, response) => Html(response.body) }
 
-  //TODO this shouldn't have to be a def, look at initialisation order to solve
-  implicit def readToHtml: HttpReads[Html] = ErrorHttpReads.convertFailuresToExceptions or bodyToHtml
+  implicit val readToHtml: HttpReads[Html] = ErrorHttpReads.convertFailuresToExceptions or bodyToHtml
 }
 object HtmlHttpReads extends HtmlHttpReads
