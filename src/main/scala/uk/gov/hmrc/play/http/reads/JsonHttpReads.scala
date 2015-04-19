@@ -18,6 +18,7 @@ package uk.gov.hmrc.play.http.reads
 
 import play.api.libs.json
 import uk.gov.hmrc.play.http.{JsValidationException, HttpResponse}
+import PartialHttpReads._
 
 trait JsonHttpReads {
   implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] =
@@ -38,9 +39,7 @@ trait JsonHttpReads {
     ))
   }
 
-  def emptyOn(status: Int) = PartialHttpReads[Seq[Nothing]] { (method, url, response) =>
-    if (response.status == status) Some(Seq.empty) else None
-  }
+  def emptyOn(status: Int) = onStatus(status)(always(Seq.empty))
 
   def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[Seq[O]] = {
     import ErrorHttpReads._

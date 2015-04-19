@@ -16,16 +16,17 @@
 
 package uk.gov.hmrc.play.http.reads
 
+import PartialHttpReads._
+
+import scala.language.implicitConversions
+
 trait OptionHttpReads {
-  def noneOn(status: Int) = PartialHttpReads[None.type] { (method, url, response) =>
-    if (response.status == status) Some(None) else None
-  }
+  def noneOn(status: Int): PartialHttpReads[None.type] = onStatus(status)(always(None))
 
   def some[P](implicit rds: HttpReads[P]) = HttpReads[Option[P]] { (method, url, response) =>
     Some(rds.read(method, url, response))
   }
 
-  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] =
-    PartialHttpReads.byStatus { case 204 | 404 => None } or some[P]
+  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = noneOn(204) or noneOn(404) or some[P]
 }
 object OptionHttpReads extends OptionHttpReads

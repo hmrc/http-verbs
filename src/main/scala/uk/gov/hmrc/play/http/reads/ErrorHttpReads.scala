@@ -17,6 +17,7 @@
 package uk.gov.hmrc.play.http.reads
 
 import uk.gov.hmrc.play.http._
+import PartialHttpReads._
 
 trait ErrorHttpReads {
   def convertFailuresToExceptions: PartialHttpReads[Nothing] =
@@ -26,21 +27,17 @@ trait ErrorHttpReads {
     convert5xxToUpstream5xxResponse or
     convertLessThan200GreaterThan599ToException
 
-  // TODO not sure that this is a good thing. should be generalised out or more strictly typed
-  private def convert(statusMatches: Int => Boolean)(f: (String, String, HttpResponse) => Exception): PartialHttpReads[Nothing] = PartialHttpReads { (method, url, response) =>
-    if (statusMatches(response.status)) throw f(method, url, response) else None
-  }
+  def convert400ToBadRequest = onStatus(400) { (m, u, r) => throw new BadRequestException(s"$m of '$u' returned 400 (Bad Request). Response body '${r.body}'") }
+  def convert404ToNotFound = onStatus(404) { (m, u, r) => throw new NotFoundException(s"$m of '$u' returned 404 (Not Found). Response body: '${r.body}'") }
 
-  def convert400ToBadRequest = convert(_ == 400) { (m, u, r) => new BadRequestException(s"$m of '$u' returned 400 (Bad Request). Response body '${r.body}'") }
-  def convert404ToNotFound = convert(_ == 404) { (m, u, r) => new NotFoundException(s"$m of '$u' returned 404 (Not Found). Response body: '${r.body}'") }
-  def convert4xxToUpstream4xxResponse = convert(400 to 499 contains _) { (m, u, r) =>
-    new Upstream4xxResponse(s"$m of '$u' returned ${r.status}. Response body: '${r.body}'", r.status, 500, r.allHeaders)
+  def convert4xxToUpstream4xxResponse = onStatus(400 to 499) { (m, u, r) =>
+    throw new Upstream4xxResponse(s"$m of '$u' returned ${r.status}. Response body: '${r.body}'", r.status, 500, r.allHeaders)
   }
-  def convert5xxToUpstream5xxResponse = convert(500 to 599 contains _) { (m, u, r) =>
-    new Upstream5xxResponse(s"$m of '$u' returned ${r.status}. Response body: '${r.body}'", r.status, 502)
+  def convert5xxToUpstream5xxResponse = onStatus(500 to 599) { (m, u, r) =>
+    throw new Upstream5xxResponse(s"$m of '$u' returned ${r.status}. Response body: '${r.body}'", r.status, 502)
   }
-  def convertLessThan200GreaterThan599ToException = convert(status => status < 200 || status >= 600) { (m, u, r) =>
-    new Exception(s"$m to $u failed with status ${r.status}. Response body: '${r.body}'")
+  def convertLessThan200GreaterThan599ToException = onStatus(status => status < 200 || status >= 600) { (m, u, r) =>
+    throw new Exception(s"$m to $u failed with status ${r.status}. Response body: '${r.body}'")
   }
 }
 object ErrorHttpReads extends ErrorHttpReads
