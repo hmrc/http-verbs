@@ -34,6 +34,8 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
 
   protected def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse]
 
+  protected def doPostAndRetrieveStream[I](url: String, body: I, headers: Seq[(String,String)])(implicit wts: Writes[I], hc: HeaderCarrier): Future[StreamingHttpResponse]
+
   @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
   def POST[A](url: String, body: A, responseHandler: ProcessingFunction)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = POST[A](url, body, responseHandler, Seq())
   @deprecated("ProcessingFunction is obselete, use the relevant HttpReads[A] instead", "18/03/2015")
@@ -94,6 +96,14 @@ trait HttpPost extends HttpVerb with ConnectionTracing with HttpAuditing {
       val httpResponse = doEmptyPost(url)
       auditRequestWithResponseF(url, POST_VERB, None, httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
+    }
+  }
+
+  def POSTAndRetrieveStream[I](url: String, body: I, headers: Seq[(String,String)] = Seq.empty)(implicit wts: Writes[I], hc: HeaderCarrier): Future[StreamingHttpResponse] = {
+    withTracing(POST_VERB, url) {
+      val httpResponse: Future[StreamingHttpResponse] = doPostAndRetrieveStream(url, body, headers)
+      auditRequestWithResponseF(url, POST_VERB, None, httpResponse)
+      mapStreamedErrors(POST_VERB, url, httpResponse).map(handleStreamedResponse(POST_VERB,url)(_) )
     }
   }
 }

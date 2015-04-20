@@ -19,7 +19,7 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
-import uk.gov.hmrc.play.http.{HttpPost, HttpResponse}
+import uk.gov.hmrc.play.http.{StreamingHttpResponse, HttpPost, HttpResponse}
 import MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
@@ -45,4 +45,7 @@ trait WSPost extends HttpPost with WSRequest {
     buildRequest(url).post(Results.EmptyContent()).map(new WSHttpResponse(_))
   }
 
+  override def doPostAndRetrieveStream[I](url: String, body: I, headers: Seq[(String, String)])(implicit wts: Writes[I], hc: HeaderCarrier): Future[StreamingHttpResponse] = {
+    buildRequest(url).withHeaders(headers: _*).withMethod("POST").withBody(Json.toJson(body)).stream().map( response => new WSStreamingHttpResponse( response._1, response._2 ) )
+  }
 }

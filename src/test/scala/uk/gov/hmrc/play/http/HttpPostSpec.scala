@@ -32,6 +32,7 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult
     def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doPostResult
     def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
+    def doPostAndRetrieveStream[I](url: String, body: I, headers: Seq[(String, String)])(implicit wts: Writes[I], hc: HeaderCarrier): Future[StreamingHttpResponse] = ???
   }
 
   "HttpPost.POST" should {
