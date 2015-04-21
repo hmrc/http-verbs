@@ -20,9 +20,9 @@ import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.Json
-import play.twirl.api.Html
 import uk.gov.hmrc.play.http
-import uk.gov.hmrc.play.http._
+import uk.gov.hmrc.play.http.{HttpResponse, Upstream4xxResponse, Upstream5xxResponse, BadRequestException, NotFoundException}
+import http.reads.HttpReads
 
 trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Matchers {
   val exampleVerb = "GET"
@@ -35,16 +35,22 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
     responseString = Some(exampleBody)
   )
 
-  val statusCodes = Gen.choose(0, 599)
-  val successStatusCodes = Gen.choose(200, 299)
+  val invalidCodes = Gen.oneOf(Gen.choose(Int.MinValue, 99), Gen.choose(600, Int.MaxValue))
+  val allValid = Gen.choose(100, 599)
+  val `1xx` = Gen.choose(100, 199)
+  val `2xx` = Gen.choose(200, 299)
+  val `4xx` = Gen.choose(400, 499)
+  val `5xx` = Gen.choose(500, 599)
+
+  val validResponses = responsesWith()
+  def responsesWith(statusCodes: Gen[Int] = allValid, bodyAsString: Gen[Option[String]] = Gen.const(Some(exampleBody))) = for {
+    status <- statusCodes
+    bodyAsString <- bodyAsString
+  } yield HttpResponse(status, responseString = bodyAsString)
 
   def aPassthroughForSuccessCodes(httpReads: PartialHttpReads[_]) {
-    "return None if the status code is between 200 and 299" in {
-      forAll(successStatusCodes) { statusCode: Int =>
-        val expectedResponse = HttpResponse(statusCode)
-        httpReads.read(exampleVerb, exampleUrl, expectedResponse) should be(None)
-      }
-    }
+    "pass through responses where the status code is 2xx" in 
+      forAll(responsesWith(`2xx`))(theResponseShouldBePassedThroughBy(httpReads))
   }
 
   def theStandardErrorHandling(reads: HttpReads[_]) {
@@ -53,35 +59,55 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
     theStandardErrorHandlingForOtherCodes(reads)
   }
 
-  def theStandardErrorHandlingForOtherCodes(reads: http.HttpReads[_]): Unit = {
-    "throw the correct exception for all other status codes" in {
-      forAll(Gen.choose(0, 199))(expectA[Exception](_)(reads))
-      forAll(Gen.choose(400, 499).suchThat(!Seq(400, 404).contains(_)))(expectA[Upstream4xxResponse](_, Some(500))(reads))
-      forAll(Gen.choose(500, 599))(expectA[Upstream5xxResponse](_, Some(502))(reads))
-      forAll(Gen.choose(600, 1000))(expectA[Exception](_)(reads))
-    }
+  def theStandardErrorHandlingForOtherCodes(reads: HttpReads[_]) {
+    theStandardErrorHandlingForInvalidCodes(reads)
+    theStandardErrorHandlingFor1xxCodes(reads)
+    theStandardErrorHandlingFor4xxCodes(reads)
+    theStandardErrorHandlingFor5xxCodes(reads)
   }
 
-  def theStandardErrorHandlingFor404(reads: http.HttpReads[_]): Unit = {
-    "throw the correct exception if the status code is 404" in {
-      expectA[NotFoundException](forStatus = 404)(reads)
-    }
+  def theStandardErrorHandlingFor5xxCodes(reads: HttpReads[_]) {
+    "throw the correct exception for 5xx status codes" in 
+      forAll(responsesWith(`5xx`))(expectA[Upstream5xxResponse](reportedAsStatus = Some(502))(reads))
   }
 
-  def theStandardErrorHandlingFor400(reads: http.HttpReads[_]): Unit = {
-    "throw the correct exception if the status code is 400" in {
-      expectA[BadRequestException](forStatus = 400)(reads)
-    }
+  def theStandardErrorHandlingFor4xxCodes(reads: HttpReads[_]) {
+    "throw the correct exception for 4xx status codes" in
+    forAll(responsesWith(`4xx`.suchThat(_ != 400).suchThat(_ != 404)))(expectA[Upstream4xxResponse](reportedAsStatus = Some(500))(reads))
   }
 
-  def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None)(httpReads: HttpReads[_]) {
-    val e = the [Exception] thrownBy httpReads.read(exampleVerb, exampleUrl, HttpResponse(forStatus, responseString = Some(exampleBody)))
-    e should be (a [T])
-    e.getMessage should (include (exampleUrl) and include (exampleVerb) and include (exampleBody))
-    reportStatus.foreach { s =>
-      e should have ('upstreamResponseCode (forStatus))
-      e should have ('reportAs (s))
+  def theStandardErrorHandlingFor1xxCodes(reads: HttpReads[_]) {
+    "throw the correct exception for 1xx status codes" in
+      forAll(responsesWith(`1xx`))(expectA[Exception]()(reads))
+  }
+
+  def theStandardErrorHandlingForInvalidCodes(reads: HttpReads[_]) {
+    "throw the correct exception for invalid status codes" in
+      forAll(responsesWith(invalidCodes))(expectA[Exception]()(reads))
+  }
+
+  def theStandardErrorHandlingFor404(reads: HttpReads[_]) {
+    "throw the correct exception if the status code is 404" in
+      forAll(responsesWith(statusCodes = 404))(expectA[NotFoundException]()(reads))
+  }
+
+  def theStandardErrorHandlingFor400(reads: HttpReads[_]) {
+    "throw the correct exception if the status code is 400" in
+      forAll(responsesWith(statusCodes = 400))(expectA[BadRequestException]()(reads))
+  }
+
+  def expectA[T: Manifest](reportedAsStatus: Option[Int] = None)(httpReads: HttpReads[_])(response: HttpResponse) {
+    val e = the[Exception] thrownBy httpReads.read(exampleVerb, exampleUrl, response)
+    e should be(a[T])
+    e.getMessage should (include(exampleUrl) and include(exampleVerb) and include(exampleBody))
+    reportedAsStatus.foreach { s =>
+      e should have('upstreamResponseCode(response.status))
+      e should have('reportAs(s))
     }
+  }
+  
+  def theResponseShouldBePassedThroughBy(httpReads: PartialHttpReads[_])(response: HttpResponse) {
+    httpReads.read(exampleVerb, exampleUrl, response) should be(None)
   }
 
   def failTheTest[O]: HttpReads[O] = HttpReads[O] { (_, _, _) => fail("Reading passed through to terminator when not expected") }

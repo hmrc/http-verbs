@@ -17,6 +17,7 @@
 package uk.gov.hmrc.play.http.reads
 
 import PartialHttpReads._
+import HttpReads._
 
 import scala.language.implicitConversions
 

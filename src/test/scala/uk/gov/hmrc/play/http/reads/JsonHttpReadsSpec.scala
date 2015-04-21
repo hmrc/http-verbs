@@ -23,11 +23,11 @@ class JsonHttpReadsSpec extends HttpReadsSpec {
   implicit val r = Json.reads[Example]
   "JsonHttpReads.readFromJson" should {
     val reads = JsonHttpReads.readFromJson[Example]
-    "convert a successful response body to the given class" in forAll (successStatusCodes) { status =>
+    "convert a successful response body to the given class" in forAll (`2xx`) { status =>
       val response = HttpResponse(status, responseJson = Some(Json.obj("v1" -> "test", "v2" -> 5)))
       reads.read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
     }
-    "convert a successful response body with json that doesn't validate into an exception" in forAll (successStatusCodes) { status =>
+    "convert a successful response body with json that doesn't validate into an exception" in forAll (`2xx`) { status =>
       val response = HttpResponse(status, responseJson = Some(Json.obj("v1" -> "test")))
       a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
@@ -35,7 +35,7 @@ class JsonHttpReadsSpec extends HttpReadsSpec {
   }
   "JsonHttpReads.readSeqFromJsonProperty" should {
     val reads = JsonHttpReads.readSeqFromJsonProperty[Example]("items")
-    "convert a successful response body to the given class" in forAll (successStatusCodes.suchThat(_ != 204)) { status =>
+    "convert a successful response body to the given class" in forAll (`2xx`.suchThat(_ != 204)) { status =>
       val response = HttpResponse(status, responseJson = Some(
         Json.obj("items" ->
           Json.arr(
@@ -47,7 +47,7 @@ class JsonHttpReadsSpec extends HttpReadsSpec {
       reads.read(exampleVerb, exampleUrl, response) should
         contain theSameElementsInOrderAs Seq(Example("test", 1), Example("test", 2))
     }
-    "convert a successful response body with json that doesn't validate into an exception" in forAll (successStatusCodes.suchThat(_ != 204)) { status =>
+    "convert a successful response body with json that doesn't validate into an exception" in forAll (`2xx`.suchThat(_ != 204)) { status =>
       val response = HttpResponse(status, responseJson = Some(
         Json.obj("items" ->
           Json.arr(
@@ -58,7 +58,7 @@ class JsonHttpReadsSpec extends HttpReadsSpec {
       ))
       a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
-    "convert a successful response body with json that is missing the given property into an exception" in forAll (successStatusCodes.suchThat(_ != 204)) { status =>
+    "convert a successful response body with json that is missing the given property into an exception" in forAll (`2xx`.suchThat(_ != 204)) { status =>
       val response = HttpResponse(status, responseJson = Some(
         Json.obj("missing" ->
           Json.arr(

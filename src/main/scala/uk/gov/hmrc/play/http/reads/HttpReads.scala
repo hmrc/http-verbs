@@ -30,6 +30,7 @@ object HttpReads extends HtmlHttpReads with JsonHttpReads {
   def apply[O](readF: (String, String, HttpResponse) => O): HttpReads[O] = new HttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) = readF(method, url, response)
   }
+  def always[O](const: O): HttpReads[O] = HttpReads((_,_,_) => const)
 }
 
 trait PartialHttpReads[+O] {
@@ -47,7 +48,6 @@ object PartialHttpReads {
   def apply[O](readF: (String, String, HttpResponse) => Option[O]): PartialHttpReads[O] = new PartialHttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) = readF(method, url, response)
   }
-  def always[O](const: O): PartialHttpReads[O] = PartialHttpReads((_,_,_) => Some(const))
 
   def byStatus[O](statusF: PartialFunction[Int, O]) = PartialHttpReads[O] { (method, url, response) =>
     statusF.lift(response.status)
@@ -61,6 +61,10 @@ object PartialHttpReads {
 
     def apply(possibleRds: PartialHttpReads[O]): PartialHttpReads[O] = PartialHttpReads[O] { (method, url, response) =>
       if (statusMatcher(response.status)) possibleRds.read(method, url, response) else None
+    }
+
+    def apply(possibleRds: HttpReads[O]): PartialHttpReads[O] = PartialHttpReads[O] { (method, url, response) =>
+      if (statusMatcher(response.status)) Some(possibleRds.read(method, url, response)) else None
     }
   }
 }
