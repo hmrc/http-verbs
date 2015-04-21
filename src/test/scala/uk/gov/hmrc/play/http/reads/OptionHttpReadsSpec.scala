@@ -20,28 +20,50 @@ import org.scalacheck.Gen
 import uk.gov.hmrc.play.http.HttpResponse
 
 class OptionHttpReadsSpec extends HttpReadsSpec {
-  "OptionHttpReads" should {
-    val reads = OptionHttpReads
-    "return None if the status code is 204 or 404" in {
-      val otherReads = new HttpReads[String] {
-        def read(method: String, url: String, response: HttpResponse) = fail("called the nested reads")
-      }
+  "OptionHttpReads.readOptionOf" should {
+    "return None if the status code is 204 or 404" in new TestCase {
+      forAll(responsesWith(statusCodes = Gen.oneOf(204, 404)))(noneShouldBeReturnedBy(reads))
+      nestedReads should not be 'called
+    }
+    "defer to the nested reads for other codes" in new TestCase {
+      forAll(responsesWith(statusCodes = allValid.suchThat(_ != 204).suchThat(_ != 404)))(someShouldBeReturnedBy(reads))
+      nestedReads should be ('called)
+    }
+  }
 
-      reads.readOptionOf(otherReads).read(exampleVerb, exampleUrl, HttpResponse(204)) should be(None)
-      reads.readOptionOf(otherReads).read(exampleVerb, exampleUrl, HttpResponse(404)) should be(None)
-    }
-    "defer to the nested reads otherwise" in {
-      val otherReads = new HttpReads[String] {
-        def read(method: String, url: String, response: HttpResponse) = "hi"
-      }
+  "OptionHttpReads.noneOn" should {
+    def reads(status: Int) = OptionHttpReads.noneOn(status)
 
-      forAll(Gen.posNum[Int].filter(_ != 204).filter(_ != 404)) { s =>
-        reads.readOptionOf(otherReads).read(exampleVerb, exampleUrl, HttpResponse(s)) should be(Some("hi"))
+    "return none on the specified code" in
+      forAll(validResponses)(r => noneShouldBeReturnedBy(reads(r.status) or failTheTest[None.type])(r))
+    "pass through responses with non-specified codes" in
+      forAll(validResponses)(r => theResponseShouldBePassedThroughBy(reads(r.status + 1))(r))
+  }
+
+  "OptionHttpReads.some" should {
+    "defer to the nested reads for all codes" in new TestCase {
+      forAll(validResponses)(someShouldBeReturnedBy(OptionHttpReads.some[String](nestedReads)))
+    }
+  }
+
+  def someShouldBeReturnedBy(reads: HttpReads[Option[String]])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be (Some("hi"))
+  }
+
+  def noneShouldBeReturnedBy(reads: HttpReads[_ <: Option[String]])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be (None)
+  }
+
+
+  trait TestCase {
+    val nestedReads = new HttpReads[String] {
+      var called = false
+
+      def read(method: String, url: String, response: HttpResponse) = {
+        called = true
+        "hi"
       }
     }
-    "pass through any failure" in {
-      val reads = OptionHttpReads
-      an[Exception] should be thrownBy reads.readOptionOf.read(exampleVerb, exampleUrl, exampleResponse)
-    }
+    val reads = OptionHttpReads.readOptionOf(nestedReads)
   }
 }
