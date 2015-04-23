@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.play.http.reads
 
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, WordSpec}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsNull, JsValue, Json}
 import uk.gov.hmrc.play.http
 import uk.gov.hmrc.play.http.{HttpResponse, Upstream4xxResponse, Upstream5xxResponse, BadRequestException, NotFoundException}
 import http.reads.HttpReads
@@ -28,12 +28,7 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
   val exampleVerb = "GET"
   val exampleUrl = "http://example.com/something"
   val exampleBody = "this is the string body"
-  val exampleResponse = HttpResponse(
-    responseStatus = 0,
-    responseJson = Some(Json.parse("""{"test":1}""")),
-    responseHeaders = Map("X-something" -> Seq("some value")),
-    responseString = Some(exampleBody)
-  )
+  val exampleJson = Json.parse( """{"test":1}""")
 
   val invalidCodes = Gen.oneOf(Gen.choose(Int.MinValue, 99), Gen.choose(600, Int.MaxValue))
   val allValid = Gen.choose(100, 599)
@@ -43,10 +38,20 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
   val `5xx` = Gen.choose(500, 599)
 
   val validResponses = responsesWith()
-  def responsesWith(statusCodes: Gen[Int] = allValid, bodyAsString: Gen[Option[String]] = Gen.const(Some(exampleBody))) = for {
-    status <- statusCodes
+  def responsesWith(statusCodes: Gen[Int] = allValid,
+                    bodyAsString: Gen[String] = exampleBody,
+                    bodyAsJson: Gen[JsValue] = exampleJson): Gen[HttpResponse] = for {
+    generatedStatus <- statusCodes
     bodyAsString <- bodyAsString
-  } yield HttpResponse(status, responseString = bodyAsString)
+    bodyAsJson <- bodyAsJson
+    headerValues <- Gen.listOf(Gen.alphaStr)
+  } yield new HttpResponse {
+      override val status = generatedStatus
+      override val allHeaders = headerValues.map(_ -> headerValues.toSeq).toMap
+      override val json = bodyAsJson
+      override val body = bodyAsString
+      override def toString = s"HttpResponse(status=$status, allHeaders=$allHeaders, body=$body, json=$json)"
+    }
 
   def aPassthroughForSuccessCodes(httpReads: PartialHttpReads[_]) {
     "pass through responses where the status code is 2xx" in 

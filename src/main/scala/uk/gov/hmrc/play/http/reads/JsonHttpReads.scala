@@ -17,6 +17,7 @@
 package uk.gov.hmrc.play.http.reads
 
 import play.api.libs.json
+import play.api.libs.json.{JsSuccess, JsError}
 import uk.gov.hmrc.play.http.{JsValidationException, HttpResponse}
 import PartialHttpReads._
 import HttpReads._

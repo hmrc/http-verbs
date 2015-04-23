@@ -16,64 +16,86 @@
 
 package uk.gov.hmrc.play.http.reads
 
-import play.api.libs.json.Json
+import org.scalacheck.Gen
+import play.api.libs.json._
 import uk.gov.hmrc.play.http.{JsValidationException, HttpResponse}
 
 class JsonHttpReadsSpec extends HttpReadsSpec {
   implicit val r = Json.reads[Example]
   "JsonHttpReads.readFromJson" should {
     val reads = JsonHttpReads.readFromJson[Example]
-    "convert a successful response body to the given class" in forAll (`2xx`) { status =>
-      val response = HttpResponse(status, responseJson = Some(Json.obj("v1" -> "test", "v2" -> 5)))
-      reads.read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
-    }
-    "convert a successful response body with json that doesn't validate into an exception" in forAll (`2xx`) { status =>
-      val response = HttpResponse(status, responseJson = Some(Json.obj("v1" -> "test")))
-      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
-    }
+
+    "convert a successful response body to the given class" in
+      forAll (responsesWith(`2xx`, bodyAsJson = exampleJsonObj))(aExampleClassShouldBeDeserialisedBy(reads))
+    "convert a successful response body with json that doesn't validate into an exception" in
+      forAll (responsesWith(`2xx`, bodyAsJson = brokenJsonObj))(expectAJsValidationExceptionFrom(reads))
+
     behave like theStandardErrorHandling (reads)
   }
+
+  "JsonHttpReads.jsonBodyDeserializedTo" should {
+    val reads = JsonHttpReads.jsonBodyDeserialisedTo[Example]
+    "convert a response body to the given class" in
+      forAll (responsesWith(bodyAsJson = exampleJsonObj))(aExampleClassShouldBeDeserialisedBy(reads))
+    "convert a response body with json that doesn't validate into an exception" in
+      forAll (responsesWith(bodyAsJson = brokenJsonObj))(expectAJsValidationExceptionFrom(reads))
+  }
+
+  "JsonHttpReads.atPath" should {
+    val reads = JsonHttpReads.atPath("v1")(HttpReads { (_,_,r) => r })
+    "restrict the json response to the given path" in
+      forAll (responsesWith(bodyAsJson = Json.obj("v1" -> "test"))) { response =>
+        reads.read(exampleVerb, exampleUrl, response) should have (
+          'status (response.status),
+          'json (JsString("test")),
+          'allHeaders (response.allHeaders)
+        )
+      }
+    "generate an exception if the given path is missing" in
+      forAll (responsesWith(bodyAsJson = Json.obj("someOtherProp" -> "test"))){ response =>
+        reads.read(exampleVerb, exampleUrl, response).json should be (a [JsUndefined])
+      }
+  }
+
   "JsonHttpReads.readSeqFromJsonProperty" should {
     val reads = JsonHttpReads.readSeqFromJsonProperty[Example]("items")
-    "convert a successful response body to the given class" in forAll (`2xx`.suchThat(_ != 204)) { status =>
-      val response = HttpResponse(status, responseJson = Some(
-        Json.obj("items" ->
-          Json.arr(
-            Json.obj("v1" -> "test", "v2" -> 1),
-            Json.obj("v1" -> "test", "v2" -> 2)
-          )
-        )
-      ))
-      reads.read(exampleVerb, exampleUrl, response) should
-        contain theSameElementsInOrderAs Seq(Example("test", 1), Example("test", 2))
-    }
-    "convert a successful response body with json that doesn't validate into an exception" in forAll (`2xx`.suchThat(_ != 204)) { status =>
-      val response = HttpResponse(status, responseJson = Some(
-        Json.obj("items" ->
-          Json.arr(
-            Json.obj("v1" -> "test"),
-            Json.obj("v1" -> "test", "v2" -> 2)
-          )
-        )
-      ))
-      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
-    }
+    "convert a successful response body to the given class" in
+      forAll (responsesWith(`2xx`.suchThat(_ != 204), bodyAsJson = Json.obj("items" -> Json.arr(exampleJsonObj, anotherJsonObj)))) {
+        aSeqOfExampleClassesShouldBeDeserializedBy(reads)
+      }
+    "convert a successful response body with json that doesn't validate into an exception" in
+      forAll (responsesWith(`2xx`.suchThat(_ != 204), bodyAsJson = Json.obj("items" -> Json.arr(brokenJsonObj)))) {
+         expectAJsValidationExceptionFrom(reads)
+      }
     "convert a successful response body with json that is missing the given property into an exception" in forAll (`2xx`.suchThat(_ != 204)) { status =>
-      val response = HttpResponse(status, responseJson = Some(
-        Json.obj("missing" ->
-          Json.arr(
-            Json.obj("v1" -> "test", "v2" -> 1),
-            Json.obj("v1" -> "test", "v2" -> 2)
-          )
-        )
-      ))
-      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
+      forAll (responsesWith(`2xx`.suchThat(_ != 204), bodyAsJson = Json.obj("missing" -> exampleJsonObj))) {
+        expectAJsValidationExceptionFrom(reads)
+      }
     }
-    "return None if the status code is 204 or 404" in {
-      reads.read(exampleVerb, exampleUrl, HttpResponse(204)) should be(empty)
-      reads.read(exampleVerb, exampleUrl, HttpResponse(404)) should be(empty)
-    }
+    "return None if the status code is 204 or 404" in
+      forAll (responsesWith(Gen.oneOf(204, 404))){emptySeqShouldBeReturnedBy(reads)}
+
     behave like theStandardErrorHandlingFor400 (reads)
     behave like theStandardErrorHandlingForOtherCodes (reads)
+  }
+
+  def emptySeqShouldBeReturnedBy(reads: HttpReads[Seq[Example]])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be(empty)
+  }
+
+  def aSeqOfExampleClassesShouldBeDeserializedBy(reads: HttpReads[Seq[Example]])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should contain theSameElementsInOrderAs Seq(Example("test", 5), Example("test", 2))
+  }
+
+  val exampleJsonObj = Json.obj("v1" -> "test", "v2" -> 5)
+  val anotherJsonObj = Json.obj("v1" -> "test", "v2" -> 2)
+  val brokenJsonObj = exampleJsonObj - "v2"
+
+  def expectAJsValidationExceptionFrom(reads: HttpReads[_])(response: HttpResponse) {
+    a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
+  }
+
+  def aExampleClassShouldBeDeserialisedBy(reads: HttpReads[Example])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
   }
 }
