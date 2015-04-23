@@ -68,7 +68,7 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val details = hc.toAuditDetails()
 
-      details.size shouldBe 3
+      details.size shouldBe 5
 
       details("ipAddress") shouldBe forwarded.value
       details(authorisation) shouldBe authorization.value
@@ -80,7 +80,7 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val details = hc.toAuditDetails()
 
-      details.size shouldBe 3
+      details.size shouldBe 5
 
       details("ipAddress") shouldBe "-"
       details(authorisation) shouldBe "-"
@@ -88,14 +88,16 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
     }
 
     "have more details only" in {
-      val hc = HeaderCarrier()
+      val hc = HeaderCarrier(trueClientIp = Some("192.168.1.1"), trueClientPort =Some("9999"))
 
       val details = hc.toAuditDetails("more-details" -> "the details", "lots-of-details" -> "interesting info")
 
-      details.size shouldBe 5
+      details.size shouldBe 7
 
       details("more-details") shouldBe "the details"
       details("lots-of-details") shouldBe "interesting info"
+      details(HeaderNames.trueClientIp) shouldBe "192.168.1.1"
+      details(HeaderNames.trueClientPort) shouldBe "9999"
 
     }
   }
