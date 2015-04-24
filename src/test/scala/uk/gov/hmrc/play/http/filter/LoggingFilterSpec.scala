@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http.filter
 
+import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 import org.slf4j.Logger
 import play.api.mvc._
@@ -26,7 +27,7 @@ import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 
 import scala.concurrent.Future
 
-class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues with FutureAwaits with DefaultAwaitTimeout{
+class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues with FutureAwaits with DefaultAwaitTimeout with Eventually {
 
   "the LoggingFilter should" should {
 
@@ -57,7 +58,9 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
 
       await(requestWith(loggingFilter))
 
-      fakeLogger.lastInfoMessage.value.length should be > 0
+      eventually {
+        fakeLogger.lastInfoMessage.value.length should be > 0
+      }
     }
 
     "not log when a requests' path does not match a controller which is not configured to log" in {
