@@ -37,7 +37,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          requestChain: RequestChain = RequestChain.init,
                          nsStamp: Long = System.nanoTime(),
                          extraHeaders: Seq[(String, String)] = Seq(), 
-                         trueClientIp: Option[String] = None, 
+                         trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None) extends LoggingDetails with HeaderProvider with AuditProvider {
 
   import EventKeys._
@@ -75,7 +75,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
     names.authorisation -> authorization.map(_.value).getOrElse("-"),
     names.token -> token.map(_.value).getOrElse("-"),
     HeaderNames.trueClientIp -> trueClientIp.getOrElse(""),
-    HeaderNames.trueClientPort ->trueClientPort.getOrElse("")
+    HeaderNames.trueClientPort -> trueClientPort.getOrElse("")
   )
 
   def toAuditTags(transactionName: String, path: String) = {
