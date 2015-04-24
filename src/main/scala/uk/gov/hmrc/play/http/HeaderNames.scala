@@ -27,6 +27,7 @@ object HeaderNames {
   val xSessionId = "X-Session-ID"
   val xRequestChain = "X-Request-Chain"
   val trueClientIp = "True-Client-IP"
+  val trueClientPort = "True-Client-Port"
   val token = "token"
   val surrogate = "Surrogate"
   val otacAuthorization = "Otac-Authorization"
