@@ -43,10 +43,38 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
   val url = "http://some.url"
 
   def response(returnValue: Option[String] = None, statusCode: Int = 200) = Future.successful(HttpResponse(statusCode, returnValue.map(Json.parse(_))))
+  def streamingResponse(returnValue: Option[String] = None, statusCode: Int = 200) = Future.successful(StreamingHttpResponse(statusCode))
 
   val defaultHttpResponse = response()
+  val defaultStreamingHttpResponse = streamingResponse()
 
   def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_])= {
+    s"throw a GatewayTimeout exception when the HTTP $verb throws a TimeoutException" in {
+
+      implicit val hc = HeaderCarrier()
+      val url: String = "http://some.nonexistent.url"
+
+      val e = httpCall(url, Future.failed(new TimeoutException("timeout"))).failed.futureValue
+
+      e should be (a [GatewayTimeoutException])
+      e.getMessage should startWith(verb)
+      e.getMessage should include(url)
+    }
+
+    s"throw a BadGateway exception when the HTTP $verb throws a ConnectException" in {
+
+      implicit val hc = HeaderCarrier()
+      val url: String = "http://some.nonexistent.url"
+
+      val e = httpCall(url, Future.failed(new ConnectException("timeout"))).failed.futureValue
+
+      e should be (a [BadGatewayException])
+      e.getMessage should startWith(verb)
+      e.getMessage should include(url)
+    }
+  }
+
+  def anErrorMappingStreamingHttpCall(verb: String, httpCall: (String, Future[StreamingHttpResponse]) => Future[_])= {
     s"throw a GatewayTimeout exception when the HTTP $verb throws a TimeoutException" in {
 
       implicit val hc = HeaderCarrier()

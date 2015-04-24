@@ -16,8 +16,15 @@
 
 package uk.gov.hmrc.play.http
 
+import play.api.libs.iteratee.Enumerator
 import play.api.libs.json.{JsValue, Json}
 
 class DummyHttpResponse(override val body: String, override val status: Int, override val allHeaders: Map[String, Seq[String]] = Map.empty) extends HttpResponse {
   override def json: JsValue = Json.parse(body)
+}
+
+class DummyStreamingHttpResponse(override val body: String, override val status: Int, override val allHeaders: Map[String, Seq[String]] = Map.empty) extends StreamingHttpResponse {
+  override def json: JsValue = Json.parse(body)
+
+  override def bodyEnumerator: Enumerator[Array[Byte]] = Enumerator[Array[Byte]]("This should be a stream".getBytes())
 }

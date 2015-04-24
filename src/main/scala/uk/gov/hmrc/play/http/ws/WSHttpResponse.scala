@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.play.http.HttpResponse
+import play.api.libs.iteratee.Enumerator
+import play.api.libs.json.Json
+import play.api.libs.ws.{WSResponseHeaders, WSResponse}
+import uk.gov.hmrc.play.http.{StreamingHttpResponse, HttpResponse}
 
 class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
   override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
@@ -27,6 +29,18 @@ class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
   override def json = wsResponse.json
 
   override def body = wsResponse.body
+}
+
+class WSStreamingHttpResponse(wsResponse: WSResponseHeaders, wsBody: Enumerator[Array[Byte]]) extends StreamingHttpResponse {
+  override def allHeaders: Map[String, Seq[String]] = wsResponse.headers
+
+  override def status = wsResponse.status
+
+  override def json = Json.toJson("...enumerated body...")
+
+  override def body = "...enumerated body..."
+
+  override def bodyEnumerator = wsBody
 }
 
 trait WSHttp extends WSGet with WSPut with WSPost with WSDelete

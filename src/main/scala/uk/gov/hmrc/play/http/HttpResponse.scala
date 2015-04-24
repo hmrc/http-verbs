@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
+import play.api.libs.iteratee.Enumerator
 import play.api.libs.json.{Json, JsValue}
 import play.api.mvc.Headers
 
@@ -42,6 +43,16 @@ object HttpResponse {
     override def allHeaders: Map[String, Seq[String]] = responseHeaders
     override def body: String = responseString orElse responseJson.map(Json.prettyPrint) orNull
     override def json: JsValue = responseJson.orNull
+    override def status: Int = responseStatus
+  }
+}
+
+trait StreamingHttpResponse extends HttpResponse {
+  def bodyEnumerator: Enumerator[Array[Byte]] = ???
+}
+
+object StreamingHttpResponse {
+  def apply(responseStatus: Int) = new StreamingHttpResponse {
     override def status: Int = responseStatus
   }
 }

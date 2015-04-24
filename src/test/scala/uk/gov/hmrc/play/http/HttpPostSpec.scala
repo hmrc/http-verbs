@@ -32,7 +32,29 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult
     def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doPostResult
     def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
+    def doPostAndRetrieveStream[I](url: String, body: I, headers: Seq[(String, String)])(implicit wts: Writes[I], hc: HeaderCarrier): Future[StreamingHttpResponse] = ???
   }
+
+  class StubbedStreamingHttpPost(doPostResult: Future[StreamingHttpResponse]) extends HttpPost with ConnectionTracingCapturing with MockAuditing {
+    def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier) = ???
+    def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = ???
+    def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = ???
+    def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = ???
+    def doPostAndRetrieveStream[I](url: String, body: I, headers: Seq[(String, String)])(implicit wts: Writes[I], hc: HeaderCarrier): Future[StreamingHttpResponse] = doPostResult
+  }
+
+  "HttpPost.POSTAndRetrieveStream" should {
+    val testObject = TestRequestClass("a", 1)
+    "be able to return streamed responses" in {
+      val response: DummyStreamingHttpResponse = new DummyStreamingHttpResponse(testBody, 200)
+      val testPOST: StubbedStreamingHttpPost = new StubbedStreamingHttpPost(Future.successful(response))
+      testPOST.POSTAndRetrieveStream(url, testObject).futureValue shouldBe response
+    }
+
+    behave like anErrorMappingStreamingHttpCall(POST, (url, responseF) => new StubbedStreamingHttpPost(responseF).POSTAndRetrieveStream(url, testObject))
+    behave like aTracingHttpCall(POST, "POST", new StubbedStreamingHttpPost(defaultStreamingHttpResponse)) { _.POSTAndRetrieveStream(url, testObject) }
+  }
+
 
   "HttpPost.POST" should {
     val testObject = TestRequestClass("a", 1)
