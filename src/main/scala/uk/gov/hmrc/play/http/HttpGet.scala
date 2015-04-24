@@ -18,6 +18,7 @@ package uk.gov.hmrc.play.http
 
 import uk.gov.hmrc.play.audit.http.{HeaderCarrier, HttpAuditing}
 import uk.gov.hmrc.play.http.logging.{MdcLoggingExecutionContext, ConnectionTracing}
+import uk.gov.hmrc.play.http.reads.HttpReads
 
 import scala.concurrent.Future
 import play.api.libs.json

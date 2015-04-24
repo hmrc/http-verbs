@@ -21,8 +21,7 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.{JsNull, JsValue, Json}
 import uk.gov.hmrc.play.http
-import uk.gov.hmrc.play.http.{HttpResponse, Upstream4xxResponse, Upstream5xxResponse, BadRequestException, NotFoundException}
-import http.reads.HttpReads
+import uk.gov.hmrc.play.http._
 
 trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Matchers {
   val exampleVerb = "GET"

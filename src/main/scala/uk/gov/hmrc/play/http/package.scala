@@ -21,10 +21,4 @@ import uk.gov.hmrc.play.http.logging.ConnectionTracing
 package object http {
   @deprecated("Re-named to ConnectionTracing", "23/04/2014")
   type ConnectionLogging = ConnectionTracing
-
-  // TODO do we really need to keep this?
-  @deprecated("moved to uk.gov.hmrc.play.http.reads", "5/4/15")
-  type HttpReads[O] = reads.HttpReads[O]
-  @deprecated("moved to uk.gov.hmrc.play.http.reads", "5/4/15")
-  val HttpReads = reads.HttpReads
 }

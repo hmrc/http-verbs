@@ -17,6 +17,7 @@
 package uk.gov.hmrc.play
 
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.reads.HttpReads
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Examples {
@@ -83,7 +84,7 @@ object Examples {
 
     {
       import reads.OptionHttpReads.{noneOn, some}
-      implicit val myReads: reads.HttpReads[Option[Html]] = noneOn(status = 204) or some[Html]
+      implicit val myReads: HttpReads[Option[Html]] = noneOn(status = 204) or some[Html]
       http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
     }
   }
