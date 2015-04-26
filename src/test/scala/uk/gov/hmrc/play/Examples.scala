@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play
 
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.http.reads.{JsonHttpReads, OptionHttpReads, BackwardsCompatibleReadsRecipes, HttpReads}
+import uk.gov.hmrc.play.http.reads._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Examples {
@@ -85,6 +85,19 @@ object Examples {
         noneOn(204) or noneOn(404) or some(jsonBodyDeserialisedTo[MyCaseClass])
 
       http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
+    }
+
+    object ExampleOfSeqReads extends JsonHttpReads with ErrorHttpReads {
+      implicit val readSeqMyCaseClass: HttpReads[Seq[MyCaseClass]] =
+        emptyOn(204) or
+        emptyOn(404) or
+        convert400ToBadRequest or
+        convert4xxToUpstream4xxResponse or
+        convert5xxToUpstream5xxResponse or
+        convertLessThan200GreaterThan599ToException or
+        atPath("items")(jsonBodyDeserialisedTo[Seq[MyCaseClass]])
+
+      http.GET[Seq[MyCaseClass]]("http://gov.uk/hmrc")
     }
   }
 }

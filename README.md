@@ -114,7 +114,7 @@ Status Code   | Exception
 
 _For all possible exception types, see the [hmrc/http-exceptions](https://github.com/hmrc/http-exceptions) project_
 
-If some failure status codes are expected in normal flow, `recover` can be used: 
+If some failure status codes are expected in normal flow, `recover` can be used for simple cases: 
 
 ```scala
 httpGet.GET("url") recover {
@@ -123,7 +123,7 @@ httpGet.GET("url") recover {
 }
 ```
 
-or if you expect responses which indicate no content, you can use an [`Option[...]` return type](#potentially-empty-responses).
+or you can use an [`Option[...]` return type](#potentially-empty-responses).
 
 ### Response Types
 
@@ -147,35 +147,58 @@ import play.twirl.api.Html
 http.GET[Html]("http://gov.uk/hmrc") // Returns a Play Html type
 ```
 
-#### Potentially empty responses
-If you expect to sometimes receive empty responses, then http-verbs supports an `Option[...]` on your return type. You'll need to mix-in or import `OptionHttpReads`:
-
-```scala
-
-object MyConnector extends OptionHttpReads {
-  http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
-  http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
-}
-
-import OptionHttpReads._
-http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
-http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
-```
-
-The default behaviour is that `204` or `404` status become `None`, and everything else is a `Some` of the type specified. You can tweak this though, using the HttpReads mini-DSL:
-
-```scala
-import OptionHttpReads.{noneOn, alwaysSome}
-implicit val reads: HttpReads[Option[Html]] = noneOn(status=204) or alwaysSome[Html]
-http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
-```
-
-<!--- TODO: How to influence which implicit is used - mixin vs import vs directly by type --->
-
 <!--- TODO: Talk about special methods POSTString, POSTForm etc. --->
 
 ## Extension & Customisation
-Response handling is implemented via the `HttpReads[A]` typeclass, which is responsible for converting the raw response into either an exception or the specified type. Default implementations of `HttpReads[A]` have been provided in its companion object to cover common use cases, but clients may provide their own implementations if required. 
+Response handling is implemented via the `HttpReads[A]` typeclass, which is responsible for converting the raw response into either an exception or the specified type. Default implementations of `HttpReads[A]` have are provided in its companion object to cover common use cases. 
+
+If you have more complex requirements, then you can create your own with a built-in DSL. To see all of the available methods in the DSL, see the types `uk.gov.hmrc.play.http.reads.__HttpReads`. Each can be used as either mixins or imports. 
+
+#### Reading from an array at a named property
+
+As an example, say we wanted to just deserialize an array of JSON objects from the `"items"` property. We also expected that we might get 204 or 404 responses, and wanted those to be converted into `Seq.empty`. We could write:
+
+```scala
+object ExampleOfSeqReads extends JsonHttpReads with ErrorHttpReads {
+  implicit val readSeqMyCaseClass: HttpReads[Seq[MyCaseClass]] =
+    emptyOn(204) or
+    emptyOn(404) or
+    convert400ToBadRequest or
+    convert4xxToUpstream4xxResponse or
+    convert5xxToUpstream5xxResponse or
+    convertLessThan200GreaterThan599ToException or
+    atPath("items")(jsonBodyDeserialisedTo[Seq[MyCaseClass]])
+
+  http.GET[Seq[MyCaseClass]]("http://gov.uk/hmrc")
+}
+```
+
+#### Potentially empty responses
+
+If you expect to sometimes receive empty responses, then http-verbs supports an `Option[...]` on your return type. You'll need to when `None` should be returned.
+
+For instance, if you wish to have `Option[Html]`, returning `None` on `204`, then you could write:
+
+```scala
+object ExampleWithOptionReads extends OptionHttpReads {
+  implicit val myReads: HttpReads[Option[Html]] = noneOn(status = 204) or some[Html]
+  http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
+}
+```
+
+Or, let's say that you are deserializing a JSON response, and you also expect `404` codes, which should be converted to `None`, then try:
+
+```scala
+{
+  import OptionHttpReads._
+  import JsonHttpReads._
+
+  implicit val readOptionalMyCaseClass: HttpReads[Option[MyCaseClass]] =
+    noneOn(204) or noneOn(404) or some(jsonBodyDeserialisedTo[MyCaseClass])
+
+  http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
+}
+```
 
 ## Configuration
 
