@@ -17,11 +17,8 @@
 package uk.gov.hmrc.play.http.reads
 
 import play.twirl.api.Html
-import uk.gov.hmrc.play.http.reads.HttpReads
 
 trait HtmlHttpReads {
   def bodyToHtml = HttpReads[Html] { (method, url, response) => Html(response.body) }
-
-  implicit val readToHtml: HttpReads[Html] = ErrorHttpReads.convertFailuresToExceptions or bodyToHtml
 }
 object HtmlHttpReads extends HtmlHttpReads

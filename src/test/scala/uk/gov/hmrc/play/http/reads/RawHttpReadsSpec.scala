@@ -19,20 +19,8 @@ package uk.gov.hmrc.play.http.reads
 import uk.gov.hmrc.play.http.HttpResponse
 
 class RawHttpReadsSpec extends HttpReadsSpec {
-  "RawReads.readRaw" should {
-    val reads = RawHttpReads.readRaw
-
-    "return the bare response if returned" in
-      forAll(responsesWith(`2xx`))(theBareResponseShouldBeReturnedBy(reads))
-
-    behave like theStandardErrorHandling (reads)
-  }
   "RawReads.returnTheResponse" should {
     "always return the bare response if returned" in
       forAll(validResponses)(theBareResponseShouldBeReturnedBy(RawHttpReads.returnTheResponse))
-  }
-
-  def theBareResponseShouldBeReturnedBy(reads: HttpReads[HttpResponse])(response: HttpResponse) {
-    reads.read(exampleVerb, exampleUrl, response) should be(response)
   }
 }

@@ -21,18 +21,6 @@ import play.api.libs.json._
 import uk.gov.hmrc.play.http.{JsValidationException, HttpResponse}
 
 class JsonHttpReadsSpec extends HttpReadsSpec {
-  implicit val r = Json.reads[Example]
-  "JsonHttpReads.readFromJson" should {
-    val reads = JsonHttpReads.readFromJson[Example]
-
-    "convert a successful response body to the given class" in
-      forAll (responsesWith(`2xx`, bodyAsJson = exampleJsonObj))(aExampleClassShouldBeDeserialisedBy(reads))
-    "convert a successful response body with json that doesn't validate into an exception" in
-      forAll (responsesWith(`2xx`, bodyAsJson = brokenJsonObj))(expectAJsValidationExceptionFrom(reads))
-
-    behave like theStandardErrorHandling (reads)
-  }
-
   "JsonHttpReads.jsonBodyDeserializedTo" should {
     val reads = JsonHttpReads.jsonBodyDeserialisedTo[Example]
     "convert a response body to the given class" in
@@ -77,25 +65,5 @@ class JsonHttpReadsSpec extends HttpReadsSpec {
 
     behave like theStandardErrorHandlingFor400 (reads)
     behave like theStandardErrorHandlingForOtherCodes (reads)
-  }
-
-  def emptySeqShouldBeReturnedBy(reads: HttpReads[Seq[Example]])(response: HttpResponse) {
-    reads.read(exampleVerb, exampleUrl, response) should be(empty)
-  }
-
-  def aSeqOfExampleClassesShouldBeDeserializedBy(reads: HttpReads[Seq[Example]])(response: HttpResponse) {
-    reads.read(exampleVerb, exampleUrl, response) should contain theSameElementsInOrderAs Seq(Example("test", 5), Example("test", 2))
-  }
-
-  val exampleJsonObj = Json.obj("v1" -> "test", "v2" -> 5)
-  val anotherJsonObj = Json.obj("v1" -> "test", "v2" -> 2)
-  val brokenJsonObj = exampleJsonObj - "v2"
-
-  def expectAJsValidationExceptionFrom(reads: HttpReads[_])(response: HttpResponse) {
-    a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
-  }
-
-  def aExampleClassShouldBeDeserialisedBy(reads: HttpReads[Example])(response: HttpResponse) {
-    reads.read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
   }
 }

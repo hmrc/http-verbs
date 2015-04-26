@@ -64,6 +64,7 @@ class OptionHttpReadsSpec extends HttpReadsSpec {
         "hi"
       }
     }
-    val reads = OptionHttpReads.readOptionOf(nestedReads)
+    import OptionHttpReads._
+    val reads = noneOn(204) or noneOn(404) or some(nestedReads)
   }
 }

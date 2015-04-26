@@ -23,8 +23,6 @@ import PartialHttpReads._
 import HttpReads._
 
 trait JsonHttpReads {
-  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] =
-    ErrorHttpReads.convertFailuresToExceptions or jsonBodyDeserialisedTo[O]
 
   def jsonBodyDeserialisedTo[O](implicit rds: json.Reads[O], mf: Manifest[O]) = HttpReads[O] { (method, url, response) =>
     response.json.validate[O].fold(

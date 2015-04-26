@@ -18,7 +18,6 @@ package uk.gov.hmrc.play.http.reads
 
 import PartialHttpReads._
 import HttpReads._
-import uk.gov.hmrc.play.http.reads.HttpReads
 
 import scala.language.implicitConversions
 
@@ -28,7 +27,5 @@ trait OptionHttpReads {
   def some[P](implicit rds: HttpReads[P]) = HttpReads[Option[P]] { (method, url, response) =>
     Some(rds.read(method, url, response))
   }
-
-  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = noneOn(204) or noneOn(404) or some[P]
 }
 object OptionHttpReads extends OptionHttpReads

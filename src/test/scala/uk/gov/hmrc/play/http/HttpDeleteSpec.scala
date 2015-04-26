@@ -39,7 +39,8 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour
       val testDelete = new StubbedHttpDelete(Future.successful(response))
       testDelete.DELETE(url).futureValue shouldBe response
     }
-    "be able to return HTML responses" in new HtmlHttpReads {
+    "be able to return HTML responses" in {
+      import uk.gov.hmrc.play.http.reads.BackwardsCompatibleReadsRecipes.readToHtml
       val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 200)))
       testDelete.DELETE(url).futureValue should be (an [Html])
     }

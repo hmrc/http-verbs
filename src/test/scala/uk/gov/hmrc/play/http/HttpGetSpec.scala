@@ -55,7 +55,8 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       val testGet = new StubbedHttpGet(Future.successful(response))
       testGet.GET(url).futureValue shouldBe response
     }
-    "be able to return HTML responses" in new HtmlHttpReads {
+    "be able to return HTML responses" in {
+      import uk.gov.hmrc.play.http.reads.BackwardsCompatibleReadsRecipes.readToHtml
       val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse(testBody, 200)))
       testGet.GET(url).futureValue should be (an [Html])
     }

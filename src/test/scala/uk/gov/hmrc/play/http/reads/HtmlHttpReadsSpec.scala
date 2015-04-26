@@ -20,22 +20,9 @@ import play.twirl.api.Html
 import uk.gov.hmrc.play.http.HttpResponse
 
 class HtmlHttpReadsSpec extends HttpReadsSpec {
-  "HtmlHttpReads.readToHtml" should {
-    val reads = HtmlHttpReads.readToHtml
-
-    "convert a successful response body to HTML" in forAll(responsesWith(`2xx`))(theBodyShouldBeConvertedToHtmlBy(reads))
-    behave like theStandardErrorHandling(reads)
-  }
-
   "HtmlHttpReads.bodyToHtml" should {
     val reads = HtmlHttpReads.bodyToHtml
 
     "convert a response body to HTML" in forAll(validResponses)(theBodyShouldBeConvertedToHtmlBy(reads))
-  }
-
-  def theBodyShouldBeConvertedToHtmlBy(reads: HttpReads[Html])(response: HttpResponse) {
-    reads.read(exampleVerb, exampleUrl, response) should (
-      be(an[Html]) and have('text(response.body))
-    )
   }
 }

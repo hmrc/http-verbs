@@ -20,6 +20,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.{JsNull, JsValue, Json}
+import play.twirl.api.Html
 import uk.gov.hmrc.play.http
 import uk.gov.hmrc.play.http._
 
@@ -114,6 +115,38 @@ trait HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Mat
     httpReads.read(exampleVerb, exampleUrl, response) should be(None)
   }
 
+  def theBareResponseShouldBeReturnedBy(reads: HttpReads[HttpResponse])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be(response)
+  }
+
   def failTheTest[O]: HttpReads[O] = HttpReads[O] { (_, _, _) => fail("Reading passed through to terminator when not expected") }
+
+  def emptySeqShouldBeReturnedBy(reads: HttpReads[Seq[Example]])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be(empty)
+  }
+
+  def aSeqOfExampleClassesShouldBeDeserializedBy(reads: HttpReads[Seq[Example]])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should contain theSameElementsInOrderAs Seq(Example("test", 5), Example("test", 2))
+  }
+
+  val exampleJsonObj = Json.obj("v1" -> "test", "v2" -> 5)
+  val anotherJsonObj = Json.obj("v1" -> "test", "v2" -> 2)
+  val brokenJsonObj = exampleJsonObj - "v2"
+
+  implicit val r = Json.reads[Example]
+
+  def expectAJsValidationExceptionFrom(reads: HttpReads[_])(response: HttpResponse) {
+    a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
+  }
+
+  def aExampleClassShouldBeDeserialisedBy(reads: HttpReads[Example])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
+  }
+
+  def theBodyShouldBeConvertedToHtmlBy(reads: HttpReads[Html])(response: HttpResponse) {
+    reads.read(exampleVerb, exampleUrl, response) should (
+      be(an[Html]) and have('text(response.body))
+    )
+  }
 }
 case class Example(v1: String, v2: Int)

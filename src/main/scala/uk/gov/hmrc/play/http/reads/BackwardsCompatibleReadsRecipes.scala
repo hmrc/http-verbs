@@ -16,9 +16,17 @@
 
 package uk.gov.hmrc.play.http.reads
 
+import play.api.libs.json
+import play.twirl.api.Html
 import uk.gov.hmrc.play.http.HttpResponse
 
-trait RawHttpReads {
-  def returnTheResponse = HttpReads[HttpResponse] { (m, u, r) => r }
+trait BackwardsCompatibleReadsRecipes extends HtmlHttpReads with JsonHttpReads with ErrorHttpReads with OptionHttpReads with RawHttpReads {
+  implicit val readToHtml: HttpReads[Html] =
+    convertFailuresToExceptions or bodyToHtml
+
+  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] =
+    convertFailuresToExceptions or jsonBodyDeserialisedTo[O]
 }
-object RawHttpReads extends RawHttpReads
+object BackwardsCompatibleReadsRecipes extends BackwardsCompatibleReadsRecipes {
+  implicit val readRaw: HttpReads[HttpResponse] = convertFailuresToExceptions or returnTheResponse
+}

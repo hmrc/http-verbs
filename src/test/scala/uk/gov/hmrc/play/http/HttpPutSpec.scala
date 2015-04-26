@@ -39,7 +39,8 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPut = new StubbedHttpPut(Future.successful(response))
       testPut.PUT(url, testObject).futureValue shouldBe response
     }
-    "be able to return HTML responses" in new HtmlHttpReads {
+    "be able to return HTML responses" in {
+      import uk.gov.hmrc.play.http.reads.BackwardsCompatibleReadsRecipes.readToHtml
       val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse(testBody, 200)))
       testPut.PUT(url, testObject).futureValue should be (an [Html])
     }
