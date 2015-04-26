@@ -36,7 +36,9 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          requestId: Option[RequestId] = None,
                          requestChain: RequestChain = RequestChain.init,
                          nsStamp: Long = System.nanoTime(),
-                         extraHeaders: Seq[(String, String)] = Seq()) extends LoggingDetails with HeaderProvider with AuditProvider {
+                         extraHeaders: Seq[(String, String)] = Seq(), 
+                         trueClientIp: Option[String] = None,
+                         trueClientPort: Option[String] = None) extends LoggingDetails with HeaderProvider with AuditProvider {
 
   import EventKeys._
 
@@ -53,7 +55,10 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       forwarded.map(f => names.xForwardedFor -> f.value),
       token.map(t => names.token -> t.value),
       Some(names.xRequestChain -> requestChain.value),
-      authorization.map(auth => names.authorisation -> auth.value)).flatten.toList ++ extraHeaders
+      authorization.map(auth => names.authorisation -> auth.value), 
+      trueClientIp.map(HeaderNames.trueClientIp ->_),
+      trueClientPort.map(HeaderNames.trueClientPort ->_)
+    ).flatten.toList ++ extraHeaders
   }
 
   def withExtraHeaders(headers:(String, String)*) : HeaderCarrier = {
@@ -68,7 +73,9 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
   private lazy val auditDetails = Map[String, String](
     "ipAddress" -> forwarded.map(_.value).getOrElse("-"),
     names.authorisation -> authorization.map(_.value).getOrElse("-"),
-    names.token -> token.map(_.value).getOrElse("-")
+    names.token -> token.map(_.value).getOrElse("-"),
+    HeaderNames.trueClientIp -> trueClientIp.getOrElse(""),
+    HeaderNames.trueClientPort -> trueClientPort.getOrElse("")
   )
 
   def toAuditTags(transactionName: String, path: String) = {
@@ -82,12 +89,14 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
 }
 
 object HeaderCarrier {
+  @deprecated("use fromHeadersAndSession", "1.6.0")
   def fromHeaders(headers: Headers) = {
     val authorization = headers.get(HeaderNames.authorisation).map(Authorization)
     val token = headers.get(HeaderNames.token).map(Token)
     val forwardedFor = headers.get(HeaderNames.xForwardedFor).map(ForwardedFor)
     val sessionId = headers.get(HeaderNames.xSessionId).map(SessionId)
 
+    
     val requestTimestamp = Try[Long] {
       headers.get(HeaderNames.xRequestTimestamp).map(_.toLong).getOrElse(System.nanoTime())
     }.toOption
@@ -97,6 +106,7 @@ object HeaderCarrier {
     new HeaderCarrier(authorization, None, token, forwardedFor, sessionId, requestId, buildRequestChain(headers.get(HeaderNames.xRequestChain)), requestTimestamp.getOrElse(System.nanoTime()))
   }
 
+  @deprecated("use fromHeadersAndSession", "1.6.0")
   def fromSessionAndHeaders(session: Session, headers: Headers) = {
 
     def getSessionId: Option[String] = session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
@@ -118,6 +128,54 @@ object HeaderCarrier {
     )
   }
 
+  def fromHeadersAndSession(headers: Headers, session: Option[Session]=None) = {
+    session.fold(fromHeaderss(headers)) {
+       fromSession(headers, _)
+    }
+  }
+
+  private def getSessionId(s: Session, headers: Headers) = s.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
+
+  private def fromHeaderss(headers: Headers): HeaderCarrier = {
+    HeaderCarrier(
+      headers.get(HeaderNames.authorisation).map(Authorization),
+      None,
+      headers.get(HeaderNames.token).map(Token),
+      forwardedFor(headers),
+      headers.get(HeaderNames.xSessionId).map(SessionId),
+      headers.get(HeaderNames.xRequestId).map(RequestId),
+      buildRequestChain(headers.get(HeaderNames.xRequestChain)),
+      requestTimestamp(headers), Seq.empty,
+      headers.get(HeaderNames.trueClientIp),
+      headers.get(HeaderNames.trueClientPort)
+    )
+  }
+
+  private def fromSession(headers: Headers, s: Session): HeaderCarrier = {
+    HeaderCarrier(
+      s.get(SessionKeys.authToken).map(Authorization),
+      s.get(SessionKeys.userId).map(UserId),
+      s.get(SessionKeys.token).map(Token),
+      forwardedFor(headers),
+      getSessionId(s, headers).map(SessionId),
+      headers.get(HeaderNames.xRequestId).map(RequestId),
+      buildRequestChain(headers.get(HeaderNames.xRequestChain)),
+      requestTimestamp(headers),
+      Seq.empty,
+      headers.get(HeaderNames.trueClientIp),
+      headers.get(HeaderNames.trueClientPort)
+    )
+  }
+
+  private def forwardedFor(headers: Headers): Option[ForwardedFor] = {
+    ((headers.get(HeaderNames.trueClientIp), headers.get(HeaderNames.xForwardedFor)) match {
+      case (tcip, None) => tcip
+      case (None | Some(""), xff) => xff
+      case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
+      case (Some(tcip), Some(xff)) => Some(s"$tcip, $xff")
+    }).map(ForwardedFor)
+  }
+  
   def buildRequestChain(currentChain: Option[String]): RequestChain = {
     currentChain match {
       case None => RequestChain.init
@@ -130,4 +188,8 @@ object HeaderCarrier {
       .get(HeaderNames.xRequestTimestamp)
       .flatMap(tsAsString => Try(tsAsString.toLong).toOption)
       .getOrElse(System.nanoTime())
+
+
+ 
+
 }
