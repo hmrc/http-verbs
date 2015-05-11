@@ -45,7 +45,7 @@ object Examples {
   }
 
   trait VerbExamples {
-    val http: HttpGet with HttpPost with HttpPut with HttpDelete
+    val http: HttpGet with HttpPost with HttpPut with HttpDelete with HttpPatch
 
     implicit val hc = HeaderCarrier()
 
@@ -53,6 +53,7 @@ object Examples {
     http.DELETE("http://gov.uk/hmrc")
     http.POST("http://gov.uk/hmrc", body = "hi there")
     http.PUT("http://gov.uk/hmrc", body = "hi there")
+    http.PATCH("http://gov.uk/hmrc", body = "hi there")
 
     val r1 = http.GET("http://gov.uk/hmrc") // Returns an HttpResponse
     val r2 = http.GET[HttpResponse]("http://gov.uk/hmrc") // Can specify this explicitly
