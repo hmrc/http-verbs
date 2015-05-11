@@ -16,17 +16,16 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.play.http.HttpResponse
+import play.api.libs.json.{Json, Writes}
+import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.{HttpPatch, HttpResponse}
 
-class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
+import scala.concurrent.Future
 
-  override def status = wsResponse.status
+trait WSPatch extends HttpPatch with WSRequest {
 
-  override def json = wsResponse.json
-
-  override def body = wsResponse.body
+  def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+    buildRequest(url).patch(Json.toJson(body)).map (new WSHttpResponse(_))
+  }
 }
-
-trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch
