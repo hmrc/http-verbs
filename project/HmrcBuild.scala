@@ -26,7 +26,7 @@ object HmrcBuild extends Build {
   import uk.gov.hmrc.PublishingSettings._
 
   val appName = "http-verbs"
-  val appVersion = "1.7.0-SNAPSHOT"
+  val appVersion = "1.8.0-SNAPSHOT"
 
   lazy val microservice = Project(appName, file("."))
     .settings(version := appVersion)
