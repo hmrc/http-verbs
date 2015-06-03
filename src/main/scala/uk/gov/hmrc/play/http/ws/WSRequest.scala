@@ -26,7 +26,7 @@ trait WSRequest {
   import play.api.libs.ws.WS
   import uk.gov.hmrc.play.audit.http.HeaderCarrier
 
-  def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
+  def buildRequest(url: String)(implicit hc: HeaderCarrier) = {
     WS.url(url).withHeaders(hc.headers: _*)
   }
 }
@@ -36,7 +36,7 @@ trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
+  override def buildRequest(url: String)(implicit hc: HeaderCarrier) = {
     wsProxyServer match {
       case Some(proxy) => super.buildRequest(url).withProxyServer(proxy)
       case None => super.buildRequest(url)
