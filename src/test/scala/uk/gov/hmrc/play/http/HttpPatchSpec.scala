@@ -21,35 +21,33 @@ import play.api.http.HttpVerbs._
 import play.api.libs.json.Writes
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.http.reads.HtmlHttpReads
-import uk.gov.hmrc.play.test.Concurrent.await
-import uk.gov.hmrc.play.test.Concurrent.liftFuture
+
 import scala.concurrent.Future
 
-class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
+class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
-    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
+  class StubbedHttpPatch(doPatchResult: Future[HttpResponse]) extends HttpPatch with ConnectionTracingCapturing with MockAuditing {
+    def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPatchResult
   }
 
-  "HttpPut" should {
+  "HttpPatch" should {
     val testObject = TestRequestClass("a", 1)
     "be able to return plain responses" in {
       val response = new DummyHttpResponse(testBody, 200)
-      val testPut = new StubbedHttpPut(Future.successful(response))
-      testPut.PUT(url, testObject).futureValue shouldBe response
+      val testPatch = new StubbedHttpPatch(Future.successful(response))
+      testPatch.PATCH(url, testObject).futureValue shouldBe response
     }
     "be able to return HTML responses" in {
       import uk.gov.hmrc.play.http.reads.BackwardsCompatibleReadsRecipes.readToHtml
-      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testPut.PUT(url, testObject).futureValue should be (an [Html])
+      val testPatch = new StubbedHttpPatch(Future.successful(new DummyHttpResponse(testBody, 200)))
+      testPatch.PATCH(url, testObject).futureValue should be (an [Html])
     }
     "be able to return objects deserialised from JSON" in {
-      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
+      val testPatch = new StubbedHttpPatch(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPatch.PATCH[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
-    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
+    behave like anErrorMappingHttpCall(PATCH, (url, responseF) => new StubbedHttpPatch(responseF).PATCH(url, testObject))
+    behave like aTracingHttpCall(PATCH, "PATCH", new StubbedHttpPatch(defaultHttpResponse)) { _.PATCH(url, testObject) }
   }
 }

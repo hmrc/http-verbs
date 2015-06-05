@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.test
+package uk.gov.hmrc.play.http.ws
 
-object Concurrent {
-  import scala.concurrent.{Await, Future}
-  import scala.concurrent.duration._
+import play.api.libs.json.{Json, Writes}
+import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.{HttpPatch, HttpResponse}
 
-  val defaultTimeout = 5 seconds
+import scala.concurrent.Future
 
-  implicit def extractAwait[A](future: Future[A]) = await[A](future)
-  implicit def liftFuture[A](v: A) = Future.successful(v)
+trait WSPatch extends HttpPatch with WSRequest {
 
-  def await[A](future: Future[A]) = Await.result(future, defaultTimeout)
+  def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+    buildRequest(url).patch(Json.toJson(body)).map (new WSHttpResponse(_))
+  }
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,7 +46,7 @@ object Examples {
   }
 
   trait VerbExamples {
-    val http: HttpGet with HttpPost with HttpPut with HttpDelete
+    val http: HttpGet with HttpPost with HttpPut with HttpDelete with HttpPatch
 
     implicit val hc = HeaderCarrier()
 
@@ -54,6 +54,7 @@ object Examples {
     http.DELETE("http://gov.uk/hmrc")
     http.POST("http://gov.uk/hmrc", body = "hi there")
     http.PUT("http://gov.uk/hmrc", body = "hi there")
+    http.PATCH("http://gov.uk/hmrc", body = "hi there")
 
     val r1 = http.GET("http://gov.uk/hmrc") // Returns an HttpResponse
     val r2 = http.GET[HttpResponse]("http://gov.uk/hmrc") // Can specify this explicitly

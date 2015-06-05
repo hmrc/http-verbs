@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,4 +29,4 @@ class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
   override def body = wsResponse.body
 }
 
-trait WSHttp extends WSGet with WSPut with WSPost with WSDelete
+trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch
