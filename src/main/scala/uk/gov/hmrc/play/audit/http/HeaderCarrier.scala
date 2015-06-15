@@ -67,15 +67,15 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
 
   private lazy val auditTags = Map[String, String](
     names.xRequestId -> requestId.map(_.value).getOrElse("-"),
-    names.xSessionId -> sessionId.map(_.value).getOrElse("-")
+    names.xSessionId -> sessionId.map(_.value).getOrElse("-"),
+    "clientIP" -> trueClientIp.getOrElse("-"),
+    "clientPort" -> trueClientPort.getOrElse("-")
   )
 
   private lazy val auditDetails = Map[String, String](
     "ipAddress" -> forwarded.map(_.value).getOrElse("-"),
     names.authorisation -> authorization.map(_.value).getOrElse("-"),
-    names.token -> token.map(_.value).getOrElse("-"),
-    HeaderNames.trueClientIp -> trueClientIp.getOrElse(""),
-    HeaderNames.trueClientPort -> trueClientPort.getOrElse("")
+    names.token -> token.map(_.value).getOrElse("-")
   )
 
   def toAuditTags(transactionName: String, path: String) = {
