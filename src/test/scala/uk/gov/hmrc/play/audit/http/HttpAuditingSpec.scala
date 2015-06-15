@@ -112,8 +112,8 @@ class HttpAuditingSpec extends WordSpecLike with Matchers with Eventually with L
         dataEvent.auditSource shouldBe httpWithAudit.appName
         dataEvent.auditType shouldBe OutboundCall
 
-        dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri)
-        dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> getVerb, "surrogate" -> "true", "True-Client-IP" ->"", "True-Client-Port" ->"")
+        dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri, "clientIP" -> "-", "clientPort" -> "-")
+        dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> getVerb, "surrogate" -> "true")
         dataEvent.request.generatedAt shouldBe requestDateTime
 
         dataEvent.response.tags shouldBe empty
@@ -144,8 +144,8 @@ class HttpAuditingSpec extends WordSpecLike with Matchers with Eventually with L
         dataEvent.auditSource shouldBe httpWithAudit.appName
         dataEvent.auditType shouldBe OutboundCall
 
-        dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri)
-        dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> postVerb, RequestBody -> requestBody, "True-Client-IP" ->"", "True-Client-Port" ->"")
+        dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri, "clientIP" -> "-", "clientPort" -> "-")
+          dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> postVerb, RequestBody -> requestBody)
         dataEvent.request.generatedAt shouldBe requestDateTime
 
         dataEvent.response.tags shouldBe empty
@@ -198,8 +198,8 @@ class HttpAuditingSpec extends WordSpecLike with Matchers with Eventually with L
       dataEvent.auditSource shouldBe httpWithAudit.appName
       dataEvent.auditType shouldBe OutboundCall
 
-      dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri)
-      dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> getVerb, "surrogate" -> "true", "True-Client-IP" -> "192.168.1.2", "True-Client-Port" -> "12000")
+      dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri, "clientIP" -> "192.168.1.2", "clientPort" -> "12000")
+      dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> getVerb, "surrogate" -> "true")
       dataEvent.request.generatedAt shouldBe requestDateTime
 
       dataEvent.response.tags shouldBe empty
@@ -225,8 +225,8 @@ class HttpAuditingSpec extends WordSpecLike with Matchers with Eventually with L
       dataEvent.auditSource shouldBe httpWithAudit.appName
       dataEvent.auditType shouldBe OutboundCall
 
-      dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri)
-      dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> postVerb, RequestBody -> requestBody.get, "True-Client-IP" ->"", "True-Client-Port" ->"")
+      dataEvent.request.tags shouldBe Map(xSessionId -> "-", xRequestId -> "-", TransactionName -> serviceUri, Path -> serviceUri, "clientIP" -> "-", "clientPort" -> "-")
+      dataEvent.request.detail shouldBe Map("ipAddress" -> "-", authorisation -> "-", token -> "-", Path -> serviceUri, Method -> postVerb, RequestBody -> requestBody.get)
       dataEvent.request.generatedAt shouldBe requestDateTime
 
       dataEvent.response.tags shouldBe empty

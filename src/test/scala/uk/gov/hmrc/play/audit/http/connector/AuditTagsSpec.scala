@@ -40,12 +40,14 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val tags = hc.toAuditTags("theTransactionName", "/the/request/path")
 
-      tags.size shouldBe 4
+      tags.size shouldBe 6
 
       tags(xSessionId) shouldBe sessionId.value
       tags(xRequestId) shouldBe requestId.value
       tags(TransactionName) shouldBe "theTransactionName"
       tags(Path) shouldBe "/the/request/path"
+      tags("clientIP") shouldBe "-"
+      tags("clientPort") shouldBe "-"
     }
 
     "be defaulted" in {
@@ -53,13 +55,25 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val tags = hc.toAuditTags("defaultsWhenNothingSet", "/the/request/path")
 
-      tags.size shouldBe 4
+      tags.size shouldBe 6
 
       tags(xSessionId) shouldBe "-"
       tags(xRequestId) shouldBe "-"
       tags(TransactionName) shouldBe "defaultsWhenNothingSet"
       tags(Path) shouldBe "/the/request/path"
+      tags("clientIP") shouldBe "-"
+      tags("clientPort") shouldBe "-"
     }
+
+    "have more tags.clientIP and tags.clientPort" in {
+      val hc = HeaderCarrier(trueClientIp = Some("192.168.1.1"), trueClientPort =Some("9999"))
+
+      val tags = hc.toAuditTags("defaultsWhenNothingSet", "/the/request/path")
+
+      tags("clientIP") shouldBe "192.168.1.1"
+      tags("clientPort") shouldBe "9999"
+    }
+
   }
 
   "Audit DETAILS" should {
@@ -68,7 +82,7 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val details = hc.toAuditDetails()
 
-      details.size shouldBe 5
+      details.size shouldBe 3
 
       details("ipAddress") shouldBe forwarded.value
       details(authorisation) shouldBe authorization.value
@@ -80,7 +94,7 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val details = hc.toAuditDetails()
 
-      details.size shouldBe 5
+      details.size shouldBe 3
 
       details("ipAddress") shouldBe "-"
       details(authorisation) shouldBe "-"
@@ -92,14 +106,12 @@ class AuditTagsSpec extends WordSpecLike with Matchers {
 
       val details = hc.toAuditDetails("more-details" -> "the details", "lots-of-details" -> "interesting info")
 
-      details.size shouldBe 7
+      details.size shouldBe 5
 
       details("more-details") shouldBe "the details"
       details("lots-of-details") shouldBe "interesting info"
-      details(HeaderNames.trueClientIp) shouldBe "192.168.1.1"
-      details(HeaderNames.trueClientPort) shouldBe "9999"
-
     }
+
   }
 
 }
