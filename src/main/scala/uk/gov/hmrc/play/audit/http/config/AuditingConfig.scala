@@ -16,15 +16,17 @@
 
 package uk.gov.hmrc.play.audit.http.config
 
-case class BaseUri(host : String, port : Int, protocol : String = "http") {
+import play.api.Play
+
+case class BaseUri(host: String, port: Int, protocol: String) {
   val uri = s"$protocol://$host:$port".stripSuffix("/") + "/"
 
-  def addEndpoint(endpoint : String) : String = s"$uri${endpoint.stripPrefix("/")}"
+  def addEndpoint(endpoint: String): String = s"$uri${endpoint.stripPrefix("/")}"
 }
 
-case class Consumer(baseUri : BaseUri,
-                    singleEventUri : String = "write/audit",
-                    mergedEventUri : String = "write/audit/merged",
+case class Consumer(baseUri: BaseUri,
+                    singleEventUri: String = "write/audit",
+                    mergedEventUri: String = "write/audit/merged",
                     largeMergedEventUri: String = "write/audit/merged/large") {
 
   val singleEventUrl = baseUri.addEndpoint(singleEventUri)
@@ -34,18 +36,42 @@ case class Consumer(baseUri : BaseUri,
 }
 
 object Consumer {
-  implicit def baseUriToConsumer(b : BaseUri) : Consumer = Consumer(b)
+  implicit def baseUriToConsumer(b: BaseUri): Consumer = Consumer(b)
 }
 
-case class AuditingConfig(consumer : Consumer,
-                          enabled : Boolean = true,
-                          traceRequests : Boolean = true)
+case class AuditingConfig(consumer: Option[Consumer],
+                          enabled: Boolean,
+                          traceRequests: Boolean)
 
 object LoadAuditingConfig {
+
+  import play.api.Play.current
+
   def apply(key: String): AuditingConfig = {
-    import com.typesafe.config.ConfigFactory
-    import net.ceedubs.ficus.Ficus._
-    import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-    ConfigFactory.load().as[AuditingConfig](key)
-  }
+    Play.configuration.getConfig(key).map { c =>
+
+      val enabled = c.getBoolean("enabled").getOrElse(true)
+
+      if(enabled) {
+        AuditingConfig(
+          enabled = enabled,
+          traceRequests = c.getBoolean("traceRequests").getOrElse(true),
+          consumer = Some(c.getConfig("consumer").map { con =>
+            Consumer(
+              baseUri = con.getConfig("baseUri").map { uri =>
+                BaseUri(
+                  host = uri.getString("host").getOrElse(throw new Exception("Missing consumer host for auditing")),
+                  port = uri.getInt("port").getOrElse(throw new Exception("Missing consumer port for auditing")),
+                  protocol = uri.getString("protocol").getOrElse("http")
+                )
+              }.getOrElse(throw new Exception("Missing consumer baseUri for auditing"))
+            )
+          }.getOrElse(throw new Exception("Missing consumer configuration for auditing")))
+        )
+      } else {
+        AuditingConfig(consumer = None, enabled = false, traceRequests = false)
+      }
+
+    }
+  }.getOrElse(throw new Exception("Missing auditing configuration"))
 }

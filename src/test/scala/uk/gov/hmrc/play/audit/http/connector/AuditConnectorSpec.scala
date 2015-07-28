@@ -22,7 +22,7 @@ import org.scalatest.{Matchers, Tag, WordSpecLike}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import uk.gov.hmrc.play.audit.EventTypes
 import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.config.{AuditingConfig, BaseUri}
+import uk.gov.hmrc.play.audit.http.config.{Consumer, AuditingConfig, BaseUri}
 import uk.gov.hmrc.play.audit.model.{DataCall, DataEvent, ExtendedDataEvent, MergedDataEvent}
 import uk.gov.hmrc.play.http.HttpResponse
 import uk.gov.hmrc.play.http.logging.LoggingDetails
@@ -124,7 +124,7 @@ class AuditConnectorSpec extends WordSpecLike with Matchers with ScalaFutures {
     class MockAuditConnector(response: Future[HttpResponse]) extends StubAuditConnector {
       var called = new Called()
 
-      override def auditingConfig: AuditingConfig = AuditingConfig(BaseUri("datastream-base-url", 8080))
+      override def auditingConfig = AuditingConfig(consumer = Some(Consumer(BaseUri("datastream-base-url", 8080, "http"))), enabled = true, traceRequests = true)
 
       override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails) = {
         called = called.copy(handleResult = true)
@@ -154,7 +154,7 @@ class AuditConnectorSpec extends WordSpecLike with Matchers with ScalaFutures {
     class MockAuditConnector(response: Future[HttpResponse], enabled: Boolean = true) extends StubAuditConnector {
       var called = new Called()
 
-      override def auditingConfig: AuditingConfig = AuditingConfig(BaseUri("datastream-base-url", 8080), enabled)
+      override def auditingConfig: AuditingConfig = AuditingConfig(consumer = Some(Consumer(BaseUri("datastream-base-url", 8080, "http"))), enabled = enabled, traceRequests = true)
 
       override protected[connector] def handleResult(resultF: Future[HttpResponse], body: JsValue)(implicit ld: LoggingDetails) = {
         called = called.copy(handleResult = true)

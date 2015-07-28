@@ -59,7 +59,7 @@ class AuditSpec extends WordSpecLike with Matchers with Eventually {
   val exampleRequestId = "12345"
   implicit val hc = HeaderCarrier(requestId = Some(RequestId(exampleRequestId)))
   val auditConnector = new AuditConnector {
-    override def auditingConfig: AuditingConfig = new AuditingConfig(consumer = Consumer(BaseUri("localhost", 11111)))
+    override val auditingConfig = new AuditingConfig(consumer = Some(Consumer(BaseUri("localhost", 11111, "http"))), enabled = true, traceRequests = true)
   }
 
   "An Audit object" should {
