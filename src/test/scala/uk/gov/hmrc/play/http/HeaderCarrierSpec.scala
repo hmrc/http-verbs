@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.audit.http
+package uk.gov.hmrc.play.http
 
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.mvc.Session
 import play.api.test.FakeHeaders
-import uk.gov.hmrc.play.audit.http.HeaderCarrier.fromHeadersAndSession
+import uk.gov.hmrc.play.http.HeaderCarrier.fromHeadersAndSession
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
-import uk.gov.hmrc.play.http.{HeaderNames, SessionKeys}
 
 import scala.concurrent.duration._
 

@@ -18,7 +18,7 @@ package uk.gov.hmrc.play.http.test
 
 import org.scalatest.{Matchers, Suite}
 import play.api.libs.json.{JsNull, JsValue}
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.ws.WSRequest
 
 trait HttpTestHelper extends ResponseMatchers {

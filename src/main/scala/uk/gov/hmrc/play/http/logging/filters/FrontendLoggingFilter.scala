@@ -17,10 +17,10 @@
 package uk.gov.hmrc.play.http.logging.filters
 
 import play.api.mvc.RequestHeader
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 trait FrontendLoggingFilter extends LoggingFilter {
 
-  override def buildLoggedHeaders(request: RequestHeader) = HeaderCarrier.fromSessionAndHeaders(request.session, request.headers)
+  override def buildLoggedHeaders(request: RequestHeader) = HeaderCarrier.fromHeadersAndSession(request.headers, Some(request.session))
 
 }

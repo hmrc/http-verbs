@@ -19,8 +19,7 @@ package uk.gov.hmrc.play.connectors
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.audit.http.{HeaderCarrier, Token}
-import uk.gov.hmrc.play.http.HeaderNames
+import uk.gov.hmrc.play.http.{Token, HeaderCarrier, HeaderNames}
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 class ConnectorSpec extends WordSpecLike with Matchers {

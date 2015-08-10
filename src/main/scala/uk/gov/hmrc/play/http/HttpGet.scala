@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
-import uk.gov.hmrc.play.audit.http.{HeaderCarrier, HttpAuditing}
+import uk.gov.hmrc.play.http.hooks.{HttpHook, HttpHooks}
 import uk.gov.hmrc.play.http.logging.{MdcLoggingExecutionContext, ConnectionTracing}
 
 import scala.concurrent.Future
@@ -25,12 +25,13 @@ import play.api.libs.json.{Json, JsValue}
 import MdcLoggingExecutionContext._
 import play.api.http.HttpVerbs.{GET => GET_VERB}
 
-trait HttpGet extends HttpVerb with ConnectionTracing with HttpAuditing {
+trait HttpGet extends HttpVerb with ConnectionTracing with HttpHooks {
+
   protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
 
   def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =withTracing(GET_VERB, url) {
     val httpResponse = doGet(url)
-    auditRequestWithResponseF(url, GET_VERB, None, httpResponse)
+    executeHooks(url, GET_VERB, None, httpResponse)
     mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
   }
 }

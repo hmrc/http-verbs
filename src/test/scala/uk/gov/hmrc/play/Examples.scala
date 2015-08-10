@@ -16,32 +16,27 @@
 
 package uk.gov.hmrc.play
 
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Examples {
 
   import uk.gov.hmrc.play.http._
   import uk.gov.hmrc.play.http.ws._
-  import audit.http.config._
-  import audit.http.connector._
 
   trait ConnectorWithHttpValues {
     val http: HttpGet with HttpPost
   }
   object ConnectorWithHttpValues extends ConnectorWithHttpValues {
     val http = new WSGet with WSPost {
-      val appName = "my-app-name"
-      val auditConnector = AuditConnector(LoadAuditingConfig(key = "auditing"))
+      val hooks = NoneRequired
     }
   }
 
   trait ConnectorWithMixins extends HttpGet with HttpPost {
-
   }
+
   object ConnectorWithMixins extends ConnectorWithMixins with WSGet with WSPost {
-    val appName = "my-app-name"
-    val auditConnector = AuditConnector(LoadAuditingConfig(key = "auditing"))
+    val hooks = NoneRequired
   }
 
   trait VerbExamples {

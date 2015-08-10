@@ -22,8 +22,6 @@ import java.util.concurrent.TimeoutException
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.Json
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, MockAuditConnector}
 import uk.gov.hmrc.play.http.logging.{ConnectionTracing, LoggingDetails}
 
 import scala.collection.mutable
@@ -80,6 +78,7 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
       http.traceCalls.head._1 shouldBe verb
     }
   }
+
 }
 
 trait ConnectionTracingCapturing extends ConnectionTracing {
@@ -90,9 +89,4 @@ trait ConnectionTracingCapturing extends ConnectionTracing {
     traceCalls += ((method, uri))
     body
   }
-}
-
-trait MockAuditing {
-  def auditConnector: AuditConnector = new MockAuditConnector
-  def appName: String = "test-app"
 }

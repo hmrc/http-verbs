@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.audit.http
+package uk.gov.hmrc.play.http
 
 import play.api.mvc.{Headers, Session}
-import uk.gov.hmrc.play.audit.EventKeys
-import uk.gov.hmrc.play.audit.http.connector.AuditProvider
 import uk.gov.hmrc.play.http.logging._
-import uk.gov.hmrc.play.http.{HeaderNames, SessionKeys}
 
 import scala.util.Try
 
@@ -40,9 +37,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None,
                          gaToken: Option[String] = None,
-                         gaUserId: Option[String] = None) extends LoggingDetails with HeaderProvider with AuditProvider {
-
-  import EventKeys._
+                         gaUserId: Option[String] = None) extends  LoggingDetails with HeaderProvider {
 
   /**
    * @return the time, in nanoseconds, since this header carrier was created
@@ -68,69 +63,9 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
   def withExtraHeaders(headers:(String, String)*) : HeaderCarrier = {
     this.copy(extraHeaders = extraHeaders ++ headers)
   }
-
-  private lazy val auditTags = Map[String, String](
-    names.xRequestId -> requestId.map(_.value).getOrElse("-"),
-    names.xSessionId -> sessionId.map(_.value).getOrElse("-"),
-    "clientIP" -> trueClientIp.getOrElse("-"),
-    "clientPort" -> trueClientPort.getOrElse("-")
-  )
-
-  private lazy val auditDetails = Map[String, String](
-    "ipAddress" -> forwarded.map(_.value).getOrElse("-"),
-    names.authorisation -> authorization.map(_.value).getOrElse("-"),
-    names.token -> token.map(_.value).getOrElse("-")
-  )
-
-  def toAuditTags(transactionName: String, path: String) = {
-    auditTags ++ Map[String, String](
-      TransactionName -> transactionName,
-      Path -> path
-    )
-  }
-
-  def toAuditDetails(details: (String, String)*) = auditDetails ++ details
 }
 
 object HeaderCarrier {
-  @deprecated("use fromHeadersAndSession", "1.6.0")
-  def fromHeaders(headers: Headers) = {
-    val authorization = headers.get(HeaderNames.authorisation).map(Authorization)
-    val token = headers.get(HeaderNames.token).map(Token)
-    val forwardedFor = headers.get(HeaderNames.xForwardedFor).map(ForwardedFor)
-    val sessionId = headers.get(HeaderNames.xSessionId).map(SessionId)
-
-    
-    val requestTimestamp = Try[Long] {
-      headers.get(HeaderNames.xRequestTimestamp).map(_.toLong).getOrElse(System.nanoTime())
-    }.toOption
-
-    val requestId = headers.get(HeaderNames.xRequestId).map(RequestId)
-
-    new HeaderCarrier(authorization, None, token, forwardedFor, sessionId, requestId, buildRequestChain(headers.get(HeaderNames.xRequestChain)), requestTimestamp.getOrElse(System.nanoTime()))
-  }
-
-  @deprecated("use fromHeadersAndSession", "1.6.0")
-  def fromSessionAndHeaders(session: Session, headers: Headers) = {
-
-    def getSessionId: Option[String] = session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
-
-    HeaderCarrier(
-      authorization = session.get(SessionKeys.authToken).map(Authorization),
-      userId = session.get(SessionKeys.userId).map(UserId),
-      token = session.get(SessionKeys.token).map(Token),
-      forwarded = ((headers.get(HeaderNames.trueClientIp), headers.get(HeaderNames.xForwardedFor)) match {
-        case (tcip, None) => tcip
-        case (None | Some(""), xff) => xff
-        case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
-        case (Some(tcip), Some(xff)) => Some(s"$tcip, $xff")
-      }).map(ForwardedFor),
-      sessionId = getSessionId.map(SessionId),
-      requestId = headers.get(HeaderNames.xRequestId).map(RequestId),
-      requestChain = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      nsStamp = requestTimestamp(headers)
-    )
-  }
 
   def fromHeadersAndSession(headers: Headers, session: Option[Session]=None) = {
     session.fold(fromHeaderss(headers)) {

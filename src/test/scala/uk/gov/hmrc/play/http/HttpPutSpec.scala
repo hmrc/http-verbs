@@ -16,18 +16,22 @@
 
 package uk.gov.hmrc.play.http
 
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
-import play.api.libs.json.Writes
+import play.api.libs.json.{Json, Writes}
 import play.twirl.api.Html
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.test.Concurrent.await
-import uk.gov.hmrc.play.test.Concurrent.liftFuture
+import uk.gov.hmrc.play.http.hooks.HttpHook
 import scala.concurrent.Future
 
 class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with ConnectionTracingCapturing with MockAuditing {
+  class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with MockitoSugar with ConnectionTracingCapturing {
+    val testHook1 = mock[HttpHook]
+    val testHook2 = mock[HttpHook]
+    val hooks = Seq(testHook1, testHook2)
+
     def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
   }
 
@@ -49,5 +53,18 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
     behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
     behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
+
+    "Invoke any hooks provided" in {
+      import uk.gov.hmrc.play.test.Concurrent.await
+
+      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
+      val testPut = new StubbedHttpPut(dummyResponseFuture)
+      await(testPut.PUT(url, testObject))
+
+      val testJson = Json.stringify(trcreads.writes(testObject))
+
+      verify(testPut.testHook1).executeHook(url, "PUT", Some(testJson), dummyResponseFuture)
+      verify(testPut.testHook2).executeHook(url, "PUT", Some(testJson), dummyResponseFuture)
+    }
   }
 }
