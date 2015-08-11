@@ -34,7 +34,7 @@ object HmrcBuild extends Build {
     .settings(
       targetJvm := "jvm-1.7",
       libraryDependencies ++= AppDependencies(),
-      crossScalaVersions := Seq("2.11.6"),
+      crossScalaVersions := Seq("2.11.7"),
       resolvers := Seq(
         Resolver.bintrayRepo("hmrc", "releases"),
         "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/"
@@ -50,8 +50,8 @@ private object AppDependencies {
   val compile = Seq(
     "com.typesafe.play" %% "play" % PlayVersion.current,
     ws,
-    "uk.gov.hmrc" %% "time" % "1.1.0",
-    "uk.gov.hmrc" %% "http-exceptions" % "0.3.0"
+    "uk.gov.hmrc" %% "time" % "1.4.0",
+    "uk.gov.hmrc" %% "http-exceptions" % "0.4.0"
   )
 
   trait TestDependencies {
