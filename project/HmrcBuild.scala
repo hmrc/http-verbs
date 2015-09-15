@@ -32,7 +32,7 @@ object HmrcBuild extends Build {
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
     .settings(
-      targetJvm := "jvm-1.7",
+      scalaVersion := "2.11.7",
       libraryDependencies ++= AppDependencies(),
       crossScalaVersions := Seq("2.11.7"),
       resolvers := Seq(
@@ -50,8 +50,8 @@ private object AppDependencies {
   val compile = Seq(
     "com.typesafe.play" %% "play" % PlayVersion.current,
     ws,
-    "uk.gov.hmrc" %% "time" % "1.4.0",
-    "uk.gov.hmrc" %% "http-exceptions" % "0.4.0"
+    "uk.gov.hmrc" %% "time" % "2.0.0",
+    "uk.gov.hmrc" %% "http-exceptions" % "1.0.0"
   )
 
   trait TestDependencies {
@@ -66,7 +66,7 @@ private object AppDependencies {
         "commons-codec" % "commons-codec" % "1.7" % scope,
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
         "org.scalacheck" %% "scalacheck" % "1.12.2" % scope,
-        "org.pegdown" % "pegdown" % "1.4.2" % scope,
+        "org.pegdown" % "pegdown" % "1.5.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope
       )
     }.test
