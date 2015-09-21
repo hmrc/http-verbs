@@ -105,4 +105,14 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
       fromHeadersAndSession(headers(), Some(Session(Map.empty))).sessionId shouldBe None
     }
   }
+
+  "build Google Analytics headers from request" should {
+
+    "find the GA user id and token" in {
+      val hc: HeaderCarrier = fromHeadersAndSession(headers(HeaderNames.googleAnalyticTokenId -> "ga-token", HeaderNames.googleAnalyticUserId -> "123.456"))
+      hc.gaToken shouldBe Some("ga-token")
+      hc.gaUserId shouldBe Some("123.456")
+    }
+
+  }
 }

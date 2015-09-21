@@ -38,7 +38,9 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          nsStamp: Long = System.nanoTime(),
                          extraHeaders: Seq[(String, String)] = Seq(), 
                          trueClientIp: Option[String] = None,
-                         trueClientPort: Option[String] = None) extends LoggingDetails with HeaderProvider with AuditProvider {
+                         trueClientPort: Option[String] = None,
+                         gaToken: Option[String] = None,
+                         gaUserId: Option[String] = None) extends LoggingDetails with HeaderProvider with AuditProvider {
 
   import EventKeys._
 
@@ -57,7 +59,9 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       Some(names.xRequestChain -> requestChain.value),
       authorization.map(auth => names.authorisation -> auth.value), 
       trueClientIp.map(HeaderNames.trueClientIp ->_),
-      trueClientPort.map(HeaderNames.trueClientPort ->_)
+      trueClientPort.map(HeaderNames.trueClientPort ->_),
+      gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
+      gaUserId.map(HeaderNames.googleAnalyticUserId ->_)
     ).flatten.toList ++ extraHeaders
   }
 
@@ -145,9 +149,12 @@ object HeaderCarrier {
       headers.get(HeaderNames.xSessionId).map(SessionId),
       headers.get(HeaderNames.xRequestId).map(RequestId),
       buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      requestTimestamp(headers), Seq.empty,
+      requestTimestamp(headers),
+      Seq.empty,
       headers.get(HeaderNames.trueClientIp),
-      headers.get(HeaderNames.trueClientPort)
+      headers.get(HeaderNames.trueClientPort),
+      headers.get(HeaderNames.googleAnalyticTokenId),
+      headers.get(HeaderNames.googleAnalyticUserId)
     )
   }
 
@@ -163,7 +170,9 @@ object HeaderCarrier {
       requestTimestamp(headers),
       Seq.empty,
       headers.get(HeaderNames.trueClientIp),
-      headers.get(HeaderNames.trueClientPort)
+      headers.get(HeaderNames.trueClientPort),
+      headers.get(HeaderNames.googleAnalyticTokenId),
+      headers.get(HeaderNames.googleAnalyticUserId)
     )
   }
 
