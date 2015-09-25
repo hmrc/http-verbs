@@ -67,7 +67,8 @@ private object AppDependencies {
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
         "org.scalacheck" %% "scalacheck" % "1.12.2" % scope,
         "org.pegdown" % "pegdown" % "1.5.0" % scope,
-        "com.github.tomakehurst" % "wiremock" % "1.52" % scope
+        "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
+        "uk.gov.hmrc" %% "http-verbs-test" % "0.1.0" % scope
       )
     }.test
   }
