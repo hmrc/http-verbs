@@ -21,40 +21,40 @@ import java.util.concurrent.TimeoutException
 
 import scala.concurrent.{ExecutionContext, Future}
 
-protected[http] trait HttpErrorFunctions {
-  private def notFoundMessage(verbName: String, url: String, responseBody: String): String = {
+trait HttpErrorFunctions {
+  def notFoundMessage(verbName: String, url: String, responseBody: String): String = {
     s"$verbName of '$url' returned 404 (Not Found). Response body: '$responseBody'"
   }
 
-  private def preconditionFailedMessage(verbName: String, url: String, responseBody: String): String = {
+  def preconditionFailedMessage(verbName: String, url: String, responseBody: String): String = {
     s"$verbName of '$url' returned 412 (Precondition Failed). Response body: '$responseBody'"
   }
 
-  private def upstreamResponseMessage(verbName: String, url: String, status: Int, responseBody: String): String = {
+  def upstreamResponseMessage(verbName: String, url: String, status: Int, responseBody: String): String = {
     s"$verbName of '$url' returned $status. Response body: '$responseBody'"
   }
 
-  private def badRequestMessage(verbName: String, url: String, responseBody: String): String = {
+  def badRequestMessage(verbName: String, url: String, responseBody: String): String = {
     s"$verbName of '$url' returned 400 (Bad Request). Response body '$responseBody'"
   }
 
-  private def badGatewayMessage(verbName: String, url: String, status: Int, responseBody: String): String = {
+  def badGatewayMessage(verbName: String, url: String, status: Int, responseBody: String): String = {
     s"$verbName of '$url' returned status $status. Response body: '$responseBody'"
   }
 
-  private def badGatewayMessage(verbName: String, url: String, e: Exception): String = {
+  def badGatewayMessage(verbName: String, url: String, e: Exception): String = {
     s"$verbName of '$url' failed. Caused by: '${e.getMessage}'"
   }
 
-  private def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String = {
+  def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String = {
     s"$verbName of '$url' timed out with message '${e.getMessage}'"
   }
 
-  private def is2xx(status: Int) = status >= 200 && status < 300
+  def is2xx(status: Int) = status >= 200 && status < 300
 
-  private def is4xx(status: Int) = status >= 400 && status < 500
+  def is4xx(status: Int) = status >= 400 && status < 500
 
-  private def is5xx(status: Int) = status >= 500 && status < 600
+  def is5xx(status: Int) = status >= 500 && status < 600
 
   def handleResponse(httpMethod: String, url: String)(response: HttpResponse): HttpResponse =
     response.status match {
