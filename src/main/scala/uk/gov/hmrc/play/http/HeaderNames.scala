@@ -31,8 +31,8 @@ object HeaderNames {
   val token = "token"
   val surrogate = "Surrogate"
   val otacAuthorization = "Otac-Authorization"
-  val googleAnalyticTokenId = "ga.token"
-  val googleAnalyticUserId  = "ga.user-cookie-id"
+  val googleAnalyticTokenId = "ga-token"
+  val googleAnalyticUserId  = "ga-user-cookie-id"
 }
 
 object SessionKeys {
