@@ -65,8 +65,8 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
-      verify(testPatch.testHook1).executeHook(url, "POST", Some(testJson), dummyResponseFuture)
-      verify(testPatch.testHook2).executeHook(url, "POST", Some(testJson), dummyResponseFuture)
+      verify(testPatch.testHook1)(url, "POST", Some(testJson), dummyResponseFuture)
+      verify(testPatch.testHook2)(url, "POST", Some(testJson), dummyResponseFuture)
     }
   }
 
@@ -93,8 +93,8 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPost = new StubbedHttpPost(dummyResponseFuture)
       await(testPost.POSTForm(url, Map()))
 
-      verify(testPost.testHook1).executeHook(url, "POST", Some(Map()), dummyResponseFuture)
-      verify(testPost.testHook2).executeHook(url, "POST", Some(Map()), dummyResponseFuture)
+      verify(testPost.testHook1)(url, "POST", Some(Map()), dummyResponseFuture)
+      verify(testPost.testHook2)(url, "POST", Some(Map()), dummyResponseFuture)
     }
   }
 
@@ -121,8 +121,8 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPost = new StubbedHttpPost(dummyResponseFuture)
       await(testPost.POSTString[TestClass](url, testRequestBody))
 
-      verify(testPost.testHook1).executeHook(url, "POST", Some(testRequestBody), dummyResponseFuture)
-      verify(testPost.testHook2).executeHook(url, "POST", Some(testRequestBody), dummyResponseFuture)
+      verify(testPost.testHook1)(url, "POST", Some(testRequestBody), dummyResponseFuture)
+      verify(testPost.testHook2)(url, "POST", Some(testRequestBody), dummyResponseFuture)
     }
   }
 
@@ -149,8 +149,8 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPost = new StubbedHttpPost(dummyResponseFuture)
       await(testPost.POSTEmpty[TestClass](url))
 
-      verify(testPost.testHook1).executeHook(url, "POST", None, dummyResponseFuture)
-      verify(testPost.testHook2).executeHook(url, "POST", None, dummyResponseFuture)
+      verify(testPost.testHook1)(url, "POST", None, dummyResponseFuture)
+      verify(testPost.testHook2)(url, "POST", None, dummyResponseFuture)
     }
   }
 

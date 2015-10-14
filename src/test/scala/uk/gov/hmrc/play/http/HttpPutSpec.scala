@@ -63,8 +63,8 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
-      verify(testPut.testHook1).executeHook(url, "PUT", Some(testJson), dummyResponseFuture)
-      verify(testPut.testHook2).executeHook(url, "PUT", Some(testJson), dummyResponseFuture)
+      verify(testPut.testHook1)(url, "PUT", Some(testJson), dummyResponseFuture)
+      verify(testPut.testHook2)(url, "PUT", Some(testJson), dummyResponseFuture)
     }
   }
 }

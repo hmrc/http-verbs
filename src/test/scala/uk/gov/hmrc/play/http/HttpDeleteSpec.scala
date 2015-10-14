@@ -59,8 +59,8 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
       val testGet = new StubbedHttpDelete(dummyResponseFuture)
       await(testGet.DELETE(url))
 
-      verify(testGet.testHook1).executeHook(url, "DELETE", None, dummyResponseFuture)
-      verify(testGet.testHook2).executeHook(url, "DELETE", None, dummyResponseFuture)
+      verify(testGet.testHook1)(url, "DELETE", None, dummyResponseFuture)
+      verify(testGet.testHook2)(url, "DELETE", None, dummyResponseFuture)
     }
   }
 }

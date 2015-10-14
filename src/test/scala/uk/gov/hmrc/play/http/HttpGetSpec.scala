@@ -76,8 +76,8 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       val testGet = new StubbedHttpGet(dummyResponseFuture)
       await(testGet.GET(url))
 
-      verify(testGet.testHook1).executeHook(url, "GET", None, dummyResponseFuture)
-      verify(testGet.testHook2).executeHook(url, "GET", None, dummyResponseFuture)
+      verify(testGet.testHook1)(url, "GET", None, dummyResponseFuture)
+      verify(testGet.testHook2)(url, "GET", None, dummyResponseFuture)
     }
 
   }

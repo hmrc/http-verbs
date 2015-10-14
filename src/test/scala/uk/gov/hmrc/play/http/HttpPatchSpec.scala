@@ -64,8 +64,8 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
-      verify(testPatch.testHook1).executeHook(url, "PATCH", Some(testJson), dummyResponseFuture)
-      verify(testPatch.testHook2).executeHook(url, "PATCH", Some(testJson), dummyResponseFuture)
+      verify(testPatch.testHook1)(url, "PATCH", Some(testJson), dummyResponseFuture)
+      verify(testPatch.testHook2)(url, "PATCH", Some(testJson), dummyResponseFuture)
     }
   }
 }

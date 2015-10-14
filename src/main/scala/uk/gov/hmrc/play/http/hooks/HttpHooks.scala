@@ -21,17 +21,17 @@ import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 import scala.concurrent.Future
 
 trait HttpHook {
-  def executeHook(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(implicit hc: HeaderCarrier)
+  def apply(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(implicit hc: HeaderCarrier)
 }
 
 trait HttpHooks {
   val hooks: Seq[HttpHook]
 
   val NoneRequired = Seq(new HttpHook {
-    def executeHook(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(implicit hc: HeaderCarrier) = {}
+    def apply(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(implicit hc: HeaderCarrier) = {}
   })
 
   protected def executeHooks(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {
-    hooks.foreach(hook => hook.executeHook(url, verb, body, responseF))
+    hooks.foreach(hook => hook(url, verb, body, responseF))
   }
 }
