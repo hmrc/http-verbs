@@ -16,19 +16,22 @@
 
 package uk.gov.hmrc.play.http
 
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import play.twirl.api.Html
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.http.hooks.HttpHook
 import scala.concurrent.Future
 
-class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
+class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
 
   class StubbedHttpDelete(response: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
-    def auditConnector: AuditConnector = ???
-    def appName: String = ???
+    val testHook1 = mock[HttpHook]
+    val testHook2 = mock[HttpHook]
+    val hooks = Seq(testHook1, testHook2)
 
+    def appName: String = ???
     def doDelete(url: String)(implicit hc: HeaderCarrier) = response
   }
 
@@ -48,5 +51,16 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with CommonHttpBehaviour
     }
     behave like anErrorMappingHttpCall(DELETE, (url, responseF) => new StubbedHttpDelete(responseF).DELETE(url))
     behave like aTracingHttpCall(DELETE, "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }
+
+    "Invoke any hooks provided" in {
+      import uk.gov.hmrc.play.test.Concurrent.await
+
+      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
+      val testGet = new StubbedHttpDelete(dummyResponseFuture)
+      await(testGet.DELETE(url))
+
+      verify(testGet.testHook1)(url, "DELETE", None, dummyResponseFuture)
+      verify(testGet.testHook2)(url, "DELETE", None, dummyResponseFuture)
+    }
   }
 }

@@ -22,7 +22,7 @@ import org.slf4j.Logger
 import play.api.mvc._
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{LoggerLike, Routes}
-import uk.gov.hmrc.play.http.connector.DummyRequestHeader
+import uk.gov.hmrc.play.http.DummyRequestHeader
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 
 import scala.concurrent.Future

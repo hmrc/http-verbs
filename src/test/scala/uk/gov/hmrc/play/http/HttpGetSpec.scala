@@ -32,20 +32,24 @@
 
 package uk.gov.hmrc.play.http
 
+import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
-import play.api.libs.json._
 import play.twirl.api.Html
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.hooks.HttpHook
 
 import scala.concurrent.Future
 
-class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with CommonHttpBehaviour with IntegrationPatience {
+class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with CommonHttpBehaviour with IntegrationPatience with MockitoSugar {
 
-  class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends HttpGet with MockAuditing with ConnectionTracingCapturing {
+  class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends HttpGet with ConnectionTracingCapturing {
+    val testHook1 = mock[HttpHook]
+    val testHook2 = mock[HttpHook]
+    val hooks = Seq(testHook1, testHook2)
+
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
-    override protected def auditRequestWithResponseF(url: String, verb:String, body:Option[_] ,responseToAuditF: Future[HttpResponse])(implicit hc: HeaderCarrier)= {}
   }
 
   "HttpGet" should {
@@ -64,5 +68,19 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     }
     behave like anErrorMappingHttpCall(GET, (url, responseF) => new StubbedHttpGet(responseF).GET(url))
     behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(defaultHttpResponse)) { _.GET(url) }
+
+    "Invoke any hooks provided" in {
+      import uk.gov.hmrc.play.test.Concurrent.await
+
+      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
+      val testGet = new StubbedHttpGet(dummyResponseFuture)
+      await(testGet.GET(url))
+
+      verify(testGet.testHook1)(url, "GET", None, dummyResponseFuture)
+      verify(testGet.testHook2)(url, "GET", None, dummyResponseFuture)
+    }
+
   }
+
+
 }

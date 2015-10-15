@@ -22,7 +22,7 @@ import org.apache.commons.lang3.time.FastDateFormat
 import org.joda.time.DateTimeUtils
 import play.api.{LoggerLike, Logger}
 import play.api.mvc.{Filter, RequestHeader, Result}
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.{LoggingDetails, MdcLoggingExecutionContext}
 import MdcLoggingExecutionContext._
 
@@ -35,7 +35,7 @@ trait LoggingFilter extends Filter {
 
   protected def logger:LoggerLike = Logger
 
-  def buildLoggedHeaders(request: RequestHeader) = HeaderCarrier.fromHeaders(request.headers)
+  def buildLoggedHeaders(request: RequestHeader) = HeaderCarrier.fromHeadersAndSession(request.headers)
 
   def apply(next: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
     implicit val hc = buildLoggedHeaders(rh)

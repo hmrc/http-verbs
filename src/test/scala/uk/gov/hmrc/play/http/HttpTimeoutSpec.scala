@@ -25,13 +25,11 @@ import org.webbitserver.handler.{DelayedHttpHandler, StringHttpHandler}
 import org.webbitserver.netty.NettyWebServer
 import play.api.Play
 import play.api.test.FakeApplication
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import uk.gov.hmrc.play.http.ws.WSHttp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
-
 
   override def beforeAll() {
     super.beforeAll()
@@ -44,11 +42,12 @@ class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with 
     Play.stop()
   }
 
-
   "HttpCalls" should {
 
     "be gracefully timeout when no response is received within the 'timeout' frame" in {
-      val http = new WSHttp with MockAuditing
+      val http = new WSHttp {
+        override val hooks = NoneRequired
+      }
 
       // get an unused port
       val ss = new ServerSocket(0)

@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.play.connectors
 
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
 import play.api.Play.current
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 trait Connector {
 

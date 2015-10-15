@@ -7,11 +7,13 @@ http-verbs is a Scala library providing an interface to make asynchronous HTTP c
 
 It encapsulates some common concerns for calling other HTTP services on the HMRC Tax Platform, including:
 
-* Auditing
+* ~~Auditing~~
 * Logging
 * Propagation of common headers
 * Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be automatically propagated to the caller
 * Request & Response de-serialization
+
+**Auditing is no longer part of http-verbs, please see docs for [play-auditing](http://github.com/hmrc/play-auditing) for further info.**
 
 ## Adding to your build
 
@@ -34,15 +36,13 @@ Each verb is available as both an agnostic `Http___` trait and a play-specific `
 ```scala
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.ws._
-import audit.http.config._
-import audit.http.connector._
 
 trait ConnectorWithMixins extends HttpGet with HttpPost {
   
 }
+
 object ConnectorWithMixins extends ConnectorWithMixins with WSGet with WSPost {
   val appName = "my-app-name"
-  val auditConnector = AuditConnector(LoadAuditingConfig(key = "auditing"))
 }
 ```
 
@@ -51,21 +51,17 @@ or as `val`s:
 ```scala
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.ws._
-import audit.http.config._
-import audit.http.connector._
 
 trait ConnectorWithHttpValues {
   val http: HttpGet with HttpPost
 }
+
 object ConnectorWithHttpValues extends ConnectorWithHttpValues {
   val http = new WSGet with WSPost {
     val appName = "my-app-name"
-    val auditConnector = AuditConnector(LoadAuditingConfig(key = "auditing"))
   }
 }
 ```
-
-In both cases, you'll need to supply an [auditing configuration](#configuration). 
 
 #### Making HTTP Calls
 
@@ -162,26 +158,33 @@ http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html t
 ## Extension & Customisation
 Response handling is implemented via the `HttpReads[A]` typeclass, which is responsible for converting the raw response into either an exception or the specified type. Default implementations of `HttpReads[A]` have been provided in its companion object to cover common use cases, but clients may provide their own implementations if required. 
 
-## Configuration
+#### Hooks
 
-Request auditing is provided for all HTTP requests that are made using this library. Each request/response pair results in an audit message being created and sent to an external auditing service for processing.  To configure this service, your Play configuration file needs to include:
+You can now set up http-verbs to run a series of callbacks when the future representing an http request completes - these are known as hooks. Hooks are used by [play-auditing](http://github.com/hmrc/play-auditing) in order to wire up implicit auditing.
 
-```javascript
-auditing {
-  enabled = true
-  traceRequests = true
-  consumer {
-    baseUri {
-      host = ...
-      port = ...
+A hook looks like this:
+
+```scala
+object MyHook extends HttpHook {
+  override def apply(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(implicit hc: HeaderCarrier): Unit = {
+    responseF.map {
+      response => // do something on success
+    }.recover {
+      case e: Throwable => // do something on exception
     }
   }
 }
 ```
 
-```HttpAuditing``` provides ```def auditDisabledForPattern = ("""http://.*\.service""").r``` which client applications may chose to override when mixing in ```HttpAuditing```.
+And is registered with http-verbs like this:
 
-_NOTE:_ This configuration used to be provided by reading Play configuration property ```<env>.http-client.audit.disabled-for``` which is now obsolete.
+```scala
+object WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch {
+  override val hooks = Seq(MyHook, AnotherHook)
+  ...
+  ...
+}
+```
 
 ## License ##
  

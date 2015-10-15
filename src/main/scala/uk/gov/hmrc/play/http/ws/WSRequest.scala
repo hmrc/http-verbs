@@ -18,13 +18,13 @@ package uk.gov.hmrc.play.http.ws
 
 import play.api.Play
 import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer}
-import uk.gov.hmrc.play.audit.http.HeaderCarrier
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 trait WSRequest {
 
   import play.api.Play.current
   import play.api.libs.ws.WS
-  import uk.gov.hmrc.play.audit.http.HeaderCarrier
+  import uk.gov.hmrc.play.http.HeaderCarrier
 
   def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
     WS.url(url).withHeaders(hc.headers: _*)
