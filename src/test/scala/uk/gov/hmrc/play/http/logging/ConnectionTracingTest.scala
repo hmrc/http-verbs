@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.play.http.logging
 
-import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
