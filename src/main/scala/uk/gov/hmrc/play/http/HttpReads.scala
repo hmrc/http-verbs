@@ -63,7 +63,10 @@ trait JsonHttpReads extends HttpErrorFunctions {
       case 204 | 404 => Seq.empty
       case _ =>{
         val jsLookUp = handleResponse(method, url)(response).json \ name
-        readJson[Seq[O]](method, url, jsLookUp.get)
+        jsLookUp.validate[Seq[O]].fold(
+          errs => throw new JsValidationException(method, url, mf.runtimeClass, errs),
+          valid => valid
+        )
       }
     }
   }
