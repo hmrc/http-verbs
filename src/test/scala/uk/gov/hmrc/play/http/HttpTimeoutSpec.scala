@@ -31,15 +31,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
 
+  val fakeApplication = FakeApplication(additionalConfiguration = Map("ws.timeout.request" -> "1000"))
+
   override def beforeAll() {
     super.beforeAll()
-    val fakeApplication = FakeApplication(additionalConfiguration = Map("ws.timeout.request" -> "1000"))
     Play.start(fakeApplication)
   }
 
   override def afterAll() {
     super.afterAll()
-    Play.stop()
+    Play.stop(fakeApplication)
   }
 
   "HttpCalls" should {

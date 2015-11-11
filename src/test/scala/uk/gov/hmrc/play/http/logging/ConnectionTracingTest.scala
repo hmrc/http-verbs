@@ -16,25 +16,26 @@
 
 package uk.gov.hmrc.play.http.logging
 
-import org.mockito.Mockito
-import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.Logger
 import uk.gov.hmrc.play.http._
 
 import scala.util.{Failure, Success}
 
-class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {
+class ConnectionTracingTest extends WordSpecLike with Matchers {
 
-  val mockPlayLogger = mock[Logger]
+  def captureLogger() = new Logger(null) {
+    var capturedMessage : String = ""
 
-  val logger = new ConnectionTracing{
-    override lazy val connectionLogger = mockPlayLogger
+    override def debug(message: => String): Unit = capturedMessage = message
+
+    override def info(message: => String): Unit = capturedMessage = message
+
+    override def warn(message: => String): Unit = capturedMessage = message
   }
 
-  override def beforeEach() = {
-    reset(mockPlayLogger)
+  def connectionTracing = new ConnectionTracing{
+    override lazy val connectionLogger = captureLogger()
   }
 
   "logResult" should {
@@ -45,10 +46,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Success("response")
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).debug("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:ok")
-
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:ok"
     }
 
     "log 404 error as INFO" in {
@@ -57,10 +58,11 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new NotFoundException("not found"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed not found")
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed not found"
     }
 
     "log 404 upstream error as INFO" in {
@@ -69,9 +71,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new Upstream4xxResponse("404 error", 404, 404))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 404 error")
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 404 error"
 
     }
 
@@ -81,10 +84,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new Upstream4xxResponse("401 error", 401, 401))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 401 error")
-
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 401 error"
     }
 
     "log 400 error as WARN" in {
@@ -93,9 +96,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new BadRequestException("400 error"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 400 error")
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 400 error"
 
     }
 
@@ -105,10 +109,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new Upstream5xxResponse("500 error", 500, 500))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 500 error")
-
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 500 error"
     }
 
     "log 502 error as WARN" in {
@@ -117,9 +121,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new BadGatewayException("502 error"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 502 error")
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 502 error"
 
     }
 
@@ -129,10 +134,10 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
       val httpResult = Failure(new Exception("unknown error"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      val ct = connectionTracing
+      ct.logResult(ld, "GET", "/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed unknown error")
-
+      ct.connectionLogger.capturedMessage shouldBe "RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed unknown error"
     }
 
 

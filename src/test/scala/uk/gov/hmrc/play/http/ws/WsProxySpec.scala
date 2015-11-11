@@ -131,7 +131,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   override def afterAll() {
     super.afterAll()
-    Play.stop()
+    Play.stop(fakeApplication)
   }
 
 }
