@@ -19,10 +19,9 @@ package uk.gov.hmrc.play.http.filter
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 import org.slf4j.Logger
-import play.api.LoggerLike
 import play.api.mvc._
-import play.api.routing.Router
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import play.api.{LoggerLike, Routes}
 import uk.gov.hmrc.play.http.DummyRequestHeader
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 
@@ -72,7 +71,7 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
         override def controllerNeedsLogging(controllerName: String): Boolean = false
       }
 
-      await(requestWith(loggingFilter, Map(Router.Tags.RouteController -> "exists")))
+      await(requestWith(loggingFilter, Map(Routes.ROUTE_CONTROLLER -> "exists")))
 
       fakeLogger.lastInfoMessage shouldBe None
     }

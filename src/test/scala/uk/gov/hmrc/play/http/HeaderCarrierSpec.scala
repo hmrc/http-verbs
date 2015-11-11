@@ -67,7 +67,7 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
     }
   }
 
-  def headers(vals: (String, String)*) = FakeHeaders(vals)
+  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> Seq(v)})
 
   "Extracting the remaining header carrier values from the session and headers" should {
 

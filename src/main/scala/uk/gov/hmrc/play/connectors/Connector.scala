@@ -21,7 +21,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 trait Connector {
 
-  import play.api.libs.ws.{WS, WSRequest}
+  import play.api.libs.ws.{WS, WSRequestHolder}
 
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = WS.url(url).withHeaders(hc.headers: _*)
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder = WS.url(url).withHeaders(hc.headers: _*)
 }
