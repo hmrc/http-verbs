@@ -49,9 +49,9 @@ trait LoggingFilter extends Filter {
   }
 
   private def needsLogging(request: RequestHeader): Boolean = {
-    import play.api.Routes
+    import play.api.routing.Router
     (for {
-      name <- request.tags.get(Routes.ROUTE_CONTROLLER)
+      name <- request.tags.get(Router.Tags.RouteController)
     } yield controllerNeedsLogging(name)).getOrElse(true)
   }
 

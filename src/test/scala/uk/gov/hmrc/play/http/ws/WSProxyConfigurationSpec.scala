@@ -16,13 +16,16 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpecLike}
+import org.scalatest._
+import org.scalatest.concurrent.{Eventually, IntegrationPatience}
+import org.scalatestplus.play.{MixedFixtures, WsScalaTestClient}
 import play.api.libs.ws.DefaultWSProxyServer
-import play.api.test.{FakeApplication, WithApplication}
+import play.api.test.FakeApplication
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration.ProxyConfigurationException
 
+abstract class MixedPlayMatcherSpec extends fixture.WordSpec with Matchers with OptionValues with MixedFixtures with Eventually with IntegrationPatience with WsScalaTestClient
 
-class WSProxyConfigurationSpec extends WordSpecLike with Matchers with BeforeAndAfter {
+class WSProxyConfigurationSpec extends MixedPlayMatcherSpec with BeforeAndAfter {
 
   def proxyFlagConfiguredTo(value: Boolean): Map[String, Any] = Map("Dev.httpProxy.proxyRequiredForThisEnvironment" -> value)
 
@@ -33,42 +36,42 @@ class WSProxyConfigurationSpec extends WordSpecLike with Matchers with BeforeAnd
     "Dev.httpProxy.username" -> "user",
     "Dev.httpProxy.password" -> "secret") ++ flag.fold(Map.empty[String, Any])(flag => proxyFlagConfiguredTo(flag))
 
-  val proxy = DefaultWSProxyServer(
+  lazy val proxy = DefaultWSProxyServer(
     protocol = Some("https"),
     host = "localhost",
     port = 7979,
     principal = Some("user"),
     password = Some("secret")
   )
-  
+
   "If the proxyRequiredForThisEnvironment flag is not present, the WSProxyConfiguration apply method" should {
 
-    "fail if no proxy is defined" in new WithApplication(FakeApplication()) {
+    "fail if no proxy is defined" in new App(FakeApplication()) {
       a [ProxyConfigurationException] should be thrownBy WSProxyConfiguration("Dev.httpProxy")
     }
 
-    "return the proxy configuration if the proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(None))) {
+    "return the proxy configuration if the proxy is defined" in new App(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(None))) {
       WSProxyConfiguration("Dev.httpProxy") shouldBe Some(proxy)
     }
   }
 
   "If the proxyRequiredForThisEnvironment flag is set to true, the WSProxyConfiguration apply method" should {
 
-    "fail if no proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyFlagConfiguredTo(value = true))) {
+    "fail if no proxy is defined" in new App(FakeApplication(additionalConfiguration = proxyFlagConfiguredTo(value = true))) {
       a [ProxyConfigurationException] should be thrownBy WSProxyConfiguration("Dev.httpProxy")
     }
 
-    "return the proxy configuration if the proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(Some(true)))) {
+    "return the proxy configuration if the proxy is defined" in new App(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(Some(true)))) {
       WSProxyConfiguration("Dev.httpProxy") shouldBe Some(proxy)
     }
   }
 
   "If the proxyRequiredForThisEnvironment flag is set to false, the WSProxyConfiguration apply method" should {
-    "return None if no proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyFlagConfiguredTo(value = false))) {
+    "return None if no proxy is defined" in new App(FakeApplication(additionalConfiguration = proxyFlagConfiguredTo(value = false))) {
       WSProxyConfiguration("Dev.httpProxy") shouldBe None
     }
 
-    "return None if the proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(Some(false)))) {
+    "return None if the proxy is defined" in new App(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(Some(false)))) {
       WSProxyConfiguration("Dev.httpProxy") shouldBe None
     }
   }

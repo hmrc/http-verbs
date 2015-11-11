@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.play.http.logging
 
-import play.api.Logger
+import play.api.{LoggerLike, Logger}
 import uk.gov.hmrc.play.http.{Upstream4xxResponse, HttpException}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
@@ -25,7 +25,7 @@ import scala.util.{Failure, Success, Try}
 
 trait ConnectionTracing {
 
-  lazy val connectionLogger = Logger("connector")
+  lazy val connectionLogger : LoggerLike = Logger("connector")
 
   def withTracing[T](method: String, uri: String)(body: => Future[T])(implicit ld: LoggingDetails): Future[T] = {
     val startAge = ld.age
