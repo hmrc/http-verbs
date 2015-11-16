@@ -17,11 +17,21 @@
 package uk.gov.hmrc.play.connectors
 
 import play.api.Play.current
+import play.api.libs.ws.{WS, WSRequestHolder}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
-trait Connector {
+trait RequestBuilder {
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder
+}
 
-  import play.api.libs.ws.{WS, WSRequestHolder}
-
+trait PlayWSRequestBuilder extends RequestBuilder {
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder = WS.url(url).withHeaders(hc.headers: _*)
 }
+
+trait WSClientRequestBuilder extends RequestBuilder {
+  this: WSClientProvider =>
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder = client.url(url).withHeaders(hc.headers: _*)
+}
+
+@deprecated("Please use PlayWSRequestBuilder instead", "3.1.0")
+trait Connector extends PlayWSRequestBuilder

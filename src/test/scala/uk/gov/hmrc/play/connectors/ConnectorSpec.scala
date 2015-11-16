@@ -17,35 +17,48 @@
 package uk.gov.hmrc.play.connectors
 
 import org.scalatest.{Matchers, WordSpecLike}
+import play.api.Application
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.http.{Token, HeaderCarrier, HeaderNames}
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 class ConnectorSpec extends WordSpecLike with Matchers {
+  class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc:((=> Any) => Any)) {
+    def setup(f: => Any) = setupFunc(f)
+  }
+
+  val withFakeApp: ( => Any) => Any = running(FakeApplication())
+  def withoutFakeApp(f: => Any) = f
+
+  val permutations = Seq(new TestConfig("Deprecated Connector", new Connector{}, withFakeApp),
+                         new TestConfig("PlayWS Request Builder", new PlayWSRequestBuilder {}, withFakeApp),
+                         new TestConfig("WSClient Request Builder", new WSClientRequestBuilder with DefaultWSClientProvider {}, withoutFakeApp))
 
   "AuthConnector.buildRequest" should {
-    "add expected headers to the request" in running(FakeApplication()){
-      val testAuthorisation = Authorization("someauth")
-      val forwarded = ForwardedFor("forwarded")
-      val token = Token("token")
-      val sessionId = SessionId("session")
-      val requestId = RequestId("requestId")
+    permutations.foreach { p =>
+      s"add expected headers to the request using the ${p.builderName}" in p.setup {
+        val testAuthorisation = Authorization("someauth")
+        val forwarded = ForwardedFor("forwarded")
+        val token = Token("token")
+        val sessionId = SessionId("session")
+        val requestId = RequestId("requestId")
 
-      val carrier: HeaderCarrier = HeaderCarrier(
-        authorization = Some(testAuthorisation),
-        token = Some(token),
-        forwarded = Some(forwarded),
-        sessionId = Some(sessionId),
-        requestId = Some(requestId)
-      )
+        val carrier: HeaderCarrier = HeaderCarrier(
+          authorization = Some(testAuthorisation),
+          token = Some(token),
+          forwarded = Some(forwarded),
+          sessionId = Some(sessionId),
+          requestId = Some(requestId)
+        )
 
-      val request = new Connector {}.buildRequest("authBase")(carrier)
-      request.headers.get(HeaderNames.authorisation).flatMap(_.headOption) shouldBe Some(testAuthorisation.value)
-      request.headers.get(HeaderNames.xForwardedFor).flatMap(_.headOption) shouldBe Some(forwarded.value)
-      request.headers.get(HeaderNames.token).flatMap(_.headOption) shouldBe Some(token.value)
-      request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption) shouldBe Some(sessionId.value)
-      request.headers.get(HeaderNames.xRequestId).flatMap(_.headOption) shouldBe Some(requestId.value)
+        val request = p.builder.buildRequest("authBase")(carrier)
+        request.headers.get(HeaderNames.authorisation).flatMap(_.headOption) shouldBe Some(testAuthorisation.value)
+        request.headers.get(HeaderNames.xForwardedFor).flatMap(_.headOption) shouldBe Some(forwarded.value)
+        request.headers.get(HeaderNames.token).flatMap(_.headOption) shouldBe Some(token.value)
+        request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption) shouldBe Some(sessionId.value)
+        request.headers.get(HeaderNames.xRequestId).flatMap(_.headOption) shouldBe Some(requestId.value)
+      }
     }
   }
 }
