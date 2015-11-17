@@ -17,8 +17,9 @@
 package uk.gov.hmrc.play.http
 
 import org.scalatest.{Matchers, WordSpecLike}
-import play.api.mvc.Session
-import play.api.test.FakeHeaders
+import play.api.mvc.{Cookie, Action, Controller, Session}
+import play.api.test.{FakeRequest, FakeApplication, FakeHeaders}
+import play.api.test.Helpers._
 import uk.gov.hmrc.play.http.HeaderCarrier.fromHeadersAndSession
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
@@ -103,6 +104,7 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
     "ignore the sessionId when it is not present in the headers nor session" in {
       fromHeadersAndSession(headers(), Some(Session(Map.empty))).sessionId shouldBe None
     }
+
   }
 
   "build Google Analytics headers from request" should {
@@ -114,4 +116,24 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
     }
 
   }
+
+  "utilise values from cookies" should {
+
+    object TestController extends Controller {
+      def index = Action { req =>
+        fromHeadersAndSession(req.headers, Some(req.session)).deviceID shouldBe Some("deviceIdCookie")
+        Ok("Test")
+      }
+    }
+
+    "find the deviceID from the cookie" in running(FakeApplication()) {
+      TestController.index(FakeRequest().withCookies(Cookie(CookieNames.deviceID, "deviceIdCookie")))
+    }
+
+    "find the deviceID from the headers if the cookie is not set such as in an internal microservice call" in {
+      fromHeadersAndSession(headers(HeaderNames.deviceID -> "deviceIdTest"), Some(Session(Map.empty))).deviceID shouldBe Some("deviceIdTest")
+    }
+
+  }
+
 }
