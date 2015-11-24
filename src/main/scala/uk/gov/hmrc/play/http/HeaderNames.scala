@@ -33,6 +33,11 @@ object HeaderNames {
   val otacAuthorization = "Otac-Authorization"
   val googleAnalyticTokenId = "ga-token"
   val googleAnalyticUserId  = "ga-user-cookie-id"
+  val deviceID  = "deviceID" // not a typo, should be ID
+}
+
+object CookieNames {
+  val deviceID = "mdtpdi"
 }
 
 object SessionKeys {

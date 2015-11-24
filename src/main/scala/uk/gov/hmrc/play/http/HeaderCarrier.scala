@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
-import play.api.mvc.{Headers, Session}
+import play.api.mvc.{Cookies, Headers, Session}
 import uk.gov.hmrc.play.http.logging._
 
 import scala.util.Try
@@ -37,7 +37,8 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None,
                          gaToken: Option[String] = None,
-                         gaUserId: Option[String] = None) extends  LoggingDetails with HeaderProvider {
+                         gaUserId: Option[String] = None,
+                         deviceID: Option[String] = None) extends  LoggingDetails with HeaderProvider {
 
   /**
    * @return the time, in nanoseconds, since this header carrier was created
@@ -56,7 +57,8 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       trueClientIp.map(HeaderNames.trueClientIp ->_),
       trueClientPort.map(HeaderNames.trueClientPort ->_),
       gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
-      gaUserId.map(HeaderNames.googleAnalyticUserId ->_)
+      gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
+      deviceID.map(HeaderNames.deviceID -> _)
     ).flatten.toList ++ extraHeaders
   }
 
@@ -68,14 +70,17 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
 object HeaderCarrier {
 
   def fromHeadersAndSession(headers: Headers, session: Option[Session]=None) = {
-    session.fold(fromHeaderss(headers)) {
-       fromSession(headers, _)
+    lazy val cookies: Cookies = Cookies(headers.get(play.api.http.HeaderNames.COOKIE))
+    session.fold(fromHeaders(headers)) {
+       fromSession(headers, cookies, _)
     }
   }
 
   private def getSessionId(s: Session, headers: Headers) = s.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
 
-  private def fromHeaderss(headers: Headers): HeaderCarrier = {
+  private def getDeviceId(c: Cookies, headers: Headers) = c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
+
+  private def fromHeaders(headers: Headers): HeaderCarrier = {
     HeaderCarrier(
       headers.get(HeaderNames.authorisation).map(Authorization),
       None,
@@ -89,11 +94,12 @@ object HeaderCarrier {
       headers.get(HeaderNames.trueClientIp),
       headers.get(HeaderNames.trueClientPort),
       headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId)
+      headers.get(HeaderNames.googleAnalyticUserId),
+      headers.get(HeaderNames.deviceID)
     )
   }
 
-  private def fromSession(headers: Headers, s: Session): HeaderCarrier = {
+  private def fromSession(headers: Headers, cookies: Cookies, s: Session): HeaderCarrier = {
     HeaderCarrier(
       s.get(SessionKeys.authToken).map(Authorization),
       s.get(SessionKeys.userId).map(UserId),
@@ -107,7 +113,8 @@ object HeaderCarrier {
       headers.get(HeaderNames.trueClientIp),
       headers.get(HeaderNames.trueClientPort),
       headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId)
+      headers.get(HeaderNames.googleAnalyticUserId),
+      getDeviceId(cookies, headers)
     )
   }
 

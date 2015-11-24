@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play.connectors
 
 import org.scalatest.{Matchers, WordSpecLike}
-import play.api.Application
+
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.http.{Token, HeaderCarrier, HeaderNames}
@@ -43,13 +43,15 @@ class ConnectorSpec extends WordSpecLike with Matchers {
         val token = Token("token")
         val sessionId = SessionId("session")
         val requestId = RequestId("requestId")
+        val deviceID = "deviceIdTest"
 
         val carrier: HeaderCarrier = HeaderCarrier(
           authorization = Some(testAuthorisation),
           token = Some(token),
           forwarded = Some(forwarded),
           sessionId = Some(sessionId),
-          requestId = Some(requestId)
+          requestId = Some(requestId),
+          deviceID = Some(deviceID)
         )
 
         val request = p.builder.buildRequest("authBase")(carrier)
@@ -58,6 +60,7 @@ class ConnectorSpec extends WordSpecLike with Matchers {
         request.headers.get(HeaderNames.token).flatMap(_.headOption) shouldBe Some(token.value)
         request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption) shouldBe Some(sessionId.value)
         request.headers.get(HeaderNames.xRequestId).flatMap(_.headOption) shouldBe Some(requestId.value)
+        request.headers.get(HeaderNames.deviceID).flatMap(_.headOption) shouldBe Some(deviceID)
       }
     }
   }
