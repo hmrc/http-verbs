@@ -26,10 +26,11 @@ class WSRequestSpec extends WordSpecLike with Matchers {
 
   "buildRequest" should {
 
-    "create a WSRequestBuilder with the right URL and Http headers" in running(FakeApplication()) {
+    "create a WSRequestBuilder that contains the values passed in by header-carrier" in running(FakeApplication()) {
       val url = "http://test.me"
 
-      implicit val hc = HeaderCarrier(authorization = Some(Authorization("auth")),
+      implicit val hc = HeaderCarrier(
+        authorization = Some(Authorization("auth")),
         sessionId = Some(SessionId("session")),
         requestId = Some(RequestId("request")),
         token = Some(Token("token")),
@@ -46,6 +47,15 @@ class WSRequestSpec extends WordSpecLike with Matchers {
 
       result.url shouldBe url
     }
+
+    "create a WSRequestBuilder with a User-Agent header that has the 'appName' config value as it's value" in
+      running(FakeApplication(additionalConfiguration = Map("appName" -> "test-client"))) {
+
+      val wsRequest = new WSRequest {}.buildRequest("http://test.me")(HeaderCarrier())
+
+      wsRequest.headers("User-Agent").head shouldBe "test-client"
+    }
+
 
   }
 

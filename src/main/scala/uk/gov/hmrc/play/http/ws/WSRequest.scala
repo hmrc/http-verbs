@@ -27,7 +27,12 @@ trait WSRequest {
   import uk.gov.hmrc.play.http.HeaderCarrier
 
   def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
-    WS.url(url).withHeaders(hc.headers: _*)
+    val agentHeader = Play.maybeApplication
+      .flatMap(_.configuration.getString("appName"))
+      .map(name => "User-Agent" -> name)
+      .toList
+
+    WS.url(url).withHeaders(agentHeader ++ hc.headers: _*)
   }
 }
 
