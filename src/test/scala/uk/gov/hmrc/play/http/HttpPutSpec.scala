@@ -23,6 +23,7 @@ import play.api.http.HttpVerbs._
 import play.api.libs.json.{Json, Writes}
 import play.twirl.api.Html
 import uk.gov.hmrc.play.http.hooks.HttpHook
+
 import scala.concurrent.Future
 
 class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
@@ -32,7 +33,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
+    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
   }
 
   "HttpPut" should {
@@ -44,15 +45,17 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     }
     "be able to return HTML responses" in new HtmlHttpReads {
       val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testPut.PUT(url, testObject).futureValue should be (an [Html])
+      testPut.PUT(url, testObject).futureValue should be(an[Html])
     }
     "be able to return objects deserialised from JSON" in {
-      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
+      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse( """{"foo":"t","bar":10}""", 200)))
+      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(PUT, (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
-    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
+    behave like aTracingHttpCall(PUT, "PUT", new StubbedHttpPut(defaultHttpResponse)) {
+      _.PUT(url, testObject)
+    }
 
     "Invoke any hooks provided" in {
       import uk.gov.hmrc.play.test.Concurrent.await

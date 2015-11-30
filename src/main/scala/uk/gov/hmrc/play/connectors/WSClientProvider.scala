@@ -25,10 +25,10 @@ trait WSClientProvider {
 
 trait DefaultWSClientProvider extends WSClientProvider {
   val clientConfig = new DefaultWSClientConfig()
-  val secureDefaults:com.ning.http.client.AsyncHttpClientConfig = new NingAsyncHttpClientConfigBuilder(clientConfig).build()
+  val secureDefaults: com.ning.http.client.AsyncHttpClientConfig = new NingAsyncHttpClientConfigBuilder(clientConfig).build()
   val builder = new com.ning.http.client.AsyncHttpClientConfig.Builder(secureDefaults)
   builder.setCompressionEnabled(true)
-  val secureDefaultsWithSpecificOptions:com.ning.http.client.AsyncHttpClientConfig = builder.build()
+  val secureDefaultsWithSpecificOptions: com.ning.http.client.AsyncHttpClientConfig = builder.build()
 
   implicit val client = new play.api.libs.ws.ning.NingWSClient(secureDefaultsWithSpecificOptions)
 }

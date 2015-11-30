@@ -22,6 +22,7 @@ import org.scalatest.{Matchers, WordSpecLike}
 import play.api.http.HttpVerbs._
 import play.twirl.api.Html
 import uk.gov.hmrc.play.http.hooks.HttpHook
+
 import scala.concurrent.Future
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
@@ -32,6 +33,7 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     val hooks = Seq(testHook1, testHook2)
 
     def appName: String = ???
+
     def doDelete(url: String)(implicit hc: HeaderCarrier) = response
   }
 
@@ -43,14 +45,16 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     }
     "be able to return HTML responses" in new HtmlHttpReads {
       val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testDelete.DELETE(url).futureValue should be (an [Html])
+      testDelete.DELETE(url).futureValue should be(an[Html])
     }
     "be able to return objects deserialised from JSON" in {
-      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testDelete.DELETE[TestClass](url).futureValue should be (TestClass("t", 10))
+      val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse( """{"foo":"t","bar":10}""", 200)))
+      testDelete.DELETE[TestClass](url).futureValue should be(TestClass("t", 10))
     }
     behave like anErrorMappingHttpCall(DELETE, (url, responseF) => new StubbedHttpDelete(responseF).DELETE(url))
-    behave like aTracingHttpCall(DELETE, "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }
+    behave like aTracingHttpCall(DELETE, "DELETE", new StubbedHttpDelete(defaultHttpResponse)) {
+      _.DELETE(url)
+    }
 
     "Invoke any hooks provided" in {
       import uk.gov.hmrc.play.test.Concurrent.await

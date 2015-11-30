@@ -32,8 +32,8 @@ object HeaderNames {
   val surrogate = "Surrogate"
   val otacAuthorization = "Otac-Authorization"
   val googleAnalyticTokenId = "ga-token"
-  val googleAnalyticUserId  = "ga-user-cookie-id"
-  val deviceID  = "deviceID" // not a typo, should be ID
+  val googleAnalyticUserId = "ga-user-cookie-id"
+  val deviceID = "deviceID" // not a typo, should be ID
 }
 
 object CookieNames {

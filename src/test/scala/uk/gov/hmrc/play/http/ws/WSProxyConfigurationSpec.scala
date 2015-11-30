@@ -40,11 +40,11 @@ class WSProxyConfigurationSpec extends WordSpecLike with Matchers with BeforeAnd
     principal = Some("user"),
     password = Some("secret")
   )
-  
+
   "If the proxyRequiredForThisEnvironment flag is not present, the WSProxyConfiguration apply method" should {
 
     "fail if no proxy is defined" in new WithApplication(FakeApplication()) {
-      a [ProxyConfigurationException] should be thrownBy WSProxyConfiguration("Dev.httpProxy")
+      a[ProxyConfigurationException] should be thrownBy WSProxyConfiguration("Dev.httpProxy")
     }
 
     "return the proxy configuration if the proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(None))) {
@@ -55,7 +55,7 @@ class WSProxyConfigurationSpec extends WordSpecLike with Matchers with BeforeAnd
   "If the proxyRequiredForThisEnvironment flag is set to true, the WSProxyConfiguration apply method" should {
 
     "fail if no proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyFlagConfiguredTo(value = true))) {
-      a [ProxyConfigurationException] should be thrownBy WSProxyConfiguration("Dev.httpProxy")
+      a[ProxyConfigurationException] should be thrownBy WSProxyConfiguration("Dev.httpProxy")
     }
 
     "return the proxy configuration if the proxy is defined" in new WithApplication(FakeApplication(additionalConfiguration = proxyConfigWithFlagSetTo(Some(true)))) {

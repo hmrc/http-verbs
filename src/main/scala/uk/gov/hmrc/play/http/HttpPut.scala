@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.play.http
 
-import play.api.libs.json.{Json, Writes}
 import play.api.http.HttpVerbs.{PUT => PUT_VERB}
-import uk.gov.hmrc.play.http.hooks.{HttpHook, HttpHooks}
-import uk.gov.hmrc.play.http.logging.{MdcLoggingExecutionContext, ConnectionTracing}
-import MdcLoggingExecutionContext._
+import play.api.libs.json.{Json, Writes}
+import uk.gov.hmrc.play.http.hooks.HttpHooks
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.logging.{ConnectionTracing, MdcLoggingExecutionContext}
 
 import scala.concurrent.Future
 

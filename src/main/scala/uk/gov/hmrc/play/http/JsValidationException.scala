@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.play.http
 
-import play.api.libs.json.JsPath
 import play.api.data.validation.ValidationError
+import play.api.libs.json.JsPath
 
 class JsValidationException(val method: String,
                             val url: String,

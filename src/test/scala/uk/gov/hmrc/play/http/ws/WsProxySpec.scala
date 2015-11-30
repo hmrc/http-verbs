@@ -35,6 +35,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       object ProxiedGet extends WSGet with WSProxy {
         override val hooks = NoneRequired
+
         def wsProxyServer = Some(DefaultWSProxyServer(host = host, port = proxyPort))
       }
 
@@ -56,6 +57,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       object ProxiedGet extends WSGet with WSProxy {
         override val hooks = NoneRequired
+
         def wsProxyServer = None
       }
 
@@ -104,8 +106,8 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     def setupEndpointExpectations() {
       endpointMock.register(get(urlEqualTo(resourcePath))
         .willReturn(aResponse()
-        .withHeader("Content-Type", "text/plain")
-        .withBody(responseData)))
+          .withHeader("Content-Type", "text/plain")
+          .withBody(responseData)))
 
       proxyMock.register(get(urlMatching(resourcePath))
         .willReturn(aResponse().proxiedFrom(endpointBaseUrl)))

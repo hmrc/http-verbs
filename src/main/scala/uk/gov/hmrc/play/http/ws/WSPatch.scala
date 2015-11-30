@@ -25,6 +25,6 @@ import scala.concurrent.Future
 trait WSPatch extends HttpPatch with WSRequest {
 
   def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    buildRequest(url).patch(Json.toJson(body)).map (new WSHttpResponse(_))
+    buildRequest(url).patch(Json.toJson(body)).map(new WSHttpResponse(_))
   }
 }

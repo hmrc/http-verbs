@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.play.http.filter
 
-import org.slf4j.{Marker, Logger}
+import org.slf4j.{Logger, Marker}
 
-trait FakeLogger extends Logger{
+trait FakeLogger extends Logger {
   override def warn(s: String): Unit = ???
 
   override def warn(s: String, o: scala.Any): Unit = ???

@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.play.http.logging
 
-import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
@@ -29,7 +28,7 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
   val mockPlayLogger = mock[Logger]
 
-  val logger = new ConnectionTracing{
+  val logger = new ConnectionTracing {
     override lazy val connectionLogger = mockPlayLogger
   }
 
@@ -134,7 +133,6 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed unknown error")
 
     }
-
 
 
   }

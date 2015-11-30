@@ -17,25 +17,25 @@
 package uk.gov.hmrc.play.http.ws
 
 import play.api.libs.json.{Json, Writes}
+import play.api.mvc.Results
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost, HttpResponse}
-import MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
-import play.api.mvc.Results
 
 
 trait WSPost extends HttpPost with WSRequest {
 
-  override def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     buildRequest(url).withHeaders(headers: _*).post(Json.toJson(body)).map(new WSHttpResponse(_))
   }
 
-  override def doFormPost(url: String, body: Map[String,Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     buildRequest(url).post(body).map(new WSHttpResponse(_))
   }
 
-  override def doPostString(url: String, body: String, headers: Seq[(String,String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     buildRequest(url).withHeaders(headers: _*).post(body).map(new WSHttpResponse(_))
   }
 

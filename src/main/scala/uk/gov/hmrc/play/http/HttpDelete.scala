@@ -16,19 +16,21 @@
 
 package uk.gov.hmrc.play.http
 
-import play.api.http.HttpVerbs.{DELETE => DELETE_VERB, _}
+import play.api.http.HttpVerbs.{DELETE => DELETE_VERB}
 import uk.gov.hmrc.play.http.hooks.HttpHooks
-import uk.gov.hmrc.play.http.logging.{MdcLoggingExecutionContext, ConnectionTracing}
+import uk.gov.hmrc.play.http.logging.ConnectionTracing
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+
 import scala.concurrent.Future
-import MdcLoggingExecutionContext._
 
 trait HttpDelete extends HttpVerb with ConnectionTracing with HttpHooks {
 
   protected def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  def DELETE[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier): Future[O] = withTracing(DELETE_VERB, url) {
-    val httpResponse = doDelete(url)
-    executeHooks(url, DELETE_VERB, None, httpResponse)
-    mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
-  }
+  def DELETE[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier): Future[O] =
+    withTracing(DELETE_VERB, url) {
+      val httpResponse = doDelete(url)
+      executeHooks(url, DELETE_VERB, None, httpResponse)
+      mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
+    }
 }

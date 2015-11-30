@@ -30,9 +30,11 @@ import scala.concurrent.Future
 trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
   case class TestClass(foo: String, bar: Int)
+
   implicit val tcreads = Json.format[TestClass]
 
   case class TestRequestClass(baz: String, bar: Int)
+
   implicit val trcreads = Json.format[TestRequestClass]
 
   implicit val hc = HeaderCarrier()
@@ -44,7 +46,7 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
   val defaultHttpResponse = response()
 
-  def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_])= {
+  def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_]) = {
     s"throw a GatewayTimeout exception when the HTTP $verb throws a TimeoutException" in {
 
       implicit val hc = HeaderCarrier()
@@ -52,7 +54,7 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
       val e = httpCall(url, Future.failed(new TimeoutException("timeout"))).failed.futureValue
 
-      e should be (a [GatewayTimeoutException])
+      e should be(a[GatewayTimeoutException])
       e.getMessage should startWith(verb)
       e.getMessage should include(url)
     }
@@ -64,7 +66,7 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
       val e = httpCall(url, Future.failed(new ConnectException("timeout"))).failed.futureValue
 
-      e should be (a [BadGatewayException])
+      e should be(a[BadGatewayException])
       e.getMessage should startWith(verb)
       e.getMessage should include(url)
     }

@@ -17,23 +17,24 @@
 package uk.gov.hmrc.play.connectors
 
 import org.scalatest.{Matchers, WordSpecLike}
-
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.http.{Token, HeaderCarrier, HeaderNames}
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HeaderNames, Token}
 
 class ConnectorSpec extends WordSpecLike with Matchers {
-  class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc:((=> Any) => Any)) {
+
+  class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc: ((=> Any) => Any)) {
     def setup(f: => Any) = setupFunc(f)
   }
 
-  val withFakeApp: ( => Any) => Any = running(FakeApplication())
+  val withFakeApp: (=> Any) => Any = running(FakeApplication())
+
   def withoutFakeApp(f: => Any) = f
 
-  val permutations = Seq(new TestConfig("Deprecated Connector", new Connector{}, withFakeApp),
-                         new TestConfig("PlayWS Request Builder", new PlayWSRequestBuilder {}, withFakeApp),
-                         new TestConfig("WSClient Request Builder", new WSClientRequestBuilder with DefaultWSClientProvider {}, withoutFakeApp))
+  val permutations = Seq(new TestConfig("Deprecated Connector", new Connector {}, withFakeApp),
+    new TestConfig("PlayWS Request Builder", new PlayWSRequestBuilder {}, withFakeApp),
+    new TestConfig("WSClient Request Builder", new WSClientRequestBuilder with DefaultWSClientProvider {}, withoutFakeApp))
 
   "AuthConnector.buildRequest" should {
     permutations.foreach { p =>

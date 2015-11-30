@@ -62,7 +62,7 @@ class RestFormatsSpec extends WordSpecLike with Matchers {
       val json = JsString("1994-05-01")
       val expectedDate = new LocalDate(1994, 5, 1)
 
-      val JsSuccess(result, _) =RestFormats.localDateRead.reads(json)
+      val JsSuccess(result, _) = RestFormats.localDateRead.reads(json)
       result shouldBe expectedDate
     }
 

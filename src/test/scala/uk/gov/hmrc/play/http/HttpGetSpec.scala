@@ -60,14 +60,16 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     }
     "be able to return HTML responses" in new HtmlHttpReads {
       val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testGet.GET(url).futureValue should be (an [Html])
+      testGet.GET(url).futureValue should be(an[Html])
     }
     "be able to return objects deserialised from JSON" in {
-      val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testGet.GET[TestClass](url).futureValue should be (TestClass("t", 10))
+      val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse( """{"foo":"t","bar":10}""", 200)))
+      testGet.GET[TestClass](url).futureValue should be(TestClass("t", 10))
     }
     behave like anErrorMappingHttpCall(GET, (url, responseF) => new StubbedHttpGet(responseF).GET(url))
-    behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(defaultHttpResponse)) { _.GET(url) }
+    behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(defaultHttpResponse)) {
+      _.GET(url)
+    }
 
     "Invoke any hooks provided" in {
       import uk.gov.hmrc.play.test.Concurrent.await

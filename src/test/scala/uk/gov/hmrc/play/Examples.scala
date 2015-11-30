@@ -26,6 +26,7 @@ object Examples {
   trait ConnectorWithHttpValues {
     val http: HttpGet with HttpPost
   }
+
   object ConnectorWithHttpValues extends ConnectorWithHttpValues {
     val http = new WSGet with WSPost {
       val hooks = NoneRequired
@@ -50,7 +51,8 @@ object Examples {
     http.PUT("http://gov.uk/hmrc", body = "hi there")
     http.PATCH("http://gov.uk/hmrc", body = "hi there")
 
-    val r1 = http.GET("http://gov.uk/hmrc") // Returns an HttpResponse
+    val r1 = http.GET("http://gov.uk/hmrc")
+    // Returns an HttpResponse
     val r2 = http.GET[HttpResponse]("http://gov.uk/hmrc") // Can specify this explicitly
     r1.map { r =>
       r.status
@@ -59,14 +61,18 @@ object Examples {
     }
 
     import play.api.libs.json._
+
     case class MyCaseClass(a: String, b: Int)
+
     implicit val f = Json.reads[MyCaseClass]
     http.GET[MyCaseClass]("http://gov.uk/hmrc") // Returns an MyCaseClass de-serialised from JSON
 
     import play.twirl.api.Html
+
     http.GET[Html]("http://gov.uk/hmrc") // Returns a Play Html type
 
     http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON
     http.GET[Option[Html]]("http://gov.uk/hmrc") // Returns a None, or a Play Html type
   }
+
 }

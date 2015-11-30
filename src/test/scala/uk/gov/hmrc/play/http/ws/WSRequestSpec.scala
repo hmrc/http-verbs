@@ -19,8 +19,8 @@ package uk.gov.hmrc.play.http.ws
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.http.{Token, HeaderCarrier}
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
+import uk.gov.hmrc.play.http.{HeaderCarrier, Token}
 
 class WSRequestSpec extends WordSpecLike with Matchers {
 
@@ -51,10 +51,10 @@ class WSRequestSpec extends WordSpecLike with Matchers {
     "create a WSRequestBuilder with a User-Agent header that has the 'appName' config value as it's value" in
       running(FakeApplication(additionalConfiguration = Map("appName" -> "test-client"))) {
 
-      val wsRequest = new WSRequest {}.buildRequest("http://test.me")(HeaderCarrier())
+        val wsRequest = new WSRequest {}.buildRequest("http://test.me")(HeaderCarrier())
 
-      wsRequest.headers("User-Agent").head shouldBe "test-client"
-    }
+        wsRequest.headers("User-Agent").head shouldBe "test-client"
+      }
 
 
   }

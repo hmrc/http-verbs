@@ -42,7 +42,7 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
       }
     }
 
-    def requestWith(loggingFilter:LoggingFilter, someTags:Map[String, String] = Map())={
+    def requestWith(loggingFilter: LoggingFilter, someTags: Map[String, String] = Map()) = {
       loggingFilter.apply(rh => Future.successful(Results.NoContent))(new DummyRequestHeader() {
         override def tags = someTags
       })
@@ -53,6 +53,7 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
 
       val loggingFilter = new LoggingFilter() {
         override def logger = fakeLogger
+
         override def controllerNeedsLogging(controllerName: String): Boolean = true
       }
 
@@ -68,6 +69,7 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
 
       val loggingFilter = new LoggingFilter() {
         override def logger = fakeLogger
+
         override def controllerNeedsLogging(controllerName: String): Boolean = false
       }
 
