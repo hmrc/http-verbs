@@ -23,8 +23,8 @@ import org.joda.time.DateTimeUtils
 import play.api.mvc.{Filter, RequestHeader, Result}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.logging.LoggingDetails
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.http.logging.{LoggingDetails, MdcLoggingExecutionContext}
 
 import scala.concurrent.Future
 

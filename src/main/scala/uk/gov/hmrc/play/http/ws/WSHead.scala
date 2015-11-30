@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http
+package uk.gov.hmrc.play.http.ws
 
-import play.api.http.HttpVerbs.{GET => GET_VERB}
-import uk.gov.hmrc.play.http.hooks.HttpHooks
-import uk.gov.hmrc.play.http.logging.ConnectionTracing
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.{HttpHead, HeaderCarrier, HttpGet, HttpResponse}
 
 import scala.concurrent.Future
 
-trait HttpGet extends HttpVerb with ConnectionTracing with HttpHooks {
+trait WSHead extends HttpHead with WSRequest {
 
-  protected def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
-
-  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
-    withTracing(GET_VERB, url) {
-      val httpResponse = doGet(url)
-      executeHooks(url, GET_VERB, None, httpResponse)
-      mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
-    }
+  def doHead(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    buildRequest(url).get().map(new WSHttpResponse(_))
+  }
 }

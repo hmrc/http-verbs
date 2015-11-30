@@ -17,7 +17,6 @@
 package uk.gov.hmrc.play.http.ws
 
 import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPut, HttpResponse}
 

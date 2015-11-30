@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpDelete, HttpResponse}
 

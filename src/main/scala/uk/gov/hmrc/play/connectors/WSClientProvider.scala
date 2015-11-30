@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.play.connectors
 
-import play.api.libs.ws.{WSClient, DefaultWSClientConfig}
 import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
+import play.api.libs.ws.{DefaultWSClientConfig, WSClient}
 
 trait WSClientProvider {
   implicit val client: WSClient

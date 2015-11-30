@@ -16,22 +16,21 @@
 
 package uk.gov.hmrc.play.http
 
-import play.api.http.HttpVerbs.{PUT => PUT_VERB}
-import play.api.libs.json.{Json, Writes}
+import play.api.http.HttpVerbs.{HEAD => HEAD_VERB}
 import uk.gov.hmrc.play.http.hooks.HttpHooks
 import uk.gov.hmrc.play.http.logging.ConnectionTracing
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
 
-trait HttpPut extends HttpVerb with ConnectionTracing with HttpHooks {
-  protected def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
+trait HttpHead extends HttpVerb with ConnectionTracing with HttpHooks {
 
-  def PUT[I, O](url: String, body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
-    withTracing(PUT_VERB, url) {
-      val httpResponse = doPut(url, body)
-      executeHooks(url, PUT_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
-      mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
+  protected def doHead(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
+
+  def HEAD[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
+    withTracing(HEAD_VERB, url) {
+      val httpResponse = doHead(url)
+      executeHooks(url, HEAD_VERB, None, httpResponse)
+      mapErrors(HEAD_VERB, url, httpResponse).map(response => rds.read(HEAD_VERB, url, response))
     }
-  }
 }
