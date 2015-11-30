@@ -39,12 +39,13 @@ trait HttpResponse {
 object HttpResponse {
   def apply(responseStatus: Int, responseJson: Option[JsValue] = None, responseHeaders: Map[String, Seq[String]] = Map.empty, responseString: Option[String] = None) =
     new HttpResponse {
+      override def status: Int = responseStatus
+
       override def allHeaders: Map[String, Seq[String]] = responseHeaders
 
-      override def body: String = responseString orElse responseJson.map(Json.prettyPrint) orNull
-
+      // nullable value follows the design of WSResponse
       override def json: JsValue = responseJson.orNull
 
-      override def status: Int = responseStatus
+      override def body: String = responseString orElse responseJson.map(Json.prettyPrint) orNull
     }
 }

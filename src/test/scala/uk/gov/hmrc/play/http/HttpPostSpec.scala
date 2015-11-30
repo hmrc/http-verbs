@@ -34,13 +34,13 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier) = doPostResult
+    def doPost[A](url: String, body: A, precondition: Precondition, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier) = doPostResult
 
-    def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult
+    def doFormPost(url: String, body: Map[String, Seq[String]], precondition: Precondition)(implicit hc: HeaderCarrier) = doPostResult
 
-    def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doPostResult
+    def doPostString(url: String, body: String, precondition: Precondition, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doPostResult
 
-    def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
+    def doEmptyPost[A](url: String, precondition: Precondition)(implicit hc: HeaderCarrier) = doPostResult
   }
 
   "HttpPost.POST" should {

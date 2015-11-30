@@ -33,7 +33,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
+    def doPut[A](url: String, body: A, precondition: Precondition)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
   }
 
   "HttpPut" should {

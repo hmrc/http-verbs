@@ -49,7 +49,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
+    override def doGet(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
   }
 
   "HttpGet" should {

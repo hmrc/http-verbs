@@ -23,6 +23,7 @@ import play.api.Play
 import play.api.libs.ws.DefaultWSProxyServer
 import play.api.test.FakeApplication
 import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.Precondition._
 import uk.gov.hmrc.play.test.Concurrent.await
 
 class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -42,7 +43,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       withServers {
         setupEndpointExpectations()
 
-        val responseFuture = ProxiedGet.doGet(fullResourceUrl)
+        val responseFuture = ProxiedGet.doGet(fullResourceUrl, NoPrecondition)
 
         await(responseFuture).body shouldBe responseData
 
@@ -64,7 +65,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       withServers {
         setupEndpointExpectations()
 
-        val responseFuture = ProxiedGet.doGet(fullResourceUrl)
+        val responseFuture = ProxiedGet.doGet(fullResourceUrl, NoPrecondition)
 
         await(responseFuture).body shouldBe responseData
 
@@ -84,7 +85,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       withServers {
         setupEndpointExpectations()
 
-        val responseFuture = NonProxiedGet.doGet(fullResourceUrl)
+        val responseFuture = NonProxiedGet.doGet(fullResourceUrl, NoPrecondition)
 
         await(responseFuture).body shouldBe responseData
 

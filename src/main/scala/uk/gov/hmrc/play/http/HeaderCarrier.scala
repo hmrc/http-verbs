@@ -25,6 +25,30 @@ case class UserId(value: String) extends AnyVal
 
 case class Token(value: String) extends AnyVal
 
+// TODO consider preconditions ifModifiedSince: DateTime, ifUnmodifiedSince: DateTime, ifRange: Seq[String]
+
+case class Precondition(ifMatch: Seq[String] = Seq(),
+                        ifNoneMatch: Seq[String] = Seq()) {
+
+  // https://tools.ietf.org/html/rfc7232#section-3.1
+  def headers: Seq[(String, String)] = {
+    val isMatchHdr =
+      if (ifMatch.isEmpty) Nil
+      else Seq(HeaderNames.ifMatch -> ifMatch.mkString(", "))
+
+    val isNoneMatchHdr =
+      if (ifNoneMatch.isEmpty) Nil
+      else Seq(HeaderNames.ifNoneMatch -> ifNoneMatch.mkString(", "))
+
+    isMatchHdr ++ isNoneMatchHdr
+  }
+}
+
+
+object Precondition {
+  val NoPrecondition = Precondition()
+}
+
 case class HeaderCarrier(authorization: Option[Authorization] = None,
                          userId: Option[UserId] = None,
                          token: Option[Token] = None,

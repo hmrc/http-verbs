@@ -19,43 +19,64 @@ package uk.gov.hmrc.play.http.ws
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
+import uk.gov.hmrc.play.http.Precondition._
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
-import uk.gov.hmrc.play.http.{HeaderCarrier, Token}
+import uk.gov.hmrc.play.http.{Precondition, HeaderCarrier, Token}
 
 class WSRequestSpec extends WordSpecLike with Matchers {
 
   "buildRequest" should {
 
-    "create a WSRequestBuilder that contains the values passed in by header-carrier" in running(FakeApplication()) {
-      val url = "http://test.me"
+    "create a WSRequestBuilder that contains the values passed in by header-carrier" in
+      running(FakeApplication()) {
+        val url = "http://test.me"
 
-      implicit val hc = HeaderCarrier(
-        authorization = Some(Authorization("auth")),
-        sessionId = Some(SessionId("session")),
-        requestId = Some(RequestId("request")),
-        token = Some(Token("token")),
-        forwarded = Some(ForwardedFor("forwarded")))
+        implicit val hc = HeaderCarrier(
+          authorization = Some(Authorization("auth")),
+          sessionId = Some(SessionId("session")),
+          requestId = Some(RequestId("request")),
+          token = Some(Token("token")),
+          forwarded = Some(ForwardedFor("forwarded")))
 
-      val wsRequest = new WSRequest {}
-      val result = wsRequest.buildRequest(url)
+        val wsRequest = new WSRequest {}
+        val result = wsRequest.buildRequest(url, NoPrecondition)
 
-      val expectedHeaders = hc.headers.map {
-        case (a, b) => (a, List(b))
-      }.toMap
+        val expectedHeaders = hc.headers.map {
+          case (a, b) => (a, List(b))
+        }.toMap
 
-      result.headers shouldBe expectedHeaders
+        result.headers shouldBe expectedHeaders
 
-      result.url shouldBe url
-    }
+        result.url shouldBe url
+      }
 
-    "create a WSRequestBuilder with a User-Agent header that has the 'appName' config value as it's value" in
+    "create a WSRequestBuilder with a User-Agent header that has the 'appName' config value as its value" in
       running(FakeApplication(additionalConfiguration = Map("appName" -> "test-client"))) {
 
-        val wsRequest = new WSRequest {}.buildRequest("http://test.me")(HeaderCarrier())
+        val wsRequest = new WSRequest {}.buildRequest("http://test.me", NoPrecondition)(HeaderCarrier())
 
         wsRequest.headers("User-Agent").head shouldBe "test-client"
       }
 
+    "create a WSRequestBuilder with an If-Match header that has the ifMatch precondition as its value" in
+      running(FakeApplication()) {
+
+        // https://tools.ietf.org/html/rfc7232#section-3.1
+        val precondition = Precondition(ifMatch = Seq("\"xyzzy\"", "\"r2d2xxxx\"", "\"c3piozzzz\""))
+        val wsRequest = new WSRequest {}.buildRequest("http://test.me", precondition)(HeaderCarrier())
+
+        wsRequest.headers("If-Match").head shouldBe """"xyzzy", "r2d2xxxx", "c3piozzzz""""
+      }
+
+    "create a WSRequestBuilder with an If-None-Match header that has the ifNoneMatch precondition as its value" in
+      running(FakeApplication()) {
+
+        // https://tools.ietf.org/html/rfc7232#section-3.1
+        val precondition = Precondition(ifNoneMatch = Seq("\"xyzzy\"", "\"r2d2xxxx\"", "\"c3piozzzz\""))
+        val wsRequest = new WSRequest {}.buildRequest("http://test.me", precondition)(HeaderCarrier())
+
+        wsRequest.headers("If-None-Match").head shouldBe """"xyzzy", "r2d2xxxx", "c3piozzzz""""
+      }
 
   }
 

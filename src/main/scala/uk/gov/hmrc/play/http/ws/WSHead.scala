@@ -17,13 +17,13 @@
 package uk.gov.hmrc.play.http.ws
 
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.http.{HttpHead, HeaderCarrier, HttpGet, HttpResponse}
+import uk.gov.hmrc.play.http._
 
 import scala.concurrent.Future
 
 trait WSHead extends HttpHead with WSRequest {
 
-  def doHead(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    buildRequest(url).get().map(new WSHttpResponse(_))
+  def doHead(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    buildRequest(url, precondition).get().map(new WSHttpResponse(_))
   }
 }

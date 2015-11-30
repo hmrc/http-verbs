@@ -18,9 +18,12 @@ package uk.gov.hmrc.play.http
 
 object HeaderNames {
 
-  import play.api.http.HeaderNames.AUTHORIZATION
+  import play.api.http.HeaderNames._
 
   val authorisation = AUTHORIZATION
+  val eTag = ETAG
+  val ifMatch = IF_MATCH
+  val ifNoneMatch = IF_NONE_MATCH
   val xForwardedFor = "x-forwarded-for"
   val xRequestId = "X-Request-ID"
   val xRequestTimestamp = "X-Request-Timestamp"

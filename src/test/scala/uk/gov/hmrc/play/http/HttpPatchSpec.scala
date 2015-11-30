@@ -33,7 +33,7 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPatchResult
+    def doPatch[A](url: String, body: A, precondition: Precondition)(implicit rds: Writes[A], hc: HeaderCarrier) = doPatchResult
   }
 
   "HttpPatch" should {

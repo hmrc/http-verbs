@@ -18,6 +18,7 @@ package uk.gov.hmrc.play.http
 
 import play.api.http.HttpVerbs.{PATCH => PATCH_VERB}
 import play.api.libs.json.{Json, Writes}
+import uk.gov.hmrc.play.http.Precondition._
 import uk.gov.hmrc.play.http.hooks.HttpHooks
 import uk.gov.hmrc.play.http.logging.ConnectionTracing
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -25,11 +26,14 @@ import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import scala.concurrent.Future
 
 trait HttpPatch extends HttpVerb with ConnectionTracing with HttpHooks {
-  protected def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
 
-  def PATCH[I, O](url: String, body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
+  protected def doPatch[A](url: String, body: A, precondition: Precondition)
+                          (implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
+
+  def PATCH[I, O](url: String, body: I, precondition: Precondition = NoPrecondition)
+                 (implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier): Future[O] = {
     withTracing(PATCH_VERB, url) {
-      val httpResponse = doPatch(url, body)
+      val httpResponse = doPatch(url, body, precondition: Precondition)
       executeHooks(url, PATCH_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
       mapErrors(PATCH_VERB, url, httpResponse).map(response => rds.read(PATCH_VERB, url, response))
     }

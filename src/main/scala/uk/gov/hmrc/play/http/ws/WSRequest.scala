@@ -18,7 +18,7 @@ package uk.gov.hmrc.play.http.ws
 
 import play.api.Play
 import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer}
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.{Precondition, HeaderCarrier}
 
 trait WSRequest {
 
@@ -26,13 +26,13 @@ trait WSRequest {
   import play.api.libs.ws.WS
   import uk.gov.hmrc.play.http.HeaderCarrier
 
-  def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
+  def buildRequest[A](url: String, precondition: Precondition)(implicit hc: HeaderCarrier) = {
     val agentHeader = Play.maybeApplication
       .flatMap(_.configuration.getString("appName"))
       .map(name => "User-Agent" -> name)
       .toList
 
-    WS.url(url).withHeaders(agentHeader ++ hc.headers: _*)
+    WS.url(url).withHeaders(agentHeader ++ precondition.headers ++ hc.headers: _*)
   }
 }
 
@@ -41,10 +41,10 @@ trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
+  override def buildRequest[A](url: String, precondition: Precondition)(implicit hc: HeaderCarrier) = {
     wsProxyServer match {
-      case Some(proxy) => super.buildRequest(url).withProxyServer(proxy)
-      case None => super.buildRequest(url)
+      case Some(proxy) => super.buildRequest(url, precondition).withProxyServer(proxy)
+      case None => super.buildRequest(url, precondition)
     }
   }
 }

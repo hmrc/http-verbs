@@ -49,7 +49,7 @@ class HttpHeadSpec extends WordSpecLike with Matchers with ScalaFutures with Com
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    override def doHead(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doHeadResult
+    override def doHead(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = doHeadResult
   }
 
   "HttpHead" should {
@@ -60,7 +60,13 @@ class HttpHeadSpec extends WordSpecLike with Matchers with ScalaFutures with Com
     }
     "be able to return HTML responses" in new HtmlHttpReads {
       val testHead = new StubbedHttpHead(Future.successful(new DummyHttpResponse("", 200)))
-      testHead.HEAD(url).futureValue should be(an[Html])
+      private val entity = testHead.HEAD(url).futureValue
+      entity should be(an[Html])
+      entity.body should be("")
+    }
+    "be able not to deserialise JSON" ignore { // FIXME
+      val testGet = new StubbedHttpHead(Future.successful(new DummyHttpResponse("", 200)))
+      testGet.HEAD[Option[TestClass]](url).futureValue should be(None)
     }
     behave like anErrorMappingHttpCall(HEAD, (url, responseF) => new StubbedHttpHead(responseF).HEAD(url))
     behave like aTracingHttpCall(HEAD, "HEAD", new StubbedHttpHead(defaultHttpResponse)) {

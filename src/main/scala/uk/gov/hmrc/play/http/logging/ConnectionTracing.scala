@@ -47,7 +47,7 @@ trait ConnectionTracing {
     val requestId = ld.requestId.getOrElse("")
     val requestChain = ld.requestChain
     val durationNs = ld.age - startAge
-    s"$requestId:$method:${startAge}:${formatNs(startAge)}:${durationNs}:${formatNs(durationNs)}:${requestChain.value}:$uri:$message"
+    s"$requestId:$method:$startAge:${formatNs(startAge)}:$durationNs:${formatNs(durationNs)}:${requestChain.value}:$uri:$message"
   }
 }
 

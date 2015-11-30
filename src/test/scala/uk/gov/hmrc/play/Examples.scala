@@ -54,7 +54,7 @@ object Examples {
     val r1 = http.GET("http://gov.uk/hmrc")
     // Returns an HttpResponse
     val r2 = http.GET[HttpResponse]("http://gov.uk/hmrc") // Can specify this explicitly
-    r1.map { r =>
+    r2.map { r =>
       r.status
       r.body
       r.allHeaders

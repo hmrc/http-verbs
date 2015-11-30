@@ -17,6 +17,7 @@
 package uk.gov.hmrc.play.http
 
 import play.api.http.HttpVerbs.{HEAD => HEAD_VERB}
+import uk.gov.hmrc.play.http.Precondition._
 import uk.gov.hmrc.play.http.hooks.HttpHooks
 import uk.gov.hmrc.play.http.logging.ConnectionTracing
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -25,11 +26,13 @@ import scala.concurrent.Future
 
 trait HttpHead extends HttpVerb with ConnectionTracing with HttpHooks {
 
-  protected def doHead(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
+  protected def doHead(url: String, precondition: Precondition)
+                      (implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  def HEAD[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
+  def HEAD[A](url: String, precondition: Precondition = NoPrecondition)
+             (implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =
     withTracing(HEAD_VERB, url) {
-      val httpResponse = doHead(url)
+      val httpResponse = doHead(url, precondition)
       executeHooks(url, HEAD_VERB, None, httpResponse)
       mapErrors(HEAD_VERB, url, httpResponse).map(response => rds.read(HEAD_VERB, url, response))
     }

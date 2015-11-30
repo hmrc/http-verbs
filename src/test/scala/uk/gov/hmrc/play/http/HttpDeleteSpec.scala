@@ -34,7 +34,7 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
 
     def appName: String = ???
 
-    def doDelete(url: String)(implicit hc: HeaderCarrier) = response
+    def doDelete(url: String, precondition: Precondition)(implicit hc: HeaderCarrier) = response
   }
 
   "HttpDelete" should {
