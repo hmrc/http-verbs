@@ -18,13 +18,13 @@ package uk.gov.hmrc.play.http.ws
 
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPatch, HttpResponse}
+import uk.gov.hmrc.play.http.{Precondition, HeaderCarrier, HttpPatch, HttpResponse}
 
 import scala.concurrent.Future
 
 trait WSPatch extends HttpPatch with WSRequest {
 
-  def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    buildRequest(url).patch(Json.toJson(body)).map (new WSHttpResponse(_))
+  def doPatch[A](url: String, body: A, precondition: Precondition)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+    buildRequest(url, precondition).patch(Json.toJson(body)).map(new WSHttpResponse(_))
   }
 }

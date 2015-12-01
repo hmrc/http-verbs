@@ -17,9 +17,9 @@
 package uk.gov.hmrc.play.http
 
 import org.scalatest.{Matchers, WordSpecLike}
-import play.api.mvc.{Cookie, Action, Controller, Session}
-import play.api.test.{FakeRequest, FakeApplication, FakeHeaders}
+import play.api.mvc.{Action, Controller, Cookie, Session}
 import play.api.test.Helpers._
+import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier.fromHeadersAndSession
 import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
@@ -68,12 +68,12 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
     }
   }
 
-  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> Seq(v)})
+  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> Seq(v) })
 
   "Extracting the remaining header carrier values from the session and headers" should {
 
     "find nothing with a blank request" in {
-      val hc = fromHeadersAndSession( FakeHeaders())
+      val hc = fromHeadersAndSession(FakeHeaders())
       hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
     }
 

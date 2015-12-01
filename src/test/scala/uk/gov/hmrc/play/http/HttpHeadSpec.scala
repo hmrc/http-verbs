@@ -42,44 +42,46 @@ import uk.gov.hmrc.play.http.hooks.HttpHook
 
 import scala.concurrent.Future
 
-class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with CommonHttpBehaviour with IntegrationPatience with MockitoSugar {
+class HttpHeadSpec extends WordSpecLike with Matchers with ScalaFutures with CommonHttpBehaviour with IntegrationPatience with MockitoSugar {
 
-  class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse) extends HttpGet with ConnectionTracingCapturing {
+  class StubbedHttpHead(doHeadResult: Future[HttpResponse] = defaultHttpResponse) extends HttpHead with ConnectionTracingCapturing {
     val testHook1 = mock[HttpHook]
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    override def doGet(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
+    override def doHead(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = doHeadResult
   }
 
-  "HttpGet" should {
+  "HttpHead" should {
     "be able to return plain responses" in {
-      val response = new DummyHttpResponse(testBody, 200)
-      val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET(url).futureValue shouldBe response
+      val response = new DummyHttpResponse("", 200)
+      val testHead = new StubbedHttpHead(Future.successful(response))
+      testHead.HEAD(url).futureValue shouldBe response
     }
     "be able to return HTML responses" in new HtmlHttpReads {
-      val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testGet.GET(url).futureValue should be(an[Html])
+      val testHead = new StubbedHttpHead(Future.successful(new DummyHttpResponse("", 200)))
+      private val entity = testHead.HEAD(url).futureValue
+      entity should be(an[Html])
+      entity.body should be("")
     }
-    "be able to return objects deserialised from JSON" in {
-      val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse( """{"foo":"t","bar":10}""", 200)))
-      testGet.GET[TestClass](url).futureValue should be(TestClass("t", 10))
+    "be able not to deserialise JSON" ignore { // FIXME
+      val testGet = new StubbedHttpHead(Future.successful(new DummyHttpResponse("", 200)))
+      testGet.HEAD[Option[TestClass]](url).futureValue should be(None)
     }
-    behave like anErrorMappingHttpCall(GET, (url, responseF) => new StubbedHttpGet(responseF).GET(url))
-    behave like aTracingHttpCall(GET, "GET", new StubbedHttpGet(defaultHttpResponse)) {
-      _.GET(url)
+    behave like anErrorMappingHttpCall(HEAD, (url, responseF) => new StubbedHttpHead(responseF).HEAD(url))
+    behave like aTracingHttpCall(HEAD, "HEAD", new StubbedHttpHead(defaultHttpResponse)) {
+      _.HEAD(url)
     }
 
     "Invoke any hooks provided" in {
       import uk.gov.hmrc.play.test.Concurrent.await
 
-      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
-      val testGet = new StubbedHttpGet(dummyResponseFuture)
-      await(testGet.GET(url))
+      val dummyResponseFuture = Future.successful(new DummyHttpResponse("", 200))
+      val testHead = new StubbedHttpHead(dummyResponseFuture)
+      await(testHead.HEAD(url))
 
-      verify(testGet.testHook1)(url, "GET", None, dummyResponseFuture)
-      verify(testGet.testHook2)(url, "GET", None, dummyResponseFuture)
+      verify(testHead.testHook1)(url, "HEAD", None, dummyResponseFuture)
+      verify(testHead.testHook2)(url, "HEAD", None, dummyResponseFuture)
     }
 
   }

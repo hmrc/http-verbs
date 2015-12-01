@@ -17,9 +17,9 @@
 package uk.gov.hmrc.play.controllers
 
 import org.joda.time.format.ISODateTimeFormat
-import play.api.libs.json._
-import play.api.libs.json.JsString
-import org.joda.time.{LocalDate, DateTime, DateTimeZone, LocalDateTime}
+import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
+import play.api.libs.json.{JsString, _}
+
 import scala.util.Try
 
 object RestFormats extends RestFormats

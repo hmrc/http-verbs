@@ -25,6 +25,38 @@ case class UserId(value: String) extends AnyVal
 
 case class Token(value: String) extends AnyVal
 
+/**
+ * Precondition provides the data needed to make conditional requests.
+ *
+ * https://tools.ietf.org/html/rfc7232#section-3
+ *
+ * Only ETag preconditions are supported at present.
+ * If-Modified-Since, if-Unmodified-Since and If-Range are not supported.
+ *
+ * The string values should be exactly as provided by earlier responses via ETag
+ * headers. That is, the quote marks and any weak prefix must be used verbatim.
+ */
+case class Precondition(ifMatch: Seq[String] = Seq(),
+                        ifNoneMatch: Seq[String] = Seq()) {
+
+  def headers: Seq[(String, String)] = {
+    val isMatchHdr =
+      if (ifMatch.isEmpty) Nil
+      else Seq(HeaderNames.ifMatch -> ifMatch.mkString(", "))
+
+    val isNoneMatchHdr =
+      if (ifNoneMatch.isEmpty) Nil
+      else Seq(HeaderNames.ifNoneMatch -> ifNoneMatch.mkString(", "))
+
+    isMatchHdr ++ isNoneMatchHdr
+  }
+}
+
+
+object Precondition {
+  val NoPrecondition = Precondition()
+}
+
 case class HeaderCarrier(authorization: Option[Authorization] = None,
                          userId: Option[UserId] = None,
                          token: Option[Token] = None,
@@ -33,16 +65,16 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          requestId: Option[RequestId] = None,
                          requestChain: RequestChain = RequestChain.init,
                          nsStamp: Long = System.nanoTime(),
-                         extraHeaders: Seq[(String, String)] = Seq(), 
+                         extraHeaders: Seq[(String, String)] = Seq(),
                          trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None,
                          gaToken: Option[String] = None,
                          gaUserId: Option[String] = None,
-                         deviceID: Option[String] = None) extends  LoggingDetails with HeaderProvider {
+                         deviceID: Option[String] = None) extends LoggingDetails with HeaderProvider {
 
   /**
-   * @return the time, in nanoseconds, since this header carrier was created
-   */
+    * @return the time, in nanoseconds, since this header carrier was created
+    */
   def age = System.nanoTime() - nsStamp
 
   val names = HeaderNames
@@ -53,26 +85,26 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       forwarded.map(f => names.xForwardedFor -> f.value),
       token.map(t => names.token -> t.value),
       Some(names.xRequestChain -> requestChain.value),
-      authorization.map(auth => names.authorisation -> auth.value), 
-      trueClientIp.map(HeaderNames.trueClientIp ->_),
-      trueClientPort.map(HeaderNames.trueClientPort ->_),
-      gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
-      gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
+      authorization.map(auth => names.authorisation -> auth.value),
+      trueClientIp.map(HeaderNames.trueClientIp -> _),
+      trueClientPort.map(HeaderNames.trueClientPort -> _),
+      gaToken.map(HeaderNames.googleAnalyticTokenId -> _),
+      gaUserId.map(HeaderNames.googleAnalyticUserId -> _),
       deviceID.map(HeaderNames.deviceID -> _)
     ).flatten.toList ++ extraHeaders
   }
 
-  def withExtraHeaders(headers:(String, String)*) : HeaderCarrier = {
+  def withExtraHeaders(headers: (String, String)*): HeaderCarrier = {
     this.copy(extraHeaders = extraHeaders ++ headers)
   }
 }
 
 object HeaderCarrier {
 
-  def fromHeadersAndSession(headers: Headers, session: Option[Session]=None) = {
+  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) = {
     lazy val cookies: Cookies = Cookies(headers.get(play.api.http.HeaderNames.COOKIE))
     session.fold(fromHeaders(headers)) {
-       fromSession(headers, cookies, _)
+      fromSession(headers, cookies, _)
     }
   }
 
@@ -126,7 +158,7 @@ object HeaderCarrier {
       case (Some(tcip), Some(xff)) => Some(s"$tcip, $xff")
     }).map(ForwardedFor)
   }
-  
+
   def buildRequestChain(currentChain: Option[String]): RequestChain = {
     currentChain match {
       case None => RequestChain.init
@@ -140,7 +172,5 @@ object HeaderCarrier {
       .flatMap(tsAsString => Try(tsAsString.toLong).toOption)
       .getOrElse(System.nanoTime())
 
-
- 
 
 }

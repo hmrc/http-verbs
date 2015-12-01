@@ -17,13 +17,13 @@
 package uk.gov.hmrc.play.http.ws
 
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpDelete, HttpResponse, Precondition}
+import uk.gov.hmrc.play.http._
 
 import scala.concurrent.Future
 
-trait WSDelete extends HttpDelete with WSRequest {
+trait WSHead extends HttpHead with WSRequest {
 
-  def doDelete(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    buildRequest(url, precondition).delete().map(new WSHttpResponse(_))
+  def doHead(url: String, precondition: Precondition)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    buildRequest(url, precondition).get().map(new WSHttpResponse(_))
   }
 }

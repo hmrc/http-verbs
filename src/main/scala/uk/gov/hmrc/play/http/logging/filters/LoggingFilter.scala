@@ -20,11 +20,11 @@ import java.util.Date
 
 import org.apache.commons.lang3.time.FastDateFormat
 import org.joda.time.DateTimeUtils
-import play.api.{LoggerLike, Logger}
 import play.api.mvc.{Filter, RequestHeader, Result}
+import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.{LoggingDetails, MdcLoggingExecutionContext}
-import MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.logging.LoggingDetails
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
 
@@ -33,7 +33,7 @@ trait LoggingFilter extends Filter {
 
   def controllerNeedsLogging(controllerName: String): Boolean
 
-  protected def logger:LoggerLike = Logger
+  protected def logger: LoggerLike = Logger
 
   def buildLoggedHeaders(request: RequestHeader) = HeaderCarrier.fromHeadersAndSession(request.headers)
 

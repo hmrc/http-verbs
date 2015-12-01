@@ -33,7 +33,7 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPatchResult
+    def doPatch[A](url: String, body: A, precondition: Precondition)(implicit rds: Writes[A], hc: HeaderCarrier) = doPatchResult
   }
 
   "HttpPatch" should {
@@ -45,15 +45,17 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
     }
     "be able to return HTML responses" in new HtmlHttpReads {
       val testPatch = new StubbedHttpPatch(Future.successful(new DummyHttpResponse(testBody, 200)))
-      testPatch.PATCH(url, testObject).futureValue should be (an [Html])
+      testPatch.PATCH(url, testObject).futureValue should be(an[Html])
     }
     "be able to return objects deserialised from JSON" in {
-      val testPatch = new StubbedHttpPatch(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testPatch.PATCH[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
+      val testPatch = new StubbedHttpPatch(Future.successful(new DummyHttpResponse( """{"foo":"t","bar":10}""", 200)))
+      testPatch.PATCH[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(PATCH, (url, responseF) => new StubbedHttpPatch(responseF).PATCH(url, testObject))
-    behave like aTracingHttpCall(PATCH, "PATCH", new StubbedHttpPatch(defaultHttpResponse)) { _.PATCH(url, testObject) }
+    behave like aTracingHttpCall(PATCH, "PATCH", new StubbedHttpPatch(defaultHttpResponse)) {
+      _.PATCH(url, testObject)
+    }
 
     "Invoke any hooks provided" in {
       import uk.gov.hmrc.play.test.Concurrent.await

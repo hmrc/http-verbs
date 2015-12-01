@@ -63,7 +63,7 @@ object ConnectorWithHttpValues extends ConnectorWithHttpValues {
 }
 ```
 
-#### Making HTTP Calls
+#### Making HTTP Requests
 
 Each verb supplies a single matching method, which takes a URL, and a request body if appropriate:
 
@@ -83,6 +83,26 @@ Headers from the carrier are added to every request. Depending on how you scope 
 * Common headers to be configured for all requests
 * Headers from an inbound call to be propagated to an outbound one (we do this by implicitly converting Play's `Request` into a `HeaderCarrier`)
 
+#### Conditional HTTP Requests
+
+Each verb permits an optional Precondition parameter, for which either the ifMatch or ifNoneMatch field should be
+populated to make a conditional request.
+
+* Use ifMatch preconditions typically when you need to PUT, POST or DELETE some data, but only to succeed when 
+  no conflict is detected.
+* Use ifNoneMatch to GET or HEAD some resource that will not need to return any content when nothing has changed
+  since an earlier request.
+
+You will have received the 'etag' values from earlier requests via the ETag header. They should be returned verbatim
+(note that they are normally quoted: see [Precondition header fields](https://tools.ietf.org/html/rfc7232#section-3)).
+
+```scala
+implicit val hc = HeaderCarrier()
+
+http.GET("http://gov.uk/hmrc", Precondition(ifNoneMatch = Seq(etag))
+http.POST("http://gov.uk/hmrc", body = "hi there", Precondition(ifMatch = Seq(etag1, etag2))
+```
+
 ## Response Handling
 
 All verbs return `Future`s. By default, a `HttpResponse` is returned for successful responses, which gives access to the status code, raw body and headers:
@@ -95,6 +115,12 @@ r1.map { r =>
   r.body
   r.allHeaders
 }
+```
+
+For conditional requests and anything that may return 204, make sure the type is an Option:
+
+```scala
+val r3 = http.GET[Option[FooValue]]("http://gov.uk/hmrc", Precondition(ifMatch = Seq(etag1, etag2))
 ```
 
 ### Errors
@@ -144,7 +170,8 @@ http.GET[Html]("http://gov.uk/hmrc") // Returns a Play Html type
 ```
 
 #### Potentially empty responses
-If you expect to receive a `204` or `404` response in some circumstances, then you can add `Option[...]` to your return type:
+If you expect to receive a `204` or `404` response in some circumstances, or you make a conditional GET request, then 
+you can add `Option[...]` to your return type:
 
 ```scala
 http.GET[Option[MyCaseClass]]("http://gov.uk/hmrc") // Returns None, or Some[MyCaseClass] de-serialised from JSON

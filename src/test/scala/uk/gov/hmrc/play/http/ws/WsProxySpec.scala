@@ -23,6 +23,7 @@ import play.api.Play
 import play.api.libs.ws.DefaultWSProxyServer
 import play.api.test.FakeApplication
 import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.Precondition._
 import uk.gov.hmrc.play.test.Concurrent.await
 
 class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -35,13 +36,14 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       object ProxiedGet extends WSGet with WSProxy {
         override val hooks = NoneRequired
+
         def wsProxyServer = Some(DefaultWSProxyServer(host = host, port = proxyPort))
       }
 
       withServers {
         setupEndpointExpectations()
 
-        val responseFuture = ProxiedGet.doGet(fullResourceUrl)
+        val responseFuture = ProxiedGet.doGet(fullResourceUrl, NoPrecondition)
 
         await(responseFuture).body shouldBe responseData
 
@@ -56,13 +58,14 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       object ProxiedGet extends WSGet with WSProxy {
         override val hooks = NoneRequired
+
         def wsProxyServer = None
       }
 
       withServers {
         setupEndpointExpectations()
 
-        val responseFuture = ProxiedGet.doGet(fullResourceUrl)
+        val responseFuture = ProxiedGet.doGet(fullResourceUrl, NoPrecondition)
 
         await(responseFuture).body shouldBe responseData
 
@@ -82,7 +85,7 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       withServers {
         setupEndpointExpectations()
 
-        val responseFuture = NonProxiedGet.doGet(fullResourceUrl)
+        val responseFuture = NonProxiedGet.doGet(fullResourceUrl, NoPrecondition)
 
         await(responseFuture).body shouldBe responseData
 
@@ -104,8 +107,8 @@ class WsProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     def setupEndpointExpectations() {
       endpointMock.register(get(urlEqualTo(resourcePath))
         .willReturn(aResponse()
-        .withHeader("Content-Type", "text/plain")
-        .withBody(responseData)))
+          .withHeader("Content-Type", "text/plain")
+          .withBody(responseData)))
 
       proxyMock.register(get(urlMatching(resourcePath))
         .willReturn(aResponse().proxiedFrom(endpointBaseUrl)))

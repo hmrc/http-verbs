@@ -25,6 +25,7 @@ import org.webbitserver.handler.{DelayedHttpHandler, StringHttpHandler}
 import org.webbitserver.netty.NettyWebServer
 import play.api.Play
 import play.api.test.FakeApplication
+import uk.gov.hmrc.play.http.Precondition.NoPrecondition
 import uk.gov.hmrc.play.http.ws.WSHttp
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -58,16 +59,16 @@ class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with 
         //starts web server
         ws.add("/test", new DelayedHttpHandler(global, 2000, new StringHttpHandler("application/json", "{name:'pong'}")))
         ws.start().get()
-        
+
         implicit val hc = HeaderCarrier()
-        
-        val start= System.currentTimeMillis()
+
+        val start = System.currentTimeMillis()
         intercept[TimeoutException] {
           //make request to web server
           import uk.gov.hmrc.play.test.Concurrent.await
-          await(http.doPost(s"$publicUri/test", "{name:'ping'}", Seq()))
+          await(http.doPost(s"$publicUri/test", "{name:'ping'}", NoPrecondition, Seq()))
         }
-        val diff  = (System.currentTimeMillis() - start).toInt
+        val diff = (System.currentTimeMillis() - start).toInt
         // there is test execution delay around 700ms
         diff should be >= 1000
         diff should be < 2500

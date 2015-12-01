@@ -36,6 +36,7 @@ trait RawReads extends HttpErrorFunctions {
     def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
   }
 }
+
 object RawReads extends RawReads
 
 trait OptionHttpReads extends HttpErrorFunctions {

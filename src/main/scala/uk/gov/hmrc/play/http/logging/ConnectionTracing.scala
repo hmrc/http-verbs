@@ -17,8 +17,8 @@
 package uk.gov.hmrc.play.http.logging
 
 import play.api.Logger
-import uk.gov.hmrc.play.http.{Upstream4xxResponse, HttpException}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.http.{HttpException, Upstream4xxResponse}
 
 import scala.concurrent._
 import scala.util.{Failure, Success, Try}
@@ -47,7 +47,7 @@ trait ConnectionTracing {
     val requestId = ld.requestId.getOrElse("")
     val requestChain = ld.requestChain
     val durationNs = ld.age - startAge
-    s"$requestId:$method:${startAge}:${formatNs(startAge)}:${durationNs}:${formatNs(durationNs)}:${requestChain.value}:$uri:$message"
+    s"$requestId:$method:$startAge:${formatNs(startAge)}:$durationNs:${formatNs(durationNs)}:${requestChain.value}:$uri:$message"
   }
 }
 

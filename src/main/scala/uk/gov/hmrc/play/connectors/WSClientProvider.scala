@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.play.connectors
 
-import play.api.libs.ws.{WSClient, DefaultWSClientConfig}
 import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
+import play.api.libs.ws.{DefaultWSClientConfig, WSClient}
 
 trait WSClientProvider {
   implicit val client: WSClient
@@ -25,10 +25,10 @@ trait WSClientProvider {
 
 trait DefaultWSClientProvider extends WSClientProvider {
   val clientConfig = new DefaultWSClientConfig()
-  val secureDefaults:com.ning.http.client.AsyncHttpClientConfig = new NingAsyncHttpClientConfigBuilder(clientConfig).build()
+  val secureDefaults: com.ning.http.client.AsyncHttpClientConfig = new NingAsyncHttpClientConfigBuilder(clientConfig).build()
   val builder = new com.ning.http.client.AsyncHttpClientConfig.Builder(secureDefaults)
   builder.setCompressionEnabled(true)
-  val secureDefaultsWithSpecificOptions:com.ning.http.client.AsyncHttpClientConfig = builder.build()
+  val secureDefaultsWithSpecificOptions: com.ning.http.client.AsyncHttpClientConfig = builder.build()
 
   implicit val client = new play.api.libs.ws.ning.NingWSClient(secureDefaultsWithSpecificOptions)
 }

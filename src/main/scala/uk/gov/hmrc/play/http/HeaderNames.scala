@@ -18,9 +18,12 @@ package uk.gov.hmrc.play.http
 
 object HeaderNames {
 
-  import play.api.http.HeaderNames.AUTHORIZATION
+  import play.api.http.HeaderNames._
 
   val authorisation = AUTHORIZATION
+  val eTag = ETAG
+  val ifMatch = IF_MATCH
+  val ifNoneMatch = IF_NONE_MATCH
   val xForwardedFor = "x-forwarded-for"
   val xRequestId = "X-Request-ID"
   val xRequestTimestamp = "X-Request-Timestamp"
@@ -32,8 +35,8 @@ object HeaderNames {
   val surrogate = "Surrogate"
   val otacAuthorization = "Otac-Authorization"
   val googleAnalyticTokenId = "ga-token"
-  val googleAnalyticUserId  = "ga-user-cookie-id"
-  val deviceID  = "deviceID" // not a typo, should be ID
+  val googleAnalyticUserId = "ga-user-cookie-id"
+  val deviceID = "deviceID" // not a typo, should be ID
 }
 
 object CookieNames {

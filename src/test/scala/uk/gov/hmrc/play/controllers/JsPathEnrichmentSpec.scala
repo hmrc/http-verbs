@@ -72,4 +72,5 @@ class JsPathEnrichmentSpec extends WordSpecLike with Matchers {
         |}
       """.stripMargin)
   }
+
 }
