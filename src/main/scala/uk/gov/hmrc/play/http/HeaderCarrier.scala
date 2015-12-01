@@ -25,12 +25,20 @@ case class UserId(value: String) extends AnyVal
 
 case class Token(value: String) extends AnyVal
 
-// TODO consider preconditions ifModifiedSince: DateTime, ifUnmodifiedSince: DateTime, ifRange: Seq[String]
-
+/**
+ * Precondition provides the data needed to make conditional requests.
+ *
+ * https://tools.ietf.org/html/rfc7232#section-3
+ *
+ * Only ETag preconditions are supported at present.
+ * If-Modified-Since, if-Unmodified-Since and If-Range are not supported.
+ *
+ * The string values should be exactly as provided by earlier responses via ETag
+ * headers. That is, the quote marks and any weak prefix must be used verbatim.
+ */
 case class Precondition(ifMatch: Seq[String] = Seq(),
                         ifNoneMatch: Seq[String] = Seq()) {
 
-  // https://tools.ietf.org/html/rfc7232#section-3.1
   def headers: Seq[(String, String)] = {
     val isMatchHdr =
       if (ifMatch.isEmpty) Nil
