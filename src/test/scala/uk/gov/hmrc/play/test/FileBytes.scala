@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http.test
+package uk.gov.hmrc.play.test
 
-import uk.gov.hmrc.play.http.HeaderCarrier
+object FileBytes {
 
-trait WithHeaderCarrier {
-  implicit val hc = HeaderCarrier()
+  def apply(filename: String) = {
+    val stream = getClass.getResourceAsStream(filename)
+
+    if (stream == null)
+      throw new Exception("Could not open stream to: " + filename)
+
+    Iterator.continually(stream.read)
+      .takeWhile(_ != -1)
+      .take(1000)
+      .map(_.toByte)
+      .toArray
+  }
 }
