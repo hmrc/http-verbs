@@ -109,10 +109,9 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
   "build Google Analytics headers from request" should {
 
-    "find the GA user id and token" in {
-      val hc: HeaderCarrier = fromHeadersAndSession(headers(HeaderNames.googleAnalyticTokenId -> "ga-token", HeaderNames.googleAnalyticUserId -> "123.456"))
-      hc.gaToken shouldBe Some("ga-token")
-      hc.gaUserId shouldBe Some("123.456")
+    "find the GA client id" in {
+      val hc: HeaderCarrier = fromHeadersAndSession(headers(HeaderNames.gaClientId -> "283183975.1456746121"))
+      hc.gaClientId shouldBe Some("283183975.1456746121")
     }
 
   }
@@ -120,18 +119,30 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
   "utilise values from cookies" should {
 
     object TestController extends Controller {
-      def index = Action { req =>
-        fromHeadersAndSession(req.headers, Some(req.session)).deviceID shouldBe Some("deviceIdCookie")
+      def index(assertions: HeaderCarrier => Unit) = Action { req =>
+        assertions(fromHeadersAndSession(req.headers, Some(req.session)))
         Ok("Test")
       }
     }
 
-    "find the deviceID from the cookie" in running(FakeApplication()) {
-      TestController.index(FakeRequest().withCookies(Cookie(CookieNames.deviceID, "deviceIdCookie")))
+    "find the deviceID and the gaClientId from their respective cookies" in running(FakeApplication()) {
+      TestController.index{
+        hc => hc.deviceID shouldBe Some("deviceIdCookie")
+        hc.gaClientId shouldBe Some("123.456")
+      } (FakeRequest().withCookies(Cookie(CookieNames.deviceID, "deviceIdCookie"), Cookie(CookieNames.googleAnalytics, "GA1.1.123.456")))
     }
 
     "find the deviceID from the headers if the cookie is not set such as in an internal microservice call" in {
-      fromHeadersAndSession(headers(HeaderNames.deviceID -> "deviceIdTest"), Some(Session(Map.empty))).deviceID shouldBe Some("deviceIdTest")
+      val result = fromHeadersAndSession(headers(HeaderNames.deviceID -> "deviceIdTest"), Some(Session(Map.empty)))
+      result.deviceID shouldBe Some("deviceIdTest")
+      result.gaClientId shouldBe None
+    }
+
+    "recover from incorrect ga client id format" in {
+      val result = TestController.index{
+        hc => hc.gaClientId shouldBe None
+      } (FakeRequest().withCookies(Cookie(CookieNames.googleAnalytics, "what.have.google.done.now?")))
+      status(result) shouldBe 200
     }
 
   }

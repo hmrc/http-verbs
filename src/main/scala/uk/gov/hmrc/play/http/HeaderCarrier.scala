@@ -33,11 +33,10 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          requestId: Option[RequestId] = None,
                          requestChain: RequestChain = RequestChain.init,
                          nsStamp: Long = System.nanoTime(),
-                         extraHeaders: Seq[(String, String)] = Seq(), 
+                         extraHeaders: Seq[(String, String)] = Seq(),
                          trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None,
-                         gaToken: Option[String] = None,
-                         gaUserId: Option[String] = None,
+                         gaClientId: Option[String] = None,
                          deviceID: Option[String] = None) extends  LoggingDetails with HeaderProvider {
 
   /**
@@ -53,11 +52,10 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       forwarded.map(f => names.xForwardedFor -> f.value),
       token.map(t => names.token -> t.value),
       Some(names.xRequestChain -> requestChain.value),
-      authorization.map(auth => names.authorisation -> auth.value), 
+      authorization.map(auth => names.authorisation -> auth.value),
       trueClientIp.map(HeaderNames.trueClientIp ->_),
       trueClientPort.map(HeaderNames.trueClientPort ->_),
-      gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
-      gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
+      gaClientId.map(HeaderNames.gaClientId ->_),
       deviceID.map(HeaderNames.deviceID -> _)
     ).flatten.toList ++ extraHeaders
   }
@@ -93,8 +91,7 @@ object HeaderCarrier {
       Seq.empty,
       headers.get(HeaderNames.trueClientIp),
       headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
+      headers.get(HeaderNames.gaClientId),
       headers.get(HeaderNames.deviceID)
     )
   }
@@ -112,10 +109,17 @@ object HeaderCarrier {
       Seq.empty,
       headers.get(HeaderNames.trueClientIp),
       headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
+      extractGaClientId(cookies),
       getDeviceId(cookies, headers)
     )
+  }
+
+  private def extractGaClientId(cookies: Cookies): Option[String] = {
+    cookies.get(CookieNames.googleAnalytics).flatMap { cookie =>
+      val split = cookie.value.split('.') //Example GA Cookie format: GA1.1.283183975.1456746121
+      if (split.length != 4 ) None
+      else  Some(split.slice(2, 4).mkString("."))
+    }
   }
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] = {
