@@ -52,6 +52,18 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
   }
 
+  class UrlTestingHttpGet() extends HttpGet {
+    val testHook1 = mock[HttpHook]
+    val testHook2 = mock[HttpHook]
+    val hooks = Seq(testHook1, testHook2)
+    var lastUrl: Option[String] = None
+
+    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+  }
+
   "HttpGet" should {
     "be able to return plain responses" in {
       val response = new DummyHttpResponse(testBody, 200)
@@ -79,8 +91,48 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
       verify(testGet.testHook1)(url, "GET", None, dummyResponseFuture)
       verify(testGet.testHook2)(url, "GET", None, dummyResponseFuture)
     }
-
   }
 
+  "HttpGet with params Seq" should {
+    "return an empty string if the query parameters is empty" in {
+      val expected = Some("http://test.net")
+      val testGet = new UrlTestingHttpGet()
+      testGet.GET("http://test.net", Seq())
+      testGet.lastUrl shouldBe expected
+    }
 
+    "return a url with a single param pair" in {
+      val expected = Some("http://test.net?one=1")
+      val testGet = new UrlTestingHttpGet()
+      testGet.GET("http://test.net", Seq(("one", "1")))
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return a url with a multiple param pairs" in {
+      val expected = Some("http://test.net?one=1&two=2&three=3")
+      val testGet = new UrlTestingHttpGet()
+      testGet.GET("http://test.net", Seq(("one", "1"),("two", "2"), ("three", "3")))
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return a url with encoded param pairs" in {
+      val expected = Some("http://test.net?email=test%2Balias%40email.com&data=%7B%22message%22%3A%22in+json+format%22%7D")
+      val testGet = new UrlTestingHttpGet()
+      testGet.GET("http://test.net", Seq(("email", "test+alias@email.com"),("data", "{\"message\":\"in json format\"}")))
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return a url with duplicate param pairs" in {
+      val expected = Some("http://test.net?one=1&two=2&one=11")
+      val testGet = new UrlTestingHttpGet()
+      testGet.GET("http://test.net", Seq(("one", "1"),("two", "2"), ("one", "11")))
+      testGet.lastUrl shouldBe expected
+    }
+
+    "raise an exception if the URL provided already has a query string" in {
+      val testGet = new UrlTestingHttpGet()
+
+      a [UrlValidationException] should be thrownBy testGet.GET("http://test.net?should=not=be+here", Seq(("one", "1")))
+    }
+  }
 }

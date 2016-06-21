@@ -27,3 +27,9 @@ class JsValidationException(val method: String,
     s"$method of '$url' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
   }
 }
+
+class UrlValidationException(val url: String, val context: String, val message: String) extends Exception {
+  override def getMessage: String = {
+    s"'$url' is invalid for $context. $message"
+  }
+}
