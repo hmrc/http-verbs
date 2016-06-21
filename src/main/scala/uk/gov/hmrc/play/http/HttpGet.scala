@@ -35,7 +35,7 @@ trait HttpGet extends HttpVerb with ConnectionTracing with HttpHooks {
     mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
   }
 
-  def GET[A](url: String, queryParams: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] =withTracing(GET_VERB, url) {
+  def GET[A](url: String, queryParams: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier): Future[A] = {
     val queryString = makeQueryString(queryParams)
     if (url.contains("?")) {
       throw new UrlValidationException(url, s"${this.getClass}.GET(url, queryParams)", "Query parameters must be provided as a Seq of tuples to this method")
