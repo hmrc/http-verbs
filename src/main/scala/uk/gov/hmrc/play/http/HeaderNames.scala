@@ -43,13 +43,19 @@ object CookieNames {
 object SessionKeys {
   val sessionId = "sessionId"
   val userId = "userId"
+  @deprecated("To be removed. Use internal services lookup instead","2016-06-24")
   val name = "name"
+  @deprecated("To be removed. Use internal services lookup instead","2016-06-24")
   val email = "email"
+  @deprecated("To be removed. Use internal services lookup instead","2016-06-24")
   val agentName = "agentName"
+  @deprecated("Use internal services lookup instead","2016-06-24")
   val token = "token"
   val authToken = "authToken"
   val otacToken = "otacToken"
+  @deprecated("Use internal services lookup instead","2016-06-24")
   val affinityGroup = "affinityGroup"
+  @deprecated("Use internal services lookup instead","2016-06-24")
   val authProvider = "ap"
   val lastRequestTimestamp = "ts"
   val redirect = "login_redirect"
