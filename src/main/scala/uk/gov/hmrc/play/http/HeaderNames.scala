@@ -20,20 +20,46 @@ object HeaderNames {
 
   import play.api.http.HeaderNames.AUTHORIZATION
 
-  val authorisation = AUTHORIZATION
-  val xForwardedFor = "x-forwarded-for"
-  val xRequestId = "X-Request-ID"
-  val xRequestTimestamp = "X-Request-Timestamp"
-  val xSessionId = "X-Session-ID"
-  val xRequestChain = "X-Request-Chain"
-  val trueClientIp = "True-Client-IP"
-  val trueClientPort = "True-Client-Port"
-  val token = "token"
-  val surrogate = "Surrogate"
-  val otacAuthorization = "Otac-Authorization"
-  val googleAnalyticTokenId = "ga-token"
-  val googleAnalyticUserId  = "ga-user-cookie-id"
-  val deviceID  = "deviceID" // not a typo, should be ID
+  /*
+   * this isn't ideal, but downstream apps still want to refer to typed header values
+   * and guarantee their explicit whitelisting whilst "remaining headers" should avoid
+   * duplicating these and creating unnecessary data on the wire.
+   * We could just model as a list but then accessing known header names would
+   * have to be done by magic number and would be susceptible to changes in ordering
+   */
+  val explicitlyIncludedHeaders = Map(
+    AUTHORIZATION -> AUTHORIZATION,
+    "x-forwarded-for" -> "x-forwarded-for",
+    "X-Request-ID" -> "X-Request-ID",
+    "X-Request-Timestamp" -> "X-Request-Timestamp",
+    "X-Session-ID" -> "X-Session-ID",
+    "X-Request-Chain" -> "X-Request-Chain",
+    "True-Client-IP" -> "True-Client-IP",
+    "True-Client-Port" -> "True-Client-Port",
+    "token" -> "token",
+    "Surrogate" -> "Surrogate",
+    "Otac-Authorization" -> "Otac-Authorization",
+    "ga-token" -> "ga-token",
+    "ga-user-cookie-id" -> "ga-user-cookie-id",
+    "deviceID" -> "deviceID", // not a typo, should be ID
+    "Akamai-Reputation" -> "Akamai-Reputation"
+  )
+
+  val authorisation = explicitlyIncludedHeaders.get(AUTHORIZATION).get
+  val xForwardedFor = explicitlyIncludedHeaders.get("x-forwarded-for").get
+  val xRequestId = explicitlyIncludedHeaders.get("X-Request-ID").get
+  val xRequestTimestamp = explicitlyIncludedHeaders.get("X-Request-Timestamp").get
+  val xSessionId = explicitlyIncludedHeaders.get("X-Session-ID").get
+  val xRequestChain = explicitlyIncludedHeaders.get("X-Request-Chain").get
+  val trueClientIp = explicitlyIncludedHeaders.get("True-Client-IP").get
+  val trueClientPort = explicitlyIncludedHeaders.get("True-Client-Port").get
+  val token = explicitlyIncludedHeaders.get("token").get
+  val surrogate = explicitlyIncludedHeaders.get("Surrogate").get
+  val otacAuthorization = explicitlyIncludedHeaders.get("Otac-Authorization").get
+  val googleAnalyticTokenId = explicitlyIncludedHeaders.get("ga-token").get
+  val googleAnalyticUserId  = explicitlyIncludedHeaders.get("ga-user-cookie-id").get
+  val deviceID  = explicitlyIncludedHeaders.get("deviceID").get
+  val akamaiReputation = explicitlyIncludedHeaders.get("Akamai-Reputation").get
 }
 
 object CookieNames {

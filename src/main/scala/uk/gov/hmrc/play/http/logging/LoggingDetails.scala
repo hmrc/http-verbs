@@ -26,6 +26,8 @@ case class SessionId(value: String) extends AnyVal
 
 case class RequestId(value: String) extends AnyVal
 
+case class AkamaiReputation(value: String) extends AnyVal
+
 case class RequestChain(value: String) extends AnyVal {
   def extend = RequestChain(s"$value-${RequestChain.newComponent}")
 }
