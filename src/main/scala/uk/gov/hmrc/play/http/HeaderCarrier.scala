@@ -126,7 +126,7 @@ object HeaderCarrier {
     )
   }
 
-  def blacklistedHeaders(): Seq[String] = {
+  val blacklistedHeaders: Seq[String] = {
     // TODO sensible config key name and default values
     Play.current.configuration.getStringSeq("blacklistedHttpHeaders").getOrElse(Seq("User-Agent"))
   }
@@ -134,8 +134,8 @@ object HeaderCarrier {
 
   private def remainingHeaders(headers: Headers): Seq[(String, String)] = {
     val remaining = headers.keys.
-      filterNot(HeaderNames.explicitlyIncludedHeaders.keySet.contains(_)).
-      filterNot(blacklistedHeaders().contains(_))
+      filterNot(HeaderNames.explicitlyIncludedHeaders.values.toSeq.contains(_)).
+      filterNot(blacklistedHeaders.contains(_))
     remaining.map(h => (h -> headers.get(h).getOrElse(""))).toSeq
   }
 
