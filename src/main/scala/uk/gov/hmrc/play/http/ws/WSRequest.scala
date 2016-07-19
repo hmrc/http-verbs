@@ -16,9 +16,13 @@
 
 package uk.gov.hmrc.play.http.ws
 
+import java.net.URL
+
 import play.api.Play
 import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer}
 import uk.gov.hmrc.play.http.HeaderCarrier
+
+import scala.util.matching.Regex
 
 trait WSRequest {
 
@@ -26,13 +30,27 @@ trait WSRequest {
   import play.api.libs.ws.WS
   import uk.gov.hmrc.play.http.HeaderCarrier
 
+  private val internalHostPatterns: Seq[Regex] = Play.maybeApplication.flatMap(
+    _.configuration.getStringSeq("internalServiceHostPatterns").
+      map(_.map(_.r))
+  ).getOrElse(Seq("^.*\\.service$".r))
+
   def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
     val agentHeader = Play.maybeApplication
       .flatMap(_.configuration.getString("appName"))
       .map(name => "User-Agent" -> name)
       .toList
 
-    WS.url(url).withHeaders(agentHeader ++ hc.headers: _*)
+    WS.url(url).withHeaders(agentHeader ++ otherHeaders(url, hc): _*)
+  }
+
+  private def otherHeaders(url: String, hc: HeaderCarrier): Seq[(String, String)] = {
+    val u = new URL(url)
+    if (internalHostPatterns.exists(_.pattern.matcher(u.getHost).matches())) {
+      hc.headers
+    } else {
+      hc.headers.filterNot(hc.remainingHeaders.contains(_))
+    }
   }
 }
 
