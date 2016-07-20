@@ -41,7 +41,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          gaUserId: Option[String] = None,
                          deviceID: Option[String] = None,
                          akamaiReputation: Option[AkamaiReputation] = None,
-                         remainingHeaders: Seq[(String, String)] = Seq()) extends  LoggingDetails with HeaderProvider {
+                         otherHeaders: Seq[(String, String)] = Seq()) extends  LoggingDetails with HeaderProvider {
 
   /**
    * @return the time, in nanoseconds, since this header carrier was created
@@ -63,7 +63,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
       deviceID.map(HeaderNames.deviceID -> _),
       akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
-    ).flatten.toList ++ extraHeaders ++ remainingHeaders
+    ).flatten.toList ++ extraHeaders ++ otherHeaders
   }
 
   def withExtraHeaders(headers:(String, String)*) : HeaderCarrier = {
@@ -101,7 +101,7 @@ object HeaderCarrier {
       headers.get(HeaderNames.googleAnalyticUserId),
       headers.get(HeaderNames.deviceID),
       headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      remainingHeaders(headers)
+      otherHeaders(headers)
     )
   }
 
@@ -122,7 +122,7 @@ object HeaderCarrier {
       headers.get(HeaderNames.googleAnalyticUserId),
       getDeviceId(cookies, headers),
       headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      remainingHeaders(headers)
+      otherHeaders(headers)
     )
   }
 
@@ -132,7 +132,7 @@ object HeaderCarrier {
   }
 
 
-  private def remainingHeaders(headers: Headers): Seq[(String, String)] = {
+  private def otherHeaders(headers: Headers): Seq[(String, String)] = {
     val remaining = headers.keys.
       filterNot(HeaderNames.explicitlyIncludedHeaders.values.toSeq.contains(_)).
       filterNot(blacklistedHeaders.contains(_))

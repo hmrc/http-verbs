@@ -110,7 +110,7 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
     }
 
     "add all non-blacklisted remaining headers" in  {
-      fromHeadersAndSession(headers("User-Agent" -> "quix", "quix" -> "foo"), Some(Session())).remainingHeaders shouldBe Seq("quix" -> "foo")
+      fromHeadersAndSession(headers("User-Agent" -> "quix", "quix" -> "foo"), Some(Session())).otherHeaders shouldBe Seq("quix" -> "foo")
     }
 
   }

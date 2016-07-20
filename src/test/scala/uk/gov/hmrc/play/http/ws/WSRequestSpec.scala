@@ -60,7 +60,7 @@ class WSRequestSpec extends WordSpecLike with Matchers {
       running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
         val url = "http://test.me/baz" // an external service call, according to config
         implicit val hc = HeaderCarrier(
-            remainingHeaders = Seq("foo" -> "secret!")
+            otherHeaders = Seq("foo" -> "secret!")
           )
         val req = new WSRequest() {}
         val res = req.buildRequest(url)
@@ -71,7 +71,7 @@ class WSRequestSpec extends WordSpecLike with Matchers {
       running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
         val url = "http://test.service/bar" // an internal service call, according to config
         implicit val hc = HeaderCarrier(
-            remainingHeaders = Seq("foo" -> "secret!")
+            otherHeaders = Seq("foo" -> "secret!")
           )
         val req = new WSRequest() {}
         val res = req.buildRequest(url)
@@ -82,7 +82,7 @@ class WSRequestSpec extends WordSpecLike with Matchers {
       running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
         val url = "http://localhost/foo" // an internal service call, according to config
         implicit val hc = HeaderCarrier(
-            remainingHeaders = Seq("foo" -> "secret!")
+            otherHeaders = Seq("foo" -> "secret!")
           )
         val req = new WSRequest() {}
         val res = req.buildRequest(url)

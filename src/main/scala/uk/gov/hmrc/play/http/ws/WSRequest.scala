@@ -49,7 +49,7 @@ trait WSRequest {
     if (internalHostPatterns.exists(_.pattern.matcher(u.getHost).matches())) {
       hc.headers
     } else {
-      hc.headers.filterNot(hc.remainingHeaders.contains(_))
+      hc.headers.filterNot(hc.otherHeaders.contains(_))
     }
   }
 }
