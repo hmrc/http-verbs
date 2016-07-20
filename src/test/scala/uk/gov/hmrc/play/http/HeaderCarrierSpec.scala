@@ -26,9 +26,7 @@ import uk.gov.hmrc.play.http.logging._
 
 import scala.concurrent.duration._
 
-class HeaderCarrierSpec extends WordSpecLike with Matchers with OneAppPerSuite {
-
-  override implicit lazy val app: FakeApplication = FakeApplication(additionalConfiguration = Map("blacklistedHttpHeaders" -> Seq("foo", "baz")))
+class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
   "Extracting the request timestamp from the session and headers" should {
     "find it in the header if present and a valid Long" in {
@@ -111,8 +109,8 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers with OneAppPerSuite {
       fromHeadersAndSession(headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"), Some(Session())).akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
     }
 
-    "add all non-blacklisted remaining headers" in {
-      fromHeadersAndSession(headers("foo" -> "bar", "bar" -> "baz", "baz" -> "quix", "quix" -> "foo"), Some(Session())).remainingHeaders shouldBe Seq("bar" -> "baz", "quix" -> "foo")
+    "add all non-blacklisted remaining headers" in  {
+      fromHeadersAndSession(headers("User-Agent" -> "quix", "quix" -> "foo"), Some(Session())).remainingHeaders shouldBe Seq("quix" -> "foo")
     }
 
   }
