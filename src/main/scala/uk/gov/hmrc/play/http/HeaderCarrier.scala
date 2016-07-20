@@ -128,7 +128,7 @@ object HeaderCarrier {
 
   val blacklistedHeaders: Seq[String] = {
     // TODO sensible config key name and default values
-    Play.current.configuration.getStringSeq("blacklistedHttpHeaders").getOrElse(Seq("User-Agent"))
+    Play.maybeApplication.flatMap(_.configuration.getStringSeq("blacklistedHttpHeaders")).getOrElse(Seq("User-Agent"))
   }
 
 
