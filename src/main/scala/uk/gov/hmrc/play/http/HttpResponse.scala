@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
-import play.api.libs.json.{Json, JsValue}
-import play.api.mvc.Headers
+import play.api.libs.json.{JsValue, Json}
 
 /**
  * The ws.Response class is very hard to dummy up as it wraps a concrete instance of
@@ -44,4 +43,6 @@ object HttpResponse {
     override def json: JsValue = responseJson.orNull
     override def status: Int = responseStatus
   }
+
+  def unapply(that: HttpResponse) = Some(that.status, that.json, that.allHeaders, that.body)
 }
