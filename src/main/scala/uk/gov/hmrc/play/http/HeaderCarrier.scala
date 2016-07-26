@@ -36,8 +36,6 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          extraHeaders: Seq[(String, String)] = Seq(), 
                          trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None,
-                         gaToken: Option[String] = None,
-                         gaUserId: Option[String] = None,
                          deviceID: Option[String] = None) extends  LoggingDetails with HeaderProvider {
 
   /**
@@ -56,8 +54,6 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       authorization.map(auth => names.authorisation -> auth.value), 
       trueClientIp.map(HeaderNames.trueClientIp ->_),
       trueClientPort.map(HeaderNames.trueClientPort ->_),
-      gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
-      gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
       deviceID.map(HeaderNames.deviceID -> _)
     ).flatten.toList ++ extraHeaders
   }
@@ -93,8 +89,6 @@ object HeaderCarrier {
       Seq.empty,
       headers.get(HeaderNames.trueClientIp),
       headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
       headers.get(HeaderNames.deviceID)
     )
   }
@@ -112,8 +106,6 @@ object HeaderCarrier {
       Seq.empty,
       headers.get(HeaderNames.trueClientIp),
       headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
       getDeviceId(cookies, headers)
     )
   }
