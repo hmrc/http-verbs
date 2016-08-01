@@ -17,16 +17,16 @@
 package uk.gov.hmrc.play.http
 
 import org.scalatest.{Matchers, WordSpecLike}
-import play.api.mvc.{Cookie, Action, Controller, Session}
-import play.api.test.{FakeRequest, FakeApplication, FakeHeaders}
+import org.scalatestplus.play.OneAppPerSuite
+import play.api.mvc.{Action, Controller, Cookie, Session}
+import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.http.HeaderCarrier.fromHeadersAndSession
-import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
+import uk.gov.hmrc.play.http.logging._
 
 import scala.concurrent.duration._
 
 class HeaderCarrierSpec extends WordSpecLike with Matchers {
-
 
   "Extracting the request timestamp from the session and headers" should {
     "find it in the header if present and a valid Long" in {
@@ -103,6 +103,14 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
     "ignore the sessionId when it is not present in the headers nor session" in {
       fromHeadersAndSession(headers(), Some(Session(Map.empty))).sessionId shouldBe None
+    }
+
+    "find the akamai reputation from the headers" in {
+      fromHeadersAndSession(headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"), Some(Session())).akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
+    }
+
+    "add all non-blacklisted remaining headers" in  {
+      fromHeadersAndSession(headers("User-Agent" -> "quix", "quix" -> "foo"), Some(Session())).otherHeaders shouldBe Seq("quix" -> "foo")
     }
 
   }

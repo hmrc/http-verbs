@@ -20,9 +20,17 @@ object HeaderNames {
 
   import play.api.http.HeaderNames.AUTHORIZATION
 
+  /*
+   * this isn't ideal, but downstream apps still want to refer to typed header values
+   * and guarantee their explicit whitelisting whilst "remaining headers" should avoid
+   * duplicating these and creating unnecessary data on the wire.
+   * We could just model as a list but then accessing known header names would
+   * have to be done by magic number and would be susceptible to changes in ordering
+   */
+
   val authorisation = AUTHORIZATION
   val xForwardedFor = "x-forwarded-for"
-  val xRequestId = "X-Request-ID"
+  val xRequestId =  "X-Request-ID"
   val xRequestTimestamp = "X-Request-Timestamp"
   val xSessionId = "X-Session-ID"
   val xRequestChain = "X-Request-Chain"
@@ -34,6 +42,25 @@ object HeaderNames {
   val googleAnalyticTokenId = "ga-token"
   val googleAnalyticUserId  = "ga-user-cookie-id"
   val deviceID  = "deviceID" // not a typo, should be ID
+  val akamaiReputation = "Akamai-Reputation"
+
+  val explicitlyIncludedHeaders = Seq(
+    authorisation,
+    xForwardedFor,
+    xRequestId,
+    xRequestTimestamp,
+    xSessionId,
+    xRequestChain,
+    trueClientIp,
+    trueClientPort,
+    token,
+    surrogate,
+    otacAuthorization,
+    googleAnalyticTokenId,
+    googleAnalyticUserId,
+    deviceID, // not a typo, should be ID
+    akamaiReputation
+  )
 }
 
 object CookieNames {

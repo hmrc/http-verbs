@@ -56,6 +56,38 @@ class WSRequestSpec extends WordSpecLike with Matchers {
       wsRequest.headers("User-Agent").head shouldBe "test-client"
     }
 
+    "filter 'remaining headers' from request for external service calls" in
+      running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
+        val url = "http://test.me/baz" // an external service call, according to config
+        implicit val hc = HeaderCarrier(
+            otherHeaders = Seq("foo" -> "secret!")
+          )
+        val req = new WSRequest() {}
+        val res = req.buildRequest(url)
+        res.headers.get("foo") shouldBe None
+    }
+
+    "include 'remaining headers' in request for internal service call to .service URL" in
+      running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
+        val url = "http://test.service/bar" // an internal service call, according to config
+        implicit val hc = HeaderCarrier(
+            otherHeaders = Seq("foo" -> "secret!")
+          )
+        val req = new WSRequest() {}
+        val res = req.buildRequest(url)
+        res.headers.get("foo") shouldBe Some(List("secret!"))
+      }
+
+    "include 'remaining headers' in request for internal service call to other configured internal URL pattern" in
+      running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
+        val url = "http://localhost/foo" // an internal service call, according to config
+        implicit val hc = HeaderCarrier(
+            otherHeaders = Seq("foo" -> "secret!")
+          )
+        val req = new WSRequest() {}
+        val res = req.buildRequest(url)
+        res.headers.get("foo") shouldBe Some(List("secret!"))
+      }
 
   }
 

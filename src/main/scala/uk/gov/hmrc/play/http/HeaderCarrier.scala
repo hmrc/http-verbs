@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
+import play.api.Play
 import play.api.mvc.{Cookies, Headers, Session}
 import uk.gov.hmrc.play.http.logging._
 
@@ -33,12 +34,14 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          requestId: Option[RequestId] = None,
                          requestChain: RequestChain = RequestChain.init,
                          nsStamp: Long = System.nanoTime(),
-                         extraHeaders: Seq[(String, String)] = Seq(), 
+                         extraHeaders: Seq[(String, String)] = Seq(),
                          trueClientIp: Option[String] = None,
                          trueClientPort: Option[String] = None,
                          gaToken: Option[String] = None,
                          gaUserId: Option[String] = None,
-                         deviceID: Option[String] = None) extends  LoggingDetails with HeaderProvider {
+                         deviceID: Option[String] = None,
+                         akamaiReputation: Option[AkamaiReputation] = None,
+                         otherHeaders: Seq[(String, String)] = Seq()) extends  LoggingDetails with HeaderProvider {
 
   /**
    * @return the time, in nanoseconds, since this header carrier was created
@@ -53,13 +56,14 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       forwarded.map(f => names.xForwardedFor -> f.value),
       token.map(t => names.token -> t.value),
       Some(names.xRequestChain -> requestChain.value),
-      authorization.map(auth => names.authorisation -> auth.value), 
+      authorization.map(auth => names.authorisation -> auth.value),
       trueClientIp.map(HeaderNames.trueClientIp ->_),
       trueClientPort.map(HeaderNames.trueClientPort ->_),
       gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
       gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
-      deviceID.map(HeaderNames.deviceID -> _)
-    ).flatten.toList ++ extraHeaders
+      deviceID.map(HeaderNames.deviceID -> _),
+      akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
+    ).flatten.toList ++ extraHeaders ++ otherHeaders
   }
 
   def withExtraHeaders(headers:(String, String)*) : HeaderCarrier = {
@@ -95,7 +99,9 @@ object HeaderCarrier {
       headers.get(HeaderNames.trueClientPort),
       headers.get(HeaderNames.googleAnalyticTokenId),
       headers.get(HeaderNames.googleAnalyticUserId),
-      headers.get(HeaderNames.deviceID)
+      headers.get(HeaderNames.deviceID),
+      headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      otherHeaders(headers)
     )
   }
 
@@ -114,8 +120,21 @@ object HeaderCarrier {
       headers.get(HeaderNames.trueClientPort),
       headers.get(HeaderNames.googleAnalyticTokenId),
       headers.get(HeaderNames.googleAnalyticUserId),
-      getDeviceId(cookies, headers)
+      getDeviceId(cookies, headers),
+      headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      otherHeaders(headers)
     )
+  }
+
+  val blacklistedHeaders: Seq[String] = {
+    Play.maybeApplication.flatMap(_.configuration.getStringSeq("httpHeadersBlacklist")).getOrElse(Seq("User-Agent"))
+  }
+
+  private def otherHeaders(headers: Headers): Seq[(String, String)] = {
+    val remaining = headers.keys.
+      filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_)).
+      filterNot(blacklistedHeaders.contains(_))
+    remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq
   }
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] = {
@@ -126,7 +145,7 @@ object HeaderCarrier {
       case (Some(tcip), Some(xff)) => Some(s"$tcip, $xff")
     }).map(ForwardedFor)
   }
-  
+
   def buildRequestChain(currentChain: Option[String]): RequestChain = {
     currentChain match {
       case None => RequestChain.init
@@ -141,6 +160,6 @@ object HeaderCarrier {
       .getOrElse(System.nanoTime())
 
 
- 
+
 
 }
