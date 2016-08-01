@@ -131,12 +131,11 @@ object HeaderCarrier {
     Play.maybeApplication.flatMap(_.configuration.getStringSeq("blacklistedHttpHeaders")).getOrElse(Seq("User-Agent"))
   }
 
-
   private def otherHeaders(headers: Headers): Seq[(String, String)] = {
     val remaining = headers.keys.
-      filterNot(HeaderNames.explicitlyIncludedHeaders.values.toSeq.contains(_)).
+      filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_)).
       filterNot(blacklistedHeaders.contains(_))
-    remaining.map(h => (h -> headers.get(h).getOrElse(""))).toSeq
+    remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq
   }
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] = {
