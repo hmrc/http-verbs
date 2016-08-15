@@ -126,14 +126,14 @@ object HeaderCarrier {
     )
   }
 
-  val blacklistedHeaders: Seq[String] = {
-    Play.maybeApplication.flatMap(_.configuration.getStringSeq("httpHeadersBlacklist")).getOrElse(Seq("User-Agent"))
+  def whitelistedHeaders: Seq[String] = {
+    Play.maybeApplication.flatMap(_.configuration.getStringSeq("httpHeadersWhitelist")).getOrElse(Seq())
   }
 
   private def otherHeaders(headers: Headers): Seq[(String, String)] = {
     val remaining = headers.keys.
       filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_)).
-      filterNot(blacklistedHeaders.contains(_))
+      filter(whitelistedHeaders.contains(_))
     remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq
   }
 

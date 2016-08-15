@@ -72,48 +72,51 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
   "Extracting the remaining header carrier values from the session and headers" should {
 
-    "find nothing with a blank request" in {
-      val hc = fromHeadersAndSession( FakeHeaders())
-      hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
-    }
+      "find nothing with a blank request" in {
+        val hc = fromHeadersAndSession( FakeHeaders())
+        hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
+      }
 
-    "find the userId from the session" in {
-      fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.userId -> "beeblebrox")))).userId shouldBe Some(UserId("beeblebrox"))
-    }
+      "find the userId from the session" in {
+        fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.userId -> "beeblebrox")))).userId shouldBe Some(UserId("beeblebrox"))
+      }
 
-    "find the token from the session" in {
-      fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.token -> "THE_ONE_RING")))).token shouldBe Some(Token("THE_ONE_RING"))
-    }
+      "find the token from the session" in {
+        fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.token -> "THE_ONE_RING")))).token shouldBe Some(Token("THE_ONE_RING"))
+      }
 
-    "find the authorization from the session" in {
-      fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.authToken -> "let me in!")))).authorization shouldBe Some(Authorization("let me in!"))
-    }
+      "find the authorization from the session" in {
+        fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.authToken -> "let me in!")))).authorization shouldBe Some(Authorization("let me in!"))
+      }
 
-    "find the requestId from the headers" in {
-      fromHeadersAndSession(headers(HeaderNames.xRequestId -> "18476239874162"), Some(Session())).requestId shouldBe Some(RequestId("18476239874162"))
-    }
+      "find the requestId from the headers" in {
+        fromHeadersAndSession(headers(HeaderNames.xRequestId -> "18476239874162"), Some(Session())).requestId shouldBe Some(RequestId("18476239874162"))
+      }
 
-    "find the sessionId from the session" in {
-      fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.sessionId -> "sesssionIdFromSession")))).sessionId shouldBe Some(SessionId("sesssionIdFromSession"))
-    }
+      "find the sessionId from the session" in {
+        fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.sessionId -> "sesssionIdFromSession")))).sessionId shouldBe Some(SessionId("sesssionIdFromSession"))
+      }
 
-    "find the sessionId from the headers when not present in the session" in {
-      fromHeadersAndSession(headers(HeaderNames.xSessionId -> "sessionIdFromHeader"), Some(Session(Map.empty))).sessionId shouldBe Some(SessionId("sessionIdFromHeader"))
-    }
+      "find the sessionId from the headers when not present in the session" in {
+        fromHeadersAndSession(headers(HeaderNames.xSessionId -> "sessionIdFromHeader"), Some(Session(Map.empty))).sessionId shouldBe Some(SessionId("sessionIdFromHeader"))
+      }
 
-    "ignore the sessionId when it is not present in the headers nor session" in {
-      fromHeadersAndSession(headers(), Some(Session(Map.empty))).sessionId shouldBe None
-    }
+      "ignore the sessionId when it is not present in the headers nor session" in {
+        fromHeadersAndSession(headers(), Some(Session(Map.empty))).sessionId shouldBe None
+      }
 
-    "find the akamai reputation from the headers" in {
-      fromHeadersAndSession(headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"), Some(Session())).akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
-    }
+      "find the akamai reputation from the headers" in {
+        fromHeadersAndSession(headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"), Some(Session())).akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
+      }
 
-    "add all non-blacklisted remaining headers" in  {
-      fromHeadersAndSession(headers("User-Agent" -> "quix", "quix" -> "foo"), Some(Session())).otherHeaders shouldBe Seq("quix" -> "foo")
-    }
+      "add all whitelisted remaining headers, ignoring explicit ones" in running(FakeApplication(additionalConfiguration = Map("httpHeadersWhitelist" -> Seq("quix")))) {
+        fromHeadersAndSession(headers(
+          HeaderNames.xRequestId -> "18476239874162",
+          "User-Agent" -> "quix",
+          "quix" -> "foo"), Some(Session())).otherHeaders shouldBe Seq("quix" -> "foo")
+      }
 
-  }
+    }
 
   "build Google Analytics headers from request" should {
 
