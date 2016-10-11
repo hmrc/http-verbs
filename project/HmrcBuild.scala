@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-import sbt._
 import sbt.Keys._
-import uk.gov.hmrc.PublishingSettings._
-import uk.gov.hmrc.SbtAutoBuildPlugin
+import sbt._
 import uk.gov.hmrc.versioning.SbtGitVersioning
 
 object HmrcBuild extends Build {
 
   import uk.gov.hmrc._
-  import DefaultBuildSettings._
-  import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
-  import uk.gov.hmrc.PublishingSettings._
 
   val appName = "http-verbs"
 
@@ -44,7 +39,7 @@ object HmrcBuild extends Build {
 
 private object AppDependencies {
 
-  import play.PlayImport._
+  import play.sbt.PlayImport._
   import play.core.PlayVersion
 
   val compile = Seq(
@@ -63,13 +58,16 @@ private object AppDependencies {
     def apply() = new TestDependencies {
       override lazy val test = Seq(
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
+        "com.typesafe.play" %% "play-specs2" % PlayVersion.current % scope,
         "commons-codec" % "commons-codec" % "1.7" % scope,
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
         "org.scalacheck" %% "scalacheck" % "1.12.2" % scope,
         "org.pegdown" % "pegdown" % "1.5.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
         "uk.gov.hmrc" %% "http-verbs-test" % "0.1.0" % scope,
-        "org.scalatestplus" %% "play" % "1.2.0" % scope
+        "org.scalatestplus" %% "play" % "1.2.0" % scope,
+        "ch.qos.logback" % "logback-core" % "1.1.7",
+        "ch.qos.logback" % "logback-classic" % "1.1.7"
       )
     }.test
   }

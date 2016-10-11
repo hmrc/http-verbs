@@ -16,19 +16,22 @@
 
 package uk.gov.hmrc.play.connectors
 
-import play.api.libs.ws.{WSClient, DefaultWSClientConfig}
-import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import play.api.libs.ws.WSClient
+import play.api.libs.ws.ahc.{AhcConfigBuilder, AhcWSClient}
 
 trait WSClientProvider {
   implicit val client: WSClient
 }
 
 trait DefaultWSClientProvider extends WSClientProvider {
-  val clientConfig = new DefaultWSClientConfig()
-  val secureDefaults:com.ning.http.client.AsyncHttpClientConfig = new NingAsyncHttpClientConfigBuilder(clientConfig).build()
-  val builder = new com.ning.http.client.AsyncHttpClientConfig.Builder(secureDefaults)
-  builder.setCompressionEnabled(true)
-  val secureDefaultsWithSpecificOptions:com.ning.http.client.AsyncHttpClientConfig = builder.build()
+  val builder = new AhcConfigBuilder()
+  val ahcBuilder = builder.configure()
+  val ahcConfig = ahcBuilder.build()
 
-  implicit val client = new play.api.libs.ws.ning.NingWSClient(secureDefaultsWithSpecificOptions)
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+
+  implicit val client = new AhcWSClient(ahcConfig)
 }

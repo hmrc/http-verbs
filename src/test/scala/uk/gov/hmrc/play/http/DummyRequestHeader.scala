@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.play.http
 
+import java.security.cert.X509Certificate
+
 import play.api.mvc.{Headers, RequestHeader}
 import play.api.test.FakeHeaders
 
@@ -41,4 +43,6 @@ class DummyRequestHeader extends RequestHeader {
   override def id: Long = ???
 
   override def secure: Boolean = false
+
+  override def clientCertificateChain: Option[Seq[X509Certificate]] = ???
 }

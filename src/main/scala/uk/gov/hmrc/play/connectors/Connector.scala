@@ -17,20 +17,20 @@
 package uk.gov.hmrc.play.connectors
 
 import play.api.Play.current
-import play.api.libs.ws.{WS, WSRequestHolder}
+import play.api.libs.ws.{WS, WSRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 trait RequestBuilder {
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest
 }
 
 trait PlayWSRequestBuilder extends RequestBuilder {
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder = WS.url(url).withHeaders(hc.headers: _*)
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = WS.url(url).withHeaders(hc.headers: _*)
 }
 
 trait WSClientRequestBuilder extends RequestBuilder {
   this: WSClientProvider =>
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequestHolder = client.url(url).withHeaders(hc.headers: _*)
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = client.url(url).withHeaders(hc.headers: _*)
 }
 
 @deprecated("Please use PlayWSRequestBuilder instead", "3.1.0")

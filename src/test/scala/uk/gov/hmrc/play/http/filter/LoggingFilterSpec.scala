@@ -16,18 +16,25 @@
 
 package uk.gov.hmrc.play.http.filter
 
+import akka.stream.Materializer
 import org.scalatest.concurrent.Eventually
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 import org.slf4j.Logger
+import play.api.LoggerLike
 import play.api.mvc._
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import play.api.{LoggerLike, Routes}
 import uk.gov.hmrc.play.http.DummyRequestHeader
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 
 import scala.concurrent.Future
 
-class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues with FutureAwaits with DefaultAwaitTimeout with Eventually {
+class LoggingFilterSpec extends WordSpecLike with MockitoSugar with Matchers with OptionValues with FutureAwaits with DefaultAwaitTimeout with Eventually {
+
+  class LoggingFilterTest (loggerIn: LoggerLike, controllerNeedsLogging: Boolean)(implicit val mat: Materializer) extends LoggingFilter {
+    override def logger = loggerIn
+    override def controllerNeedsLogging(controllerName: String): Boolean = controllerNeedsLogging
+  }
 
   "the LoggingFilter should" should {
 
@@ -42,7 +49,7 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
       }
     }
 
-    def requestWith(loggingFilter:LoggingFilter, someTags:Map[String, String] = Map())={
+    def requestWith(loggingFilter: LoggingFilter, someTags: Map[String, String] = Map()) = {
       loggingFilter.apply(rh => Future.successful(Results.NoContent))(new DummyRequestHeader() {
         override def tags = someTags
       })
@@ -51,10 +58,8 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
     "log when a requests' path matches a controller which is configured to log" in {
       val fakeLogger = buildFakeLogger()
 
-      val loggingFilter = new LoggingFilter() {
-        override def logger = fakeLogger
-        override def controllerNeedsLogging(controllerName: String): Boolean = true
-      }
+      implicit val mat: Materializer = mock[Materializer]
+      val loggingFilter = new LoggingFilterTest(fakeLogger, true)
 
       await(requestWith(loggingFilter))
 
@@ -66,12 +71,10 @@ class LoggingFilterSpec extends WordSpecLike with Matchers with OptionValues wit
     "not log when a requests' path does not match a controller which is not configured to log" in {
       val fakeLogger = buildFakeLogger()
 
-      val loggingFilter = new LoggingFilter() {
-        override def logger = fakeLogger
-        override def controllerNeedsLogging(controllerName: String): Boolean = false
-      }
+      implicit val mat: Materializer = mock[Materializer]
+      val loggingFilter = new LoggingFilterTest(fakeLogger, false)
 
-      await(requestWith(loggingFilter, Map(Routes.ROUTE_CONTROLLER -> "exists")))
+      await(requestWith(loggingFilter, Map(play.routing.Router.Tags.ROUTE_CONTROLLER -> "exists")))
 
       fakeLogger.lastInfoMessage shouldBe None
     }
