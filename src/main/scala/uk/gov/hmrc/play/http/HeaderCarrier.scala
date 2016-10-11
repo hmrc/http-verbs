@@ -74,7 +74,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
 object HeaderCarrier {
 
   def fromHeadersAndSession(headers: Headers, session: Option[Session]=None) = {
-    lazy val cookies: Cookies = Cookies(headers.get(play.api.http.HeaderNames.COOKIE))
+    lazy val cookies: Cookies = Cookies.fromCookieHeader(headers.get(play.api.http.HeaderNames.COOKIE))
     session.fold(fromHeaders(headers)) {
        fromSession(headers, cookies, _)
     }

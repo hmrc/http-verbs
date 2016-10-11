@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play.http
 
 import play.api.libs.json
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsNull, JsUndefined, JsValue}
 import play.twirl.api.Html
 
 trait HttpReads[O] {
@@ -61,7 +61,7 @@ trait JsonHttpReads extends HttpErrorFunctions {
   def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
     def read(method: String, url: String, response: HttpResponse) = response.status match {
       case 204 | 404 => Seq.empty
-      case _ => readJson[Seq[O]](method, url, handleResponse(method, url)(response).json \ name)
+      case _ => readJson[Seq[O]](method, url, (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
     }
   }
 
