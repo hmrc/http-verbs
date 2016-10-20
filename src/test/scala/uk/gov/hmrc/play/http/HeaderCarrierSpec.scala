@@ -17,10 +17,9 @@
 package uk.gov.hmrc.play.http
 
 import org.scalatest.{Matchers, WordSpecLike}
-import org.scalatestplus.play.OneAppPerSuite
 import play.api.mvc.{Action, Controller, Cookie, Session}
-import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
+import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier.fromHeadersAndSession
 import uk.gov.hmrc.play.http.logging._
 
