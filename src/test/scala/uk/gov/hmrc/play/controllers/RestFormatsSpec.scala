@@ -30,6 +30,14 @@ class RestFormatsSpec extends WordSpecLike with Matchers {
       result shouldBe testDate
     }
 
+    "accept strings formatted without a millisecond component" in {
+      val testDate = new LocalDateTime(0, DateTimeZone.UTC)
+      val jsValue: JsValue = JsString("1970-01-01T00:00:00")
+
+      val JsSuccess(result, _) = RestFormats.localDateTimeRead.reads(jsValue)
+      result shouldBe testDate
+    }
+
     "return a JsError for a json value that is not a JsString" in {
       RestFormats.localDateTimeRead.reads(Json.obj()) shouldBe a[JsError]
     }
@@ -43,6 +51,14 @@ class RestFormatsSpec extends WordSpecLike with Matchers {
     "return a DateTime in zone UTC for correctly formatted JsString" in {
       val testDate = new DateTime(0)
       val jsValue = RestFormats.dateTimeWrite.writes(testDate)
+
+      val JsSuccess(result, _) = RestFormats.dateTimeRead.reads(jsValue)
+      result shouldBe testDate.withZone(DateTimeZone.UTC)
+    }
+
+    "accept strings formatted without a millisecond component" in {
+      val testDate = new DateTime(0)
+      val jsValue: JsValue = JsString("1970-01-01T00:00:00+00:00")
 
       val JsSuccess(result, _) = RestFormats.dateTimeRead.reads(jsValue)
       result shouldBe testDate.withZone(DateTimeZone.UTC)

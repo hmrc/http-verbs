@@ -26,16 +26,17 @@ object RestFormats extends RestFormats
 
 trait RestFormats {
 
-  private val dateTimeFormat = ISODateTimeFormat.dateTime.withZoneUTC
+  private val dateTimeReadParser = ISODateTimeFormat.dateTimeParser.withZoneUTC
+  private val dateTimeWriteFormat = ISODateTimeFormat.dateTime.withZoneUTC
   private val localDateRegex = """^(\d\d\d\d)-(\d\d)-(\d\d)$""".r
 
   implicit val localDateTimeRead: Reads[LocalDateTime] = new Reads[LocalDateTime] {
     override def reads(json: JsValue): JsResult[LocalDateTime] = {
       json match {
         case JsString(s) => Try {
-          JsSuccess(new LocalDateTime(dateTimeFormat.parseDateTime(s), DateTimeZone.UTC))
+          JsSuccess(new LocalDateTime(dateTimeReadParser.parseDateTime(s), DateTimeZone.UTC))
         }.getOrElse {
-          JsError(s"Could not parse $s as a DateTime with format ${dateTimeFormat.toString}")
+          JsError(s"Could not parse $s as a DateTime with format ${dateTimeReadParser.toString}")
         }
         case _ => JsError(s"Expected value to be a string, was actually $json")
       }
@@ -43,16 +44,16 @@ trait RestFormats {
   }
 
   implicit val localDateTimeWrite: Writes[LocalDateTime] = new Writes[LocalDateTime] {
-    def writes(dateTime: LocalDateTime): JsValue = JsString(dateTimeFormat.print(dateTime.toDateTime(DateTimeZone.UTC)))
+    def writes(dateTime: LocalDateTime): JsValue = JsString(dateTimeWriteFormat.print(dateTime.toDateTime(DateTimeZone.UTC)))
   }
 
   implicit val dateTimeRead: Reads[DateTime] = new Reads[DateTime] {
     override def reads(json: JsValue): JsResult[DateTime] = {
       json match {
         case JsString(s) => Try {
-          JsSuccess(dateTimeFormat.parseDateTime(s))
+          JsSuccess(dateTimeReadParser.parseDateTime(s))
         }.getOrElse {
-          JsError(s"Could not parse $s as a DateTime with format ${dateTimeFormat.toString}")
+          JsError(s"Could not parse $s as a DateTime with format ${dateTimeReadParser.toString}")
         }
         case _ => JsError(s"Expected value to be a string, was actually $json")
       }
@@ -60,7 +61,7 @@ trait RestFormats {
   }
 
   implicit val dateTimeWrite: Writes[DateTime] = new Writes[DateTime] {
-    def writes(dateTime: DateTime): JsValue = JsString(dateTimeFormat.print(dateTime))
+    def writes(dateTime: DateTime): JsValue = JsString(dateTimeWriteFormat.print(dateTime))
   }
 
   implicit val localDateRead: Reads[LocalDate] = new Reads[LocalDate] {
