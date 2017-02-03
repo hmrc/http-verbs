@@ -146,4 +146,23 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
   }
 
+  "utilise values from cookies for HMRC Language" should {
+
+    object TestController extends Controller {
+      def index = Action { req =>
+        fromHeadersAndSession(req.headers, Some(req.session)).hmrcLang shouldBe Some("en-GB")
+        Ok("en-HG")
+      }
+    }
+
+    "find the hmrcLang from the cookie" in running(FakeApplication()) {
+      TestController.index(FakeRequest().withCookies(Cookie(CookieNames.hmrcLang, "en-GB")))
+    }
+
+    "find the hmrcLang from the headers if the cookie is not set such as in an internal microservice call" in {
+      fromHeadersAndSession(headers(HeaderNames.hmrcLang -> "en-GB"), Some(Session(Map.empty))).hmrcLang shouldBe Some("en-GB")
+    }
+
+  }
+
 }
