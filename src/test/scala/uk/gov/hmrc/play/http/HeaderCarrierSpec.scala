@@ -156,11 +156,11 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
     }
 
     "find the hmrcLang from the cookie" in running(FakeApplication()) {
-      TestController.index(FakeRequest().withCookies(Cookie(CookieNames.hmrcLang, "en-GB")))
+      TestController.index(FakeRequest().withCookies(Cookie(CookieNames.mdtpLang, "en-GB")))
     }
 
     "find the hmrcLang from the headers if the cookie is not set such as in an internal microservice call" in {
-      fromHeadersAndSession(headers(HeaderNames.hmrcLang -> "en-GB"), Some(Session(Map.empty))).hmrcLang shouldBe Some("en-GB")
+      fromHeadersAndSession(headers(HeaderNames.mdtpLang -> "en-GB"), Some(Session(Map.empty))).hmrcLang shouldBe Some("en-GB")
     }
 
   }

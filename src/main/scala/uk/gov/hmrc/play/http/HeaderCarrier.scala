@@ -63,7 +63,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
       gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
       deviceID.map(HeaderNames.deviceID -> _),
-      hmrcLang.map(HeaderNames.hmrcLang -> _),
+      hmrcLang.map(HeaderNames.mdtpLang -> _),
       akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
     ).flatten.toList ++ extraHeaders ++ otherHeaders
   }
@@ -86,7 +86,7 @@ object HeaderCarrier {
 
   private def getDeviceId(c: Cookies, headers: Headers) = c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
 
-  private def getHmrcLang(c: Cookies, headers: Headers) = c.get(CookieNames.hmrcLang).map(_.value).fold[Option[String]](headers.get(HeaderNames.hmrcLang))(Some(_))
+  private def getHmrcLang(c: Cookies, headers: Headers) = c.get(CookieNames.mdtpLang).map(_.value).fold[Option[String]](headers.get(HeaderNames.mdtpLang))(Some(_))
 
   private def fromHeaders(headers: Headers): HeaderCarrier = {
     HeaderCarrier(
@@ -104,7 +104,7 @@ object HeaderCarrier {
       headers.get(HeaderNames.googleAnalyticTokenId),
       headers.get(HeaderNames.googleAnalyticUserId),
       headers.get(HeaderNames.deviceID),
-      headers.get(HeaderNames.hmrcLang),
+      headers.get(HeaderNames.mdtpLang),
       headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
       otherHeaders(headers)
     )

@@ -43,7 +43,7 @@ object HeaderNames {
   val googleAnalyticUserId  = "ga-user-cookie-id"
   val deviceID  = "deviceID" // not a typo, should be ID
   val akamaiReputation = "Akamai-Reputation"
-  val hmrcLang  = "HMRC_LANG"
+  val mdtpLang  = "MDTP-Language"
 
 
   val explicitlyIncludedHeaders = Seq(
@@ -62,13 +62,13 @@ object HeaderNames {
     googleAnalyticUserId,
     deviceID, // not a typo, should be ID
     akamaiReputation,
-    hmrcLang
+    mdtpLang
   )
 }
 
 object CookieNames {
   val deviceID = "mdtpdi"
-  val hmrcLang = "HMRC_LANG"
+  val mdtpLang = "mdtp_lang"
 
 }
 
