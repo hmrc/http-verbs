@@ -17,12 +17,11 @@
 package uk.gov.hmrc.play.http.ws
 
 import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
+import play.api.mvc.Results
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost, HttpResponse}
-import MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
-import play.api.mvc.Results
 
 
 trait WSPost extends HttpPost with WSRequest {
@@ -44,4 +43,8 @@ trait WSPost extends HttpPost with WSRequest {
     buildRequest(url).post(Results.EmptyContent()).map(new WSHttpResponse(_))
   }
 
+  override protected def doBinaryPost(url: String, body: Array[Byte])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    import play.api.http.{ContentTypeOf, Writeable}
+    buildRequest(url).post(body)(Writeable.wBytes, ContentTypeOf.contentTypeOf_ByteArray).map(new WSHttpResponse(_))
+  }
 }

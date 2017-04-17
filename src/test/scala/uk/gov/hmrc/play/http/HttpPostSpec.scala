@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
+
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
@@ -23,6 +24,7 @@ import play.api.http.HttpVerbs._
 import play.api.libs.json.{Json, Writes}
 import play.twirl.api.Html
 import uk.gov.hmrc.play.http.hooks.HttpHook
+import uk.gov.hmrc.play.test.FileBytes
 import scala.concurrent.Future
 import uk.gov.hmrc.play.test.Concurrent.await
 
@@ -37,6 +39,7 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult
     def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doPostResult
     def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
+    def doBinaryPost(url: String, body: Array[Byte])(implicit hc: HeaderCarrier): Future[HttpResponse] = doPostResult
   }
 
   "HttpPost.POST" should {
@@ -159,4 +162,33 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     behave like aTracingHttpCall[StubbedHttpPost](POST, "POSTEmpty", new StubbedHttpPost(defaultHttpResponse)) { _.POSTEmpty(url) }
   }
 
+
+  "HttpPost.POSTBinary" should {
+
+    "be able to return empty body response responses" in {
+      val response = new DummyHttpResponse("", 200)
+      val testPOST = new StubbedHttpPost(Future.successful(response))
+
+      testPOST.POSTBinary(url, FileBytes("/testfile.txt")).futureValue shouldBe response
+    }
+
+    "be able to return JSON responses" in {
+      val response = new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)
+      val testPOST = new StubbedHttpPost(Future.successful(response))
+
+      val actualResponse = testPOST.POSTBinary[TestClass](url, FileBytes("/testfile.txt")).futureValue
+
+      actualResponse shouldBe TestClass("t", 10)
+    }
+
+    "Invoke any hooks provided" in {
+      val dummyResponseFuture = Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200))
+      val testPOST = new StubbedHttpPost(dummyResponseFuture)
+
+      testPOST.POSTBinary[TestClass](url, FileBytes("/testfile.txt")).futureValue
+
+      verify(testPOST.testHook1)(url, "POST", None, dummyResponseFuture)
+      verify(testPOST.testHook2)(url, "POST", None, dummyResponseFuture)
+    }
+  }
 }
