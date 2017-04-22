@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ object HeaderNames {
   val googleAnalyticUserId  = "ga-user-cookie-id"
   val deviceID  = "deviceID" // not a typo, should be ID
   val akamaiReputation = "Akamai-Reputation"
+  val mdtpLang  = "MDTP-Language"
+
 
   val explicitlyIncludedHeaders = Seq(
     authorisation,
@@ -59,12 +61,15 @@ object HeaderNames {
     googleAnalyticTokenId,
     googleAnalyticUserId,
     deviceID, // not a typo, should be ID
-    akamaiReputation
+    akamaiReputation,
+    mdtpLang
   )
 }
 
 object CookieNames {
   val deviceID = "mdtpdi"
+  val mdtpLang = "mdtp_lang"
+
 }
 
 object SessionKeys {

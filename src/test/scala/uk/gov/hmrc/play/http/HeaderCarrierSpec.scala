@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,6 +142,25 @@ class HeaderCarrierSpec extends WordSpecLike with Matchers {
 
     "find the deviceID from the headers if the cookie is not set such as in an internal microservice call" in {
       fromHeadersAndSession(headers(HeaderNames.deviceID -> "deviceIdTest"), Some(Session(Map.empty))).deviceID shouldBe Some("deviceIdTest")
+    }
+
+  }
+
+  "utilise values from cookies for HMRC Language" should {
+
+    object TestController extends Controller {
+      def index = Action { req =>
+        fromHeadersAndSession(req.headers, Some(req.session)).hmrcLang shouldBe Some("en-GB")
+        Ok("en-GB")
+      }
+    }
+
+    "find the hmrcLang from the cookie" in running(FakeApplication()) {
+      TestController.index(FakeRequest().withCookies(Cookie(CookieNames.mdtpLang, "en-GB")))
+    }
+
+    "find the hmrcLang from the headers if the cookie is not set such as in an internal microservice call" in {
+      fromHeadersAndSession(headers(HeaderNames.mdtpLang -> "en-GB"), Some(Session(Map.empty))).hmrcLang shouldBe Some("en-GB")
     }
 
   }

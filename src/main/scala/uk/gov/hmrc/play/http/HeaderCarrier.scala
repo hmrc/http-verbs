@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,13 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
                          gaToken: Option[String] = None,
                          gaUserId: Option[String] = None,
                          deviceID: Option[String] = None,
+                         hmrcLang:Option[String] = None,
                          akamaiReputation: Option[AkamaiReputation] = None,
                          otherHeaders: Seq[(String, String)] = Seq()) extends  LoggingDetails with HeaderProvider {
 
   /**
-   * @return the time, in nanoseconds, since this header carrier was created
-   */
+    * @return the time, in nanoseconds, since this header carrier was created
+    */
   def age = System.nanoTime() - nsStamp
 
   val names = HeaderNames
@@ -62,6 +63,7 @@ case class HeaderCarrier(authorization: Option[Authorization] = None,
       gaToken.map(HeaderNames.googleAnalyticTokenId ->_),
       gaUserId.map(HeaderNames.googleAnalyticUserId ->_),
       deviceID.map(HeaderNames.deviceID -> _),
+      hmrcLang.map(HeaderNames.mdtpLang -> _),
       akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
     ).flatten.toList ++ extraHeaders ++ otherHeaders
   }
@@ -76,13 +78,15 @@ object HeaderCarrier {
   def fromHeadersAndSession(headers: Headers, session: Option[Session]=None) = {
     lazy val cookies: Cookies = Cookies.fromCookieHeader(headers.get(play.api.http.HeaderNames.COOKIE))
     session.fold(fromHeaders(headers)) {
-       fromSession(headers, cookies, _)
+      fromSession(headers, cookies, _)
     }
   }
 
   private def getSessionId(s: Session, headers: Headers) = s.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
 
   private def getDeviceId(c: Cookies, headers: Headers) = c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
+
+  private def getHmrcLang(c: Cookies, headers: Headers) = c.get(CookieNames.mdtpLang).map(_.value).fold[Option[String]](headers.get(HeaderNames.mdtpLang))(Some(_))
 
   private def fromHeaders(headers: Headers): HeaderCarrier = {
     HeaderCarrier(
@@ -100,6 +104,7 @@ object HeaderCarrier {
       headers.get(HeaderNames.googleAnalyticTokenId),
       headers.get(HeaderNames.googleAnalyticUserId),
       headers.get(HeaderNames.deviceID),
+      headers.get(HeaderNames.mdtpLang),
       headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
       otherHeaders(headers)
     )
@@ -121,6 +126,7 @@ object HeaderCarrier {
       headers.get(HeaderNames.googleAnalyticTokenId),
       headers.get(HeaderNames.googleAnalyticUserId),
       getDeviceId(cookies, headers),
+      getHmrcLang(cookies,headers),
       headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
       otherHeaders(headers)
     )
