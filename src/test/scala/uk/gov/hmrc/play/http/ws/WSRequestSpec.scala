@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ class WSRequestSpec extends WordSpecLike with Matchers {
         res.headers.get("foo") shouldBe None
     }
 
-    "include 'remaining headers' in request for internal service call to .service URL" in
+    "include 'remaining headers' in request for internal service call to .service URL based on internalServiceHostPatterns defined in config" in
       running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {
         val url = "http://test.service/bar" // an internal service call, according to config
         implicit val hc = HeaderCarrier(
@@ -77,6 +77,22 @@ class WSRequestSpec extends WordSpecLike with Matchers {
         val res = req.buildRequest(url)
         res.headers.get("foo") shouldBe Some(List("secret!"))
       }
+
+    "include 'remaining headers' in request for internal service call to .mdtp and .service URL" in {
+
+      for {url <- List("http://test.public.service/bar", "http://test.public.mdtp/bar"  )} {
+
+        running(FakeApplication()) {
+          implicit val hc = HeaderCarrier(
+            otherHeaders = Seq("foo" -> "secret!")
+          )
+          val req = new WSRequest() {}
+          val res = req.buildRequest(url)
+          assert(res.headers.get("foo") === Some(List("secret!")), s"'other/remaining headers' for $url were not present")
+        }
+      }
+
+    }
 
     "include 'remaining headers' in request for internal service call to other configured internal URL pattern" in
       running(FakeApplication(additionalConfiguration = Map("internalServiceHostPatterns" -> List("^.*\\.service$", "^localhost$")))) {

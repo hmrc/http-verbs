@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ trait WSRequest {
   private val internalHostPatterns: Seq[Regex] = Play.maybeApplication.flatMap(
     _.configuration.getStringSeq("internalServiceHostPatterns").
       map(_.map(_.r))
-  ).getOrElse(Seq("^.*\\.service$".r))
+  ).getOrElse(Seq("^.*\\.service$".r, "^.*\\.mdtp$".r))
 
   def buildRequest[A](url: String)(implicit hc: HeaderCarrier) = {
     val agentHeader = Play.maybeApplication
