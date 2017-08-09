@@ -39,34 +39,31 @@ object HmrcBuild extends Build {
 
 private object AppDependencies {
 
-  import play.sbt.PlayImport._
-  import play.core.PlayVersion
-
   val compile = Seq(
-    "com.typesafe.play" %% "play" % PlayVersion.current,
-    ws,
+    "com.typesafe.play" %% "play-json" % "2.5.15",
     "uk.gov.hmrc" %% "time" % "2.0.0",
-    "uk.gov.hmrc" %% "http-exceptions" % "1.0.0"
+    "uk.gov.hmrc" %% "http-core" % "0.5.0"
   )
+
 
   trait TestDependencies {
     lazy val scope: String = "test"
     lazy val test: Seq[ModuleID] = ???
   }
 
+
+
   object Test {
     def apply() = new TestDependencies {
       override lazy val test = Seq(
-        "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "com.typesafe.play" %% "play-specs2" % PlayVersion.current % scope,
         "commons-codec" % "commons-codec" % "1.7" % scope,
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
         "org.scalacheck" %% "scalacheck" % "1.12.2" % scope,
         "org.pegdown" % "pegdown" % "1.5.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
-        "uk.gov.hmrc" %% "http-verbs-test" % "1.1.0" % scope,
         "ch.qos.logback" % "logback-core" % "1.1.7",
-        "ch.qos.logback" % "logback-classic" % "1.1.7"
+        "ch.qos.logback" % "logback-classic" % "1.1.7",
+        "org.mockito" % "mockito-all" % "1.10.19" % "test"
       )
     }.test
   }
