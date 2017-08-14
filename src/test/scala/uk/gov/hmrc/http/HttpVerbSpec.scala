@@ -26,11 +26,11 @@ import org.scalatest.{LoneElement, Matchers, WordSpecLike}
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 
-class HttpRequestSpec extends WordSpecLike with Matchers with MockitoSugar with LoneElement {
+class HttpVerbSpec extends WordSpecLike with Matchers with MockitoSugar with LoneElement {
 
   "applicableHeaders" should {
 
-    "should contains the values passed in by header-carrier" in {
+    "should contain the values passed in by header-carrier" in {
       val url = "http://test.me"
 
       implicit val hc = HeaderCarrier(
@@ -40,7 +40,7 @@ class HttpRequestSpec extends WordSpecLike with Matchers with MockitoSugar with 
         token = Some(Token("token")),
         forwarded = Some(ForwardedFor("forwarded")))
 
-      val httpRequest = new HttpRequest {
+      val httpRequest = new HttpVerb {
         override def configuration: Option[Config] = None
       }
       val result = httpRequest.applicableHeaders(url)
@@ -55,7 +55,7 @@ class HttpRequestSpec extends WordSpecLike with Matchers with MockitoSugar with 
       when(mockedConfig.getString("appName")).thenReturn("myApp")
       when(mockedConfig.hasPathOrNull("appName")).thenReturn(true)
 
-      val httpRequest = new HttpRequest {
+      val httpRequest = new HttpVerb {
         override def configuration: Option[Config] = Some(mockedConfig)
       }
       val result = httpRequest.applicableHeaders("http://test.me")(HeaderCarrier())
@@ -69,7 +69,7 @@ class HttpRequestSpec extends WordSpecLike with Matchers with MockitoSugar with 
         otherHeaders = Seq("foo" -> "secret!")
       )
 
-      val httpRequest = new HttpRequest {
+      val httpRequest = new HttpVerb {
         override def configuration: Option[Config] = None
       }
       val result = httpRequest.applicableHeaders("http://test.me")
@@ -80,7 +80,7 @@ class HttpRequestSpec extends WordSpecLike with Matchers with MockitoSugar with 
       implicit val hc = HeaderCarrier(
         otherHeaders = Seq("foo" -> "secret!")
       )
-      val httpRequest = new HttpRequest {
+      val httpRequest = new HttpVerb {
         override def configuration: Option[Config] = None
       }
 
@@ -103,7 +103,7 @@ class HttpRequestSpec extends WordSpecLike with Matchers with MockitoSugar with 
       when(mockedConfig.getStringList("internalServiceHostPatterns")).thenReturn(List("localhost"))
       when(mockedConfig.hasPathOrNull("internalServiceHostPatterns")).thenReturn(true)
 
-      val httpRequest = new HttpRequest {
+      val httpRequest = new HttpVerb {
         override def configuration: Option[Config] = Some(mockedConfig)
       }
       val result = httpRequest.applicableHeaders(url)

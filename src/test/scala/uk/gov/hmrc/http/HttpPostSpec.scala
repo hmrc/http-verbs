@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import com.typesafe.config.Config
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
@@ -31,6 +32,7 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     val testHook1 = mock[HttpHook]
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
+    override def configuration: Option[Config] = None
 
     def doPost[A](url: String, body: A, headers: Seq[(String,String)])(implicit rds: Writes[A], hc: HeaderCarrier) = doPostResult
     def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult

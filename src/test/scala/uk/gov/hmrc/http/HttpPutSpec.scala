@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import com.typesafe.config.Config
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
@@ -31,6 +32,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     val testHook1 = mock[HttpHook]
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
+    override def configuration: Option[Config] = None
 
     def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
   }

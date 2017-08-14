@@ -32,6 +32,7 @@
 
 package uk.gov.hmrc.http
 
+import com.typesafe.config.Config
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mock.MockitoSugar
@@ -48,6 +49,8 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
+    override def configuration: Option[Config] = None
+
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
   }
 
@@ -56,6 +59,7 @@ class HttpGetSpec extends WordSpecLike with Matchers with ScalaFutures with Comm
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
     var lastUrl: Option[String] = None
+    override def configuration: Option[Config] = None
 
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
       lastUrl = Some(url)
