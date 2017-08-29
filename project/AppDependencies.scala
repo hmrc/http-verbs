@@ -13,31 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import sbt.Keys._
 import sbt._
-import uk.gov.hmrc.versioning.SbtGitVersioning
 
-object HmrcBuild extends Build {
-
-  import uk.gov.hmrc._
-
-  val appName = "http-verbs"
-
-  lazy val microservice = Project(appName, file("."))
-    .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
-    .settings(
-      scalaVersion := "2.11.8",
-      libraryDependencies ++= AppDependencies(),
-      crossScalaVersions := Seq("2.11.8"),
-      resolvers := Seq(
-        Resolver.bintrayRepo("hmrc", "releases"),
-        Resolver.typesafeRepo("releases")
-      )
-    )
-}
-
-private object AppDependencies {
+object AppDependencies {
 
   val compile = Seq(
     "com.typesafe.play" %% "play-json" % "2.5.16",
