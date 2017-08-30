@@ -18,6 +18,7 @@ package uk.gov.hmrc.http
 
 import com.typesafe.config.Config
 import org.mockito.Mockito._
+import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, WordSpecLike}
@@ -46,7 +47,7 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     }
     "be able to return objects deserialised from JSON" in {
       val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testDelete.DELETE[TestClass](url).futureValue(PatienceConfig(Span(2, Seconds), Span(15, Millis))) should be (TestClass("t", 10))
+      testDelete.DELETE[TestClass](url).futureValue(Timeout(Span(2, Seconds)), Interval(Span(15, Millis))) shouldBe TestClass("t", 10)
     }
     behave like anErrorMappingHttpCall("DELETE", (url, responseF) => new StubbedHttpDelete(responseF).DELETE(url))
     behave like aTracingHttpCall("DELETE", "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }

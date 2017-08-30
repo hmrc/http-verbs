@@ -13,34 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import sbt.Keys._
 import sbt._
-import uk.gov.hmrc.versioning.SbtGitVersioning
 
-object HmrcBuild extends Build {
-
-  import uk.gov.hmrc._
-
-  val appName = "http-verbs"
-
-  lazy val microservice = Project(appName, file("."))
-    .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
-    .settings(
-      scalaVersion := "2.11.7",
-      libraryDependencies ++= AppDependencies(),
-      crossScalaVersions := Seq("2.11.7"),
-      resolvers := Seq(
-        Resolver.bintrayRepo("hmrc", "releases"),
-        "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/"
-      )
-    )
-}
-
-private object AppDependencies {
+object AppDependencies {
 
   val compile = Seq(
-    "com.typesafe.play" %% "play-json" % "2.5.15",
+    "com.typesafe.play" %% "play-json" % "2.5.16",
     "uk.gov.hmrc" %% "time" % "2.0.0",
     "uk.gov.hmrc" %% "http-core" % "0.5.0"
   )
@@ -51,19 +29,17 @@ private object AppDependencies {
     lazy val test: Seq[ModuleID] = ???
   }
 
-
-
   object Test {
     def apply() = new TestDependencies {
       override lazy val test = Seq(
         "commons-codec" % "commons-codec" % "1.7" % scope,
-        "org.scalatest" %% "scalatest" % "2.2.4" % scope,
-        "org.scalacheck" %% "scalacheck" % "1.12.2" % scope,
-        "org.pegdown" % "pegdown" % "1.5.0" % scope,
+        "org.scalatest" %% "scalatest" % "3.0.3" % scope,
+        "org.scalacheck" %% "scalacheck" % "1.13.4" % scope,
+        "org.pegdown" % "pegdown" % "1.6.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
-        "ch.qos.logback" % "logback-core" % "1.1.7",
-        "ch.qos.logback" % "logback-classic" % "1.1.7",
-        "org.mockito" % "mockito-all" % "1.10.19" % "test"
+        "ch.qos.logback" % "logback-core" % "1.1.7" % scope,
+        "ch.qos.logback" % "logback-classic" % "1.1.7" % scope,
+        "org.mockito" % "mockito-all" % "1.10.19"  % scope
       )
     }.test
   }
