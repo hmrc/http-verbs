@@ -17,7 +17,6 @@
 package uk.gov.hmrc.http
 
 class UrlValidationException(val url: String, val context: String, val message: String) extends Exception {
-  override def getMessage: String = {
+  override def getMessage: String =
     s"'$url' is invalid for $context. $message"
-  }
 }

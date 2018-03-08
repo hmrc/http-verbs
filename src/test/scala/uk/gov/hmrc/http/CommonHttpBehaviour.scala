@@ -35,16 +35,17 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
   case class TestRequestClass(baz: String, bar: Int)
   implicit val trcreads = Json.format[TestRequestClass]
 
-  implicit val hc = HeaderCarrier()
-  val testBody = "testBody"
+  implicit val hc     = HeaderCarrier()
+  val testBody        = "testBody"
   val testRequestBody = "testRequestBody"
-  val url = "http://some.url"
+  val url             = "http://some.url"
 
-  def response(returnValue: Option[String] = None, statusCode: Int = 200) = Future.successful(HttpResponse(statusCode, returnValue.map(Json.parse(_))))
+  def response(returnValue: Option[String] = None, statusCode: Int = 200) =
+    Future.successful(HttpResponse(statusCode, returnValue.map(Json.parse(_))))
 
   val defaultHttpResponse = response()
 
-  def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_])= {
+  def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_]) = {
     s"throw a GatewayTimeout exception when the HTTP $verb throws a TimeoutException" in {
 
       implicit val hc = HeaderCarrier()
@@ -52,7 +53,7 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
       val e = httpCall(url, Future.failed(new TimeoutException("timeout"))).failed.futureValue
 
-      e should be (a [GatewayTimeoutException])
+      e            should be(a[GatewayTimeoutException])
       e.getMessage should startWith(verb)
       e.getMessage should include(url)
     }
@@ -64,20 +65,20 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
 
       val e = httpCall(url, Future.failed(new ConnectException("timeout"))).failed.futureValue
 
-      e should be (a [BadGatewayException])
+      e            should be(a[BadGatewayException])
       e.getMessage should startWith(verb)
       e.getMessage should include(url)
     }
   }
 
-  def aTracingHttpCall[T <: ConnectionTracingCapturing](verb: String, method: String, httpBuilder: => T)(httpAction: (T => Future[_]))(implicit mf: Manifest[T]) = {
+  def aTracingHttpCall[T <: ConnectionTracingCapturing](verb: String, method: String, httpBuilder: => T)(
+    httpAction: (T => Future[_]))(implicit mf: Manifest[T]) =
     s"trace exactly once when the HTTP $verb calls $method" in {
       val http = httpBuilder
       httpAction(http).futureValue
-      http.traceCalls should have size 1
+      http.traceCalls         should have size 1
       http.traceCalls.head._1 shouldBe verb
     }
-  }
 
 }
 
@@ -85,7 +86,8 @@ trait ConnectionTracingCapturing extends ConnectionTracing {
 
   val traceCalls = mutable.Buffer[(String, String)]()
 
-  override def withTracing[T](method: String, uri: String)(body: => Future[T])(implicit ld: LoggingDetails, ec: ExecutionContext) = {
+  override def withTracing[T](method: String, uri: String)(
+    body: => Future[T])(implicit ld: LoggingDetails, ec: ExecutionContext) = {
     traceCalls += ((method, uri))
     body
   }

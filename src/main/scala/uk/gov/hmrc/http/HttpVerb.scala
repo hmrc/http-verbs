@@ -28,19 +28,18 @@ trait HttpVerb extends Request {
   @deprecated("ProcessingFunction is obsolete, use the relevant HttpReads[A] instead", "18/03/2015")
   type ProcessingFunction = (Future[HttpResponse], String) => Future[HttpResponse]
 
-  def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(implicit ec: ExecutionContext): Future[HttpResponse] =
+  def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
+    implicit ec: ExecutionContext): Future[HttpResponse] =
     f.recover {
       case e: TimeoutException => throw new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e))
       case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
     }
 
-  def badGatewayMessage(verbName: String, url: String, e: Exception): String = {
+  def badGatewayMessage(verbName: String, url: String, e: Exception): String =
     s"$verbName of '$url' failed. Caused by: '${e.getMessage}'"
-  }
 
-  def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String = {
+  def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String =
     s"$verbName of '$url' timed out with message '${e.getMessage}'"
-  }
 
   lazy val internalHostPatterns: Seq[Regex] = configuration match {
     case Some(config) if config.hasPathOrNull("internalServiceHostPatterns") =>

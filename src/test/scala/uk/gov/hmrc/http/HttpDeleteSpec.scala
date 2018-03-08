@@ -30,24 +30,26 @@ import scala.concurrent.Future
 class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
 
   class StubbedHttpDelete(response: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
-    val testHook1 = mock[HttpHook]
-    val testHook2 = mock[HttpHook]
-    val hooks = Seq(testHook1, testHook2)
+    val testHook1                              = mock[HttpHook]
+    val testHook2                              = mock[HttpHook]
+    val hooks                                  = Seq(testHook1, testHook2)
     override def configuration: Option[Config] = None
 
-    def appName: String = ???
+    def appName: String                                   = ???
     def doDelete(url: String)(implicit hc: HeaderCarrier) = response
   }
 
   "HttpDelete" should {
     "be able to return plain responses" in {
-      val response = new DummyHttpResponse(testBody, 200)
+      val response   = new DummyHttpResponse(testBody, 200)
       val testDelete = new StubbedHttpDelete(Future.successful(response))
       testDelete.DELETE(url).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
       val testDelete = new StubbedHttpDelete(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testDelete.DELETE[TestClass](url).futureValue(Timeout(Span(2, Seconds)), Interval(Span(15, Millis))) shouldBe TestClass("t", 10)
+      testDelete
+        .DELETE[TestClass](url)
+        .futureValue(Timeout(Span(2, Seconds)), Interval(Span(15, Millis))) shouldBe TestClass("t", 10)
     }
     behave like anErrorMappingHttpCall("DELETE", (url, responseF) => new StubbedHttpDelete(responseF).DELETE(url))
     behave like aTracingHttpCall("DELETE", "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }
@@ -55,7 +57,7 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     "Invoke any hooks provided" in {
 
       val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
-      val testGet = new StubbedHttpDelete(dummyResponseFuture)
+      val testGet             = new StubbedHttpDelete(dummyResponseFuture)
       testGet.DELETE(url).futureValue
 
       verify(testGet.testHook1)(url, "DELETE", None, dummyResponseFuture)

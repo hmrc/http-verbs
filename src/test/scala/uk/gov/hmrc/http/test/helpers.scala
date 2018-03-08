@@ -28,13 +28,13 @@ object Concurrent {
   val defaultTimeout = 5 seconds
 
   implicit def extractAwait[A](future: Future[A]) = await[A](future)
-  implicit def liftFuture[A](v: A) = Future.successful(v)
+  implicit def liftFuture[A](v: A)                = Future.successful(v)
 
   def await[A](future: Future[A]) = Await.result(future, defaultTimeout)
 }
 
 trait TestHttpTransport extends HttpTransport {
-  override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier):Future[HttpResponse]= ???
+  override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = ???
 
   override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
@@ -42,12 +42,15 @@ trait TestHttpTransport extends HttpTransport {
 
   override def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = ???
 
-  override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit wts: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = ???
+  override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
+    implicit wts: Writes[A],
+    hc: HeaderCarrier): Future[HttpResponse] = ???
 
-  override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+  override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
+    implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
   override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
-  override def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+  override def doFormPost(url: String, body: Map[String, Seq[String]])(
+    implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 }
-

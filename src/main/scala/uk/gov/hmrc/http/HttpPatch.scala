@@ -25,11 +25,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpPatch extends CorePatch with PatchHttpTransport with HttpVerb with ConnectionTracing with HttpHooks {
 
-  override def PATCH[I, O](url: String, body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = {
+  override def PATCH[I, O](
+    url: String,
+    body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(PATCH_VERB, url) {
       val httpResponse = doPatch(url, body)
       executeHooks(url, PATCH_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
       mapErrors(PATCH_VERB, url, httpResponse).map(response => rds.read(PATCH_VERB, url, response))
     }
-  }
 }

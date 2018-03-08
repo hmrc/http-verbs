@@ -28,13 +28,12 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
 
   val mockPlayLogger = mock[Logger]
 
-  val logger = new ConnectionTracing{
+  val logger = new ConnectionTracing {
     override lazy val connectionLogger = mockPlayLogger
   }
 
-  override def beforeEach() = {
+  override def beforeEach() =
     reset(mockPlayLogger)
-  }
 
   "logResult" should {
 
@@ -133,8 +132,6 @@ class ConnectionTracingTest extends WordSpecLike with Matchers with MockitoSugar
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed unknown error")
 
     }
-
-
 
   }
 

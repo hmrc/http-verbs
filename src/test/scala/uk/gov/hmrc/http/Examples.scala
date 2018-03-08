@@ -20,7 +20,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object Examples {
 
-
   trait VerbExamples {
     val http: HttpGet with HttpPost with HttpPut with HttpDelete with HttpPatch
 

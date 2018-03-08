@@ -25,7 +25,6 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{LoneElement, Matchers, WordSpecLike}
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
-
 class HttpVerbSpec extends WordSpecLike with Matchers with MockitoSugar with LoneElement {
 
   "applicableHeaders" should {
@@ -35,10 +34,11 @@ class HttpVerbSpec extends WordSpecLike with Matchers with MockitoSugar with Lon
 
       implicit val hc = HeaderCarrier(
         authorization = Some(Authorization("auth")),
-        sessionId = Some(SessionId("session")),
-        requestId = Some(RequestId("request")),
-        token = Some(Token("token")),
-        forwarded = Some(ForwardedFor("forwarded")))
+        sessionId     = Some(SessionId("session")),
+        requestId     = Some(RequestId("request")),
+        token         = Some(Token("token")),
+        forwarded     = Some(ForwardedFor("forwarded"))
+      )
 
       val httpRequest = new HttpVerb {
         override def configuration: Option[Config] = None
@@ -62,7 +62,7 @@ class HttpVerbSpec extends WordSpecLike with Matchers with MockitoSugar with Lon
 
       result.contains("User-Agent" -> "myApp") shouldBe true
     }
-    
+
     "filter 'remaining headers' from request for external service calls" in {
 
       implicit val hc = HeaderCarrier(
@@ -84,7 +84,7 @@ class HttpVerbSpec extends WordSpecLike with Matchers with MockitoSugar with Lon
         override def configuration: Option[Config] = None
       }
 
-      for {url <- List("http://test.public.service/bar", "http://test.public.mdtp/bar"  )} {
+      for { url <- List("http://test.public.service/bar", "http://test.public.mdtp/bar") } {
 
         val result = httpRequest.applicableHeaders(url)
         assert(result.contains("foo" -> "secret!"), s"'other/remaining headers' for $url were not present")

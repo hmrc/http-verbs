@@ -28,25 +28,28 @@ import scala.concurrent.Future
 
 class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  class StubbedHttpPut(doPutResult: Future[HttpResponse]) extends HttpPut with MockitoSugar with ConnectionTracingCapturing {
-    val testHook1 = mock[HttpHook]
-    val testHook2 = mock[HttpHook]
-    val hooks = Seq(testHook1, testHook2)
+  class StubbedHttpPut(doPutResult: Future[HttpResponse])
+      extends HttpPut
+      with MockitoSugar
+      with ConnectionTracingCapturing {
+    val testHook1                              = mock[HttpHook]
+    val testHook2                              = mock[HttpHook]
+    val hooks                                  = Seq(testHook1, testHook2)
     override def configuration: Option[Config] = None
 
-    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier)= doPutResult
+    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
   }
 
   "HttpPut" should {
     val testObject = TestRequestClass("a", 1)
     "be able to return plain responses" in {
       val response = new DummyHttpResponse(testBody, 200)
-      val testPut = new StubbedHttpPut(Future.successful(response))
+      val testPut  = new StubbedHttpPut(Future.successful(response))
       testPut.PUT(url, testObject).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
       val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
-      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be (TestClass("t", 10))
+      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall("PUT", (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
@@ -55,7 +58,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     "Invoke any hooks provided" in {
 
       val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
-      val testPut = new StubbedHttpPut(dummyResponseFuture)
+      val testPut             = new StubbedHttpPut(dummyResponseFuture)
       testPut.PUT(url, testObject).futureValue
 
       val testJson = Json.stringify(trcreads.writes(testObject))
