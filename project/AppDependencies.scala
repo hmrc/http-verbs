@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import sbt._
 
 object AppDependencies {
@@ -20,7 +21,9 @@ object AppDependencies {
   val compile = Seq(
     "com.typesafe.play" %% "play-json" % "2.5.16",
     "uk.gov.hmrc" %% "time" % "2.0.0",
-    "uk.gov.hmrc" %% "http-core" % "0.5.0"
+    "uk.gov.hmrc" %% "http-core" % "0.7.0",
+    "ch.qos.logback" % "logback-core" % "1.1.7",
+    "ch.qos.logback" % "logback-classic" % "1.1.7"
   )
 
 
@@ -38,8 +41,7 @@ object AppDependencies {
         "org.pegdown" % "pegdown" % "1.6.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
         "ch.qos.logback" % "logback-core" % "1.1.7" % scope,
-        "ch.qos.logback" % "logback-classic" % "1.1.7" % scope,
-        "org.mockito" % "mockito-all" % "1.10.19"  % scope
+        "org.mockito" % "mockito-all" % "1.10.19" % scope
       )
     }.test
   }
