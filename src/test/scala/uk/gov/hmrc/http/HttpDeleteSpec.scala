@@ -19,7 +19,7 @@ package uk.gov.hmrc.http
 import com.typesafe.config.Config
 import org.mockito.Mockito._
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.http.hooks.HttpHook

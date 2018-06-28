@@ -21,7 +21,7 @@ import java.util
 import com.typesafe.config.Config
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{LoneElement, Matchers, WordSpecLike}
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 

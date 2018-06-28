@@ -35,7 +35,7 @@ package uk.gov.hmrc.http
 import com.typesafe.config.Config
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.http.hooks.HttpHook
 

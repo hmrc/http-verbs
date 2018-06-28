@@ -18,7 +18,7 @@ package uk.gov.hmrc.http
 
 import com.typesafe.config.Config
 import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.hooks.HttpHook
