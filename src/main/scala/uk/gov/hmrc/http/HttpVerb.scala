@@ -19,11 +19,15 @@ package uk.gov.hmrc.http
 import java.net.{ConnectException, URL}
 import java.util.concurrent.TimeoutException
 
+import com.typesafe.config.Config
+
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 
 trait HttpVerb extends Request {
+
+  protected def configuration: Option[Config]
 
   @deprecated("ProcessingFunction is obsolete, use the relevant HttpReads[A] instead", "18/03/2015")
   type ProcessingFunction = (Future[HttpResponse], String) => Future[HttpResponse]
