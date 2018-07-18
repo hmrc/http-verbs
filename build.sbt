@@ -1,10 +1,13 @@
 import sbt.Keys.crossScalaVersions
+import sbt._
 
 val name = "http-verbs"
 
 lazy val library = Project(name, file("."))
-  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
+  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
   .settings(
+    majorVersion        := 8,
+    makePublicallyAvailableOnBintray := true,
     scalaVersion        := "2.11.12",
     crossScalaVersions  := Seq("2.11.12"),
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
