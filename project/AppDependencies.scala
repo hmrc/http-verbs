@@ -20,7 +20,7 @@ object AppDependencies {
 
   val compile = Seq(
     "com.typesafe.play" %% "play-json" % "2.6.9",
-    "uk.gov.hmrc"       %% "http-core" % "1.1.0",
+    "uk.gov.hmrc"       %% "http-core" % "1.2.0",
     "com.typesafe"      % "config"     % "1.3.2",
     "org.slf4j"         % "slf4j-api"  % "1.7.25"
   )
