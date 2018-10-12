@@ -18,11 +18,15 @@ import sbt._
 
 object AppDependencies {
 
-  val compile = Seq(
-    "com.typesafe.play" %% "play-json" % "2.5.12",
-    "com.typesafe"      % "config"     % "1.3.2",
-    "org.slf4j"         % "slf4j-api"  % "1.7.25"
-  )
+  val compile: Seq[ModuleID] =
+    PlayCrossCompilation.dependencies(
+      shared = Seq(
+        "com.typesafe" % "config"    % "1.3.2",
+        "org.slf4j"    % "slf4j-api" % "1.7.25"
+      ),
+      play25 = Seq("com.typesafe.play" %% "play-json" % "2.5.12"),
+      play26 = Seq("com.typesafe.play" %% "play-json" % "2.6.9")
+    )
 
   val test = Seq(
     "commons-codec"          % "commons-codec"   % "1.7"     % Test,

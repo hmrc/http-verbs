@@ -12,6 +12,7 @@ lazy val library = Project(name, file("."))
     scalaVersion        := "2.11.12",
     crossScalaVersions  := Seq("2.11.12"),
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    PlayCrossCompilation.playCrossCompilationSettings,
     scalacOptions       ++= Seq("-deprecation"),
     resolvers           := Seq(
       Resolver.bintrayRepo("hmrc", "releases"),
