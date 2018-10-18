@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.ws
+package uk.gov.hmrc.play.http.ws
 
 import java.net.ServerSocket
 

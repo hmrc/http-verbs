@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.test
+package uk.gov.hmrc.http.hooks
 
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
-trait WithHeaderCarrier {
-  implicit val hc = HeaderCarrier()
+import scala.concurrent.{ExecutionContext, Future}
+
+trait HttpHook {
+  def apply(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext)
 }
