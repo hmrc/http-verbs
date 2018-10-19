@@ -5,12 +5,20 @@ http-verbs
 
 http-verbs is a Scala library providing an interface to make asynchronous HTTP calls. 
 
-This library implements parts of [hmrc/http-core](https://github.com/hmrc/http-core) that are concerned with business logic side of calling other HTTP services on the HMRC Tax Platform, including:
+It encapsulates some common concerns for calling other HTTP services on the HMRC Tax Platform, including:
 
-  * executing hooks
-  * mapping errors
-  
-  
+* Logging
+* Header Carrier
+* Http Transport
+* Core Http function interfaces
+* executing hooks
+* mapping errors
+* Auditing
+* Logging
+* Propagation of common headers
+* Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be * automatically propagated to the caller
+* Request & Response de-serializations
+    
 
 ## Adding to your build
 
