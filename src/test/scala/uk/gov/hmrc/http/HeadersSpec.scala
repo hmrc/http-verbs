@@ -68,20 +68,42 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
   "a post request" - {
 
-    "must contain headers from the header carrier" in {
+    "with an arbtirary body" - {
 
-      server.stubFor(post(urlEqualTo("/"))
-        .willReturn(aResponse().withStatus(200)))
+      "must contain headers from the header carrier" in {
 
-      client.POST[JsValue, HttpResponse](s"http://localhost:${server.port()}", Json.obj()).futureValue
+        server.stubFor(post(urlEqualTo("/arbitrary"))
+          .willReturn(aResponse().withStatus(200)))
 
-      server.verify(postRequestedFor(urlEqualTo("/"))
-        .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-        .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-        .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-        .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-        .withHeader("extra-header", equalTo("my-extra-header"))
-      )
+        client.POST[JsValue, HttpResponse](s"http://localhost:${server.port()}/arbitrary", Json.obj()).futureValue
+
+        server.verify(postRequestedFor(urlEqualTo("/arbitrary"))
+          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+          .withHeader("extra-header", equalTo("my-extra-header"))
+        )
+      }
+    }
+
+    "with a string body" - {
+
+      "must contain headers from the header carrier" in {
+
+        server.stubFor(post(urlEqualTo("/string"))
+          .willReturn(aResponse().withStatus(200)))
+
+        client.POSTString[HttpResponse](s"http://localhost:${server.port()}/string", "foo").futureValue
+
+        server.verify(postRequestedFor(urlEqualTo("/string"))
+          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+          .withHeader("extra-header", equalTo("my-extra-header"))
+        )
+      }
     }
   }
 

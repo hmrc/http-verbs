@@ -43,7 +43,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest {
     implicit hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-    buildRequest(url).withHttpHeaders(headers: _*).post(body).map(new WSHttpResponse(_))
+    buildRequest(url).addHttpHeaders(headers: _*).post(body).map(new WSHttpResponse(_))
   }
 
   override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
