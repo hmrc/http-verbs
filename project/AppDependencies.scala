@@ -19,7 +19,7 @@ import sbt._
 object AppDependencies {
 
   val play25Version = "2.5.12"
-  val play26Version = "2.6.15"
+  val play26Version = "2.6.20"
 
   val compile: Seq[ModuleID] =
     PlayCrossCompilation.dependencies(
