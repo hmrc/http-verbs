@@ -22,6 +22,7 @@ import uk.gov.hmrc.http.logging.LoggingDetails
 
 import scala.concurrent.ExecutionContext
 
+@deprecated("MdcLoggingExecutionContext no longer required, please inject Play's default EC instead", "8.9.0")
 object MdcLoggingExecutionContext {
   implicit def fromLoggingDetails(implicit loggingDetails: LoggingDetails): ExecutionContext =
     new MdcLoggingExecutionContext(defaultContext, loggingDetails.mdcData)
