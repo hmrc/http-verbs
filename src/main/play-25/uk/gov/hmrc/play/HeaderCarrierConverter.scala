@@ -25,11 +25,13 @@ import scala.util.Try
 
 object HeaderCarrierConverter {
 
-  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) = {
+  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) =
     fromHeadersAndSessionAndRequest(headers, session, None)
-  }
 
-  def fromHeadersAndSessionAndRequest(headers: Headers, session: Option[Session] = None, request: Option[RequestHeader] = None) = {
+  def fromHeadersAndSessionAndRequest(
+    headers: Headers,
+    session: Option[Session]       = None,
+    request: Option[RequestHeader] = None) = {
     lazy val cookies: Cookies = Cookies.fromCookieHeader(headers.get(play.api.http.HeaderNames.COOKIE))
     session.fold(fromHeaders(headers, request)) {
       fromSession(headers, cookies, request, _)
@@ -79,7 +81,11 @@ object HeaderCarrierConverter {
       otherHeaders(headers, requestHeader)
     )
 
-  private def fromSession(headers: Headers, cookies: Cookies, requestHeader: Option[RequestHeader], s: Session): HeaderCarrier =
+  private def fromSession(
+    headers: Headers,
+    cookies: Cookies,
+    requestHeader: Option[RequestHeader],
+    s: Session): HeaderCarrier =
     HeaderCarrier(
       s.get(SessionKeys.authToken).map(Authorization),
       s.get(SessionKeys.userId).map(UserId),

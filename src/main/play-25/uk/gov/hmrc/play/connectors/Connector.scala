@@ -25,20 +25,21 @@ trait RequestBuilder {
 }
 
 object RequestBuilder {
-  def headers(hc: HeaderCarrier): Seq[(String,String)] = {
-    hc.headers.filter { case (name,value) => name != HeaderCarrierConverter.Path }
-  }
+  def headers(hc: HeaderCarrier): Seq[(String, String)] =
+    hc.headers.filter { case (name, value) => name != HeaderCarrierConverter.Path }
 }
 
 trait PlayWSRequestBuilder extends RequestBuilder {
 
   import play.api.Play.current
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = WS.url(url).withHeaders(RequestBuilder.headers(hc): _*)
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
+    WS.url(url).withHeaders(RequestBuilder.headers(hc): _*)
 }
 
 trait WSClientRequestBuilder extends RequestBuilder {
   this: WSClientProvider =>
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = client.url(url).withHeaders(RequestBuilder.headers(hc): _*)
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
+    client.url(url).withHeaders(RequestBuilder.headers(hc): _*)
 }
 
 @deprecated("Please use PlayWSRequestBuilder instead", "3.1.0")
