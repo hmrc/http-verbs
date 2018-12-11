@@ -19,16 +19,20 @@ package uk.gov.hmrc.http
 import akka.actor.ActorSystem
 import akka.pattern.after
 import javax.net.ssl.SSLException
-import play.api.Logger
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait Retries {
+  def intervals: Seq[FiniteDuration]
+
   def retry[A](verb: String, url: String)(block: => Future[A]): Future[A]
 }
 
 trait NoRetries extends Retries {
+  def intervals = List.empty[FiniteDuration]
+
   def retry[A](verb: String, url: String)(block: => Future[A]): Future[A] = block
 }
 
@@ -38,11 +42,20 @@ trait AkkaRetries extends Retries {
 
   implicit lazy val ec: ExecutionContext = actorSystem.dispatcher
 
-  def retry[A](verb: String, url: String)(block: => Future[A]): Future[A] =
-    block.recoverWith {
-      case ex: SSLException if ex.getMessage == "SSLEngine closed already" =>
-        Logger.warn(s"Retrying $verb $url due to 'SSLEngine closed already' error")
-        after(1.millisecond, actorSystem.scheduler)(retry(verb, url)(block))
-    }
+  private val logger = LoggerFactory.getLogger("application")
+
+  val intervals = Seq(500.millis, 1.second, 2.seconds, 4.seconds, 8.seconds)
+
+  def retry[A](verb: String, url: String)(block: => Future[A]): Future[A] = {
+    def loop(remainingIntervals: Seq[FiniteDuration])(block: => Future[A]): Future[A] =
+      block.recoverWith {
+        case ex: SSLException if ex.getMessage == "SSLEngine closed already" && remainingIntervals.nonEmpty =>
+          val nextDelay = remainingIntervals.head
+          logger.warn(s"Retrying $verb $url in $nextDelay due to 'SSLEngine closed already' error")
+          after(nextDelay, actorSystem.scheduler)(loop(remainingIntervals.tail)(block))
+      }
+
+    loop(intervals)(block)
+  }
 
 }

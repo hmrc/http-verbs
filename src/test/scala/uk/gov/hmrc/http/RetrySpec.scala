@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.http
 
+import java.time.Instant
+
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import javax.net.ssl.SSLException
@@ -25,8 +27,9 @@ import org.scalatest.{Matchers, WordSpec}
 import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.Random
+import scala.concurrent.{Await, Future}
+import scala.util.{Random, Try}
+import scala.concurrent.duration._
 
 class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
 
@@ -54,6 +57,8 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
             exception = new SSLException("SSLEngine closed already")
           )
 
+        override val intervals: Seq[FiniteDuration] = List.fill(100)(1.millis)
+
         override def actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
@@ -61,6 +66,43 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
       httpGet.GET[Option[String]](url = "doesnt-matter").futureValue shouldBe None
       httpGet.failureCounter shouldBe httpGet.maxFailures
+
+    }
+  }
+
+  "Retries" should {
+    "be spread in time as configured" in {
+
+      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
+
+      val retries = new AkkaRetries {
+        override val intervals   = expectedIntervals
+        override val actorSystem = ActorSystem("test-actor-system")
+      }
+
+      class KeepFailing {
+        var timestamps = List.empty[Instant]
+        def process: Future[Unit] = {
+          val now = Instant.now
+          timestamps = timestamps :+ now
+          Future.failed(new SSLException("SSLEngine closed already"))
+        }
+      }
+
+      val testObject = new KeepFailing
+
+      val _ = Try(retries.retry("GET", "url")(testObject.process).futureValue)
+
+      val actualIntervals: List[Long] =
+        testObject.timestamps.sliding(2).toList.map {
+          case first :: second :: Nil => second.toEpochMilli - first.toEpochMilli
+          case _                      => 0
+        }
+
+      actualIntervals.zip(expectedIntervals).foreach {
+        case (actual, expected) =>
+          actual shouldBe expected.toMillis +- 50 // for error margin as akka scheduler is not very precise
+      }
 
     }
   }
