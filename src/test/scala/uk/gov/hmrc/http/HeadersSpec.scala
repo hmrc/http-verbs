@@ -32,11 +32,16 @@ import uk.gov.hmrc.play.http.ws.{PortTester, WSHttp}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach
-  with ScalaFutures with IntegrationPatience {
+class HeadersSpec
+    extends FreeSpec
+    with MustMatchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ScalaFutures
+    with IntegrationPatience {
 
   private lazy val app: Application = new GuiceApplicationBuilder().build()
-  private val server = new WireMockServer(wireMockConfig().port(PortTester.findPort()))
+  private val server                = new WireMockServer(wireMockConfig().port(PortTester.findPort()))
 
   override def beforeAll(): Unit = {
     Play.start(app)
@@ -55,15 +60,16 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier(
     authorization = Some(Authorization("authorization")),
-    forwarded = Some(ForwardedFor("forwarded-for")),
-    sessionId = Some(SessionId("session-id")),
-    requestId = Some(RequestId("request-id"))
+    forwarded     = Some(ForwardedFor("forwarded-for")),
+    sessionId     = Some(SessionId("session-id")),
+    requestId     = Some(RequestId("request-id"))
   ).withExtraHeaders("extra-header" -> "my-extra-header")
 
-  private lazy val client = new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
+  private lazy val client = new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp
+  with NoRetries {
     override def wsClient: WSClient                      = app.injector.instanceOf[WSClient]
     override protected def configuration: Option[Config] = None
-    override  val hooks: Seq[HttpHook]                   = Seq.empty
+    override val hooks: Seq[HttpHook]                    = Seq.empty
   }
 
   "a post request" - {
@@ -72,18 +78,19 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
       "must contain headers from the header carrier" in {
 
-        server.stubFor(post(urlEqualTo("/arbitrary"))
-          .willReturn(aResponse().withStatus(200)))
+        server.stubFor(
+          post(urlEqualTo("/arbitrary"))
+            .willReturn(aResponse().withStatus(200)))
 
         client.POST[JsValue, HttpResponse](s"http://localhost:${server.port()}/arbitrary", Json.obj()).futureValue
 
-        server.verify(postRequestedFor(urlEqualTo("/arbitrary"))
-          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-          .withHeader("extra-header", equalTo("my-extra-header"))
-        )
+        server.verify(
+          postRequestedFor(urlEqualTo("/arbitrary"))
+            .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+            .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+            .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+            .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+            .withHeader("extra-header", equalTo("my-extra-header")))
       }
     }
 
@@ -91,18 +98,19 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
       "must contain headers from the header carrier" in {
 
-        server.stubFor(post(urlEqualTo("/string"))
-          .willReturn(aResponse().withStatus(200)))
+        server.stubFor(
+          post(urlEqualTo("/string"))
+            .willReturn(aResponse().withStatus(200)))
 
         client.POSTString[HttpResponse](s"http://localhost:${server.port()}/string", "foo").futureValue
 
-        server.verify(postRequestedFor(urlEqualTo("/string"))
-          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-          .withHeader("extra-header", equalTo("my-extra-header"))
-        )
+        server.verify(
+          postRequestedFor(urlEqualTo("/string"))
+            .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+            .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+            .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+            .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+            .withHeader("extra-header", equalTo("my-extra-header")))
       }
     }
   }
@@ -111,18 +119,19 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
     "must contain headers from the header carrier" in {
 
-      server.stubFor(get(urlEqualTo("/"))
-        .willReturn(aResponse().withStatus(200)))
+      server.stubFor(
+        get(urlEqualTo("/"))
+          .willReturn(aResponse().withStatus(200)))
 
       client.GET[HttpResponse](s"http://localhost:${server.port()}/").futureValue
 
-      server.verify(getRequestedFor(urlEqualTo("/"))
-        .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-        .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-        .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-        .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-        .withHeader("extra-header", equalTo("my-extra-header"))
-      )
+      server.verify(
+        getRequestedFor(urlEqualTo("/"))
+          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+          .withHeader("extra-header", equalTo("my-extra-header")))
     }
   }
 
@@ -136,13 +145,13 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
       client.DELETE[HttpResponse](s"http://localhost:${server.port()}/").futureValue
 
-      server.verify(deleteRequestedFor(urlEqualTo("/"))
-        .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-        .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-        .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-        .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-        .withHeader("extra-header", equalTo("my-extra-header"))
-      )
+      server.verify(
+        deleteRequestedFor(urlEqualTo("/"))
+          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+          .withHeader("extra-header", equalTo("my-extra-header")))
     }
   }
 
@@ -156,13 +165,13 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
       client.PATCH[JsValue, HttpResponse](s"http://localhost:${server.port()}/", Json.obj()).futureValue
 
-      server.verify(patchRequestedFor(urlEqualTo("/"))
-        .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-        .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-        .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-        .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-        .withHeader("extra-header", equalTo("my-extra-header"))
-      )
+      server.verify(
+        patchRequestedFor(urlEqualTo("/"))
+          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+          .withHeader("extra-header", equalTo("my-extra-header")))
     }
   }
 
@@ -176,13 +185,13 @@ class HeadersSpec extends FreeSpec with MustMatchers with BeforeAndAfterAll with
 
       client.PUT[JsValue, HttpResponse](s"http://localhost:${server.port()}/", Json.obj()).futureValue
 
-      server.verify(putRequestedFor(urlEqualTo("/"))
-        .withHeader(HeaderNames.authorisation, equalTo("authorization"))
-        .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
-        .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
-        .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-        .withHeader("extra-header", equalTo("my-extra-header"))
-      )
+      server.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+          .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+          .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+          .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+          .withHeader("extra-header", equalTo("my-extra-header")))
     }
   }
 }

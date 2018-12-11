@@ -24,11 +24,11 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks {
+trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
   override def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
     withTracing(GET_VERB, url) {
-      val httpResponse = doGet(url)
+      val httpResponse = retry("GET", url)(doGet(url))
       executeHooks(url, GET_VERB, None, httpResponse)
       mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
     }
