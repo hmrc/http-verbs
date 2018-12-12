@@ -17,10 +17,7 @@
 package uk.gov.hmrc.http
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 trait NoRetries extends Retries {
-  def intervals = List.empty[FiniteDuration]
-
   def retry[A](verb: String, url: String)(block: => Future[A]): Future[A] = block
 }

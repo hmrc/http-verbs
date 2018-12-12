@@ -24,6 +24,7 @@ import javax.net.ssl.SSLException
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
 
@@ -37,9 +38,9 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
   "GET" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
 
-      val http = new HttpGet with SimplifiedHttpVerb {
+      val http = new HttpGet with TestHttpVerb {
         override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -55,9 +56,9 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "DELETE" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new HttpDelete with SimplifiedHttpVerb {
+      val http = new HttpDelete with TestHttpVerb {
         override def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -72,11 +73,11 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "PATCH" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new HttpPatch with SimplifiedHttpVerb {
+      val http = new HttpPatch with TestHttpVerb {
         override def doPatch[A](url: String, body: A)(
           implicit rds: Writes[A],
           hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -91,9 +92,9 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "PUT" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new HttpPut with SimplifiedHttpVerb {
+      val http = new HttpPut with TestHttpVerb {
         override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -108,11 +109,11 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "POST" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with SimplifiedHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb {
         override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
           implicit rds: Writes[A],
           hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -127,10 +128,10 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "POSTString" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with SimplifiedHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb {
         override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
           implicit hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -145,10 +146,10 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "POSTForm" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with SimplifiedHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb {
         override def doFormPost(url: String, body: Map[String, Seq[String]])(
           implicit hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -163,9 +164,9 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   "POSTEmpty" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with SimplifiedHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb {
         override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
-          process(
+          failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
@@ -179,13 +180,15 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
   }
 
   "Retries" should {
-    "be spread in time as configured" in {
+    "be spread in time" in {
 
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
       val retries = new AkkaRetries {
-        override val intervals   = expectedIntervals
-        override val actorSystem = ActorSystem("test-actor-system")
+        override protected val configuration =
+          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+        override private[http] lazy val intervals = expectedIntervals
+        override val actorSystem                  = ActorSystem("test-actor-system")
       }
 
       class KeepFailing {
@@ -211,21 +214,50 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
         case (actual, expected) =>
           actual shouldBe expected.toMillis +- 50 // for error margin as akka scheduler is not very precise
       }
+    }
+
+    "have configurable intervals" in {
+      val retries = new AkkaRetries {
+        override protected val configuration =
+          Some(
+            Configuration(
+              "http-verbs.retries.intervals.0" -> "100 ms",
+              "http-verbs.retries.intervals.1" -> "200 ms",
+              "http-verbs.retries.intervals.2" -> "1 s"
+            ).underlying)
+        override val actorSystem = ActorSystem("test-actor-system")
+      }
+
+      retries.intervals shouldBe Seq(100.millis, 200.millis, 1.second)
+    }
+
+    "be disabled by default" in {
+      val retries = new AkkaRetries {
+        override protected val configuration = None
+        override val actorSystem             = ActorSystem("test-actor-system")
+      }
+
+      val resultF = retries.retry("GET", "url") { Future.failed(new SSLException("SSLEngine closed already")) }
+
+      whenReady(resultF.failed) { e =>
+        e shouldBe a[SSLException]
+      }
 
     }
   }
 
-  trait SimplifiedHttpVerb extends HttpVerb with AkkaRetries with HttpHooks with SucceedNthCall {
-    protected def configuration: Option[Config] = None
-    override val hooks: Seq[HttpHook]           = Nil
-    override val intervals: Seq[FiniteDuration] = List.fill(1000)(1.millis)
-    override def actorSystem: ActorSystem       = ActorSystem("test-actor-system")
+  trait TestHttpVerb extends HttpVerb with AkkaRetries with HttpHooks with SucceedNthCall {
+    protected def configuration: Option[Config] =
+      Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+    override val hooks: Seq[HttpHook]                              = Nil
+    override private[http] lazy val intervals: Seq[FiniteDuration] = List.fill(3)(1.millis)
+    override def actorSystem: ActorSystem                          = ActorSystem("test-actor-system")
   }
 
   trait SucceedNthCall {
     var failureCounter: Int = 0
     val maxFailures: Int    = Random.nextInt(3) + 1
-    def process[A, B](success: Future[A], exception: Exception): Future[A] =
+    def failFewTimesAndThenSucceed[A, B](success: Future[A], exception: Exception): Future[A] =
       if (failureCounter < maxFailures) {
         failureCounter += 1
         Future.failed(exception)
