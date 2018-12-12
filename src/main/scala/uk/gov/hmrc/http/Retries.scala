@@ -30,12 +30,6 @@ trait Retries {
   def retry[A](verb: String, url: String)(block: => Future[A]): Future[A]
 }
 
-trait NoRetries extends Retries {
-  def intervals = List.empty[FiniteDuration]
-
-  def retry[A](verb: String, url: String)(block: => Future[A]): Future[A] = block
-}
-
 trait AkkaRetries extends Retries {
 
   def actorSystem: ActorSystem

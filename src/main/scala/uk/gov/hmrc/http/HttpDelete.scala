@@ -22,11 +22,17 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait HttpDelete extends CoreDelete with DeleteHttpTransport with HttpVerb with ConnectionTracing with HttpHooks {
+trait HttpDelete
+    extends CoreDelete
+    with DeleteHttpTransport
+    with HttpVerb
+    with ConnectionTracing
+    with HttpHooks
+    with Retries {
 
   override def DELETE[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(DELETE_VERB, url) {
-      val httpResponse = doDelete(url)
+      val httpResponse = retry(DELETE_VERB, url)(doDelete(url))
       executeHooks(url, DELETE_VERB, None, httpResponse)
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
     }
