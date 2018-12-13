@@ -31,10 +31,11 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Random, Try}
 
-class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+
   "Retries" should {
     "be disabled by default" in {
-      val retries = new AkkaRetries {
+      val retries = new Retries {
         override protected val configuration = None
         override val actorSystem             = ActorSystem("test-actor-system")
       }
@@ -55,7 +56,7 @@ class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with Scal
     }
 
     "have configurable intervals" in {
-      val retries = new AkkaRetries {
+      val retries = new Retries {
         override protected val configuration =
           Some(
             Configuration(
@@ -70,7 +71,7 @@ class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with Scal
     }
 
     "run a successful future only once" in {
-      val retries: AkkaRetries = new AkkaRetries {
+      val retries: Retries = new Retries {
         override protected val configuration = None
         override val actorSystem             = ActorSystem("test-actor-system")
       }
@@ -92,7 +93,7 @@ class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with Scal
     "be spread in time" in {
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
-      val retries: AkkaRetries = new AkkaRetries {
+      val retries: Retries = new Retries {
         override protected val configuration =
           Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
         override private[http] lazy val intervals = expectedIntervals
@@ -123,7 +124,7 @@ class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with Scal
     "eventually return a failure for a Future that will never succeed" in {
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
-      val retries: AkkaRetries = new AkkaRetries {
+      val retries: Retries = new Retries {
         override protected val configuration =
           Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
         override private[http] lazy val intervals = expectedIntervals
@@ -146,7 +147,7 @@ class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with Scal
     "return a success for a Future that eventually succeeds" in {
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
-      val retries: AkkaRetries with SucceedNthCall = new AkkaRetries with SucceedNthCall {
+      val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
         override protected val configuration =
           Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
         override private[http] lazy val intervals = expectedIntervals
@@ -311,7 +312,7 @@ class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with Scal
     }
   }
 
-  trait TestHttpVerb extends HttpVerb with AkkaRetries with HttpHooks with SucceedNthCall {
+  trait TestHttpVerb extends HttpVerb with Retries with HttpHooks with SucceedNthCall {
     protected def configuration: Option[Config] =
       Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
     override val hooks: Seq[HttpHook]                              = Nil

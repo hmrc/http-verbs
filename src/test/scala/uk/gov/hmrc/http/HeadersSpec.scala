@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
@@ -65,11 +66,11 @@ class HeadersSpec
     requestId     = Some(RequestId("request-id"))
   ).withExtraHeaders("extra-header" -> "my-extra-header")
 
-  private lazy val client = new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp
-  with NoRetries {
+  private lazy val client = new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
     override def wsClient: WSClient                      = app.injector.instanceOf[WSClient]
     override protected def configuration: Option[Config] = None
     override val hooks: Seq[HttpHook]                    = Seq.empty
+    override protected def actorSystem: ActorSystem      = ActorSystem("test-actor-system")
   }
 
   "a post request" - {
