@@ -17,7 +17,6 @@
 package uk.gov.hmrc.http
 
 import java.time.Instant
-
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import javax.net.ssl.SSLException
@@ -27,17 +26,150 @@ import org.scalatest.{Matchers, WordSpec}
 import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Random, Try}
 
-class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+class AkkaRetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+  "Retries" should {
+    "be disabled by default" in {
+      val retries = new AkkaRetries {
+        override protected val configuration = None
+        override val actorSystem             = ActorSystem("test-actor-system")
+      }
+
+      @volatile var counter = 0
+      val resultF =
+        retries.retry("GET", "url") {
+          Future.failed({
+            counter += 1
+            new SSLException("SSLEngine closed already")
+          })
+        }
+
+      whenReady(resultF.failed) { e =>
+        e       shouldBe an[SSLException]
+        counter shouldBe 1
+      }
+    }
+
+    "have configurable intervals" in {
+      val retries = new AkkaRetries {
+        override protected val configuration =
+          Some(
+            Configuration(
+              "http-verbs.retries.intervals.0" -> "100 ms",
+              "http-verbs.retries.intervals.1" -> "200 ms",
+              "http-verbs.retries.intervals.2" -> "1 s"
+            ).underlying)
+        override val actorSystem = ActorSystem("test-actor-system")
+      }
+
+      retries.intervals shouldBe Seq(100.millis, 200.millis, 1.second)
+    }
+
+    "run a successful future only once" in {
+      val retries: AkkaRetries = new AkkaRetries {
+        override protected val configuration = None
+        override val actorSystem             = ActorSystem("test-actor-system")
+      }
+
+      @volatile var counter = 0
+      val resultF =
+        retries.retry("GET", "url") {
+          Future.successful({
+            counter += 1
+            counter
+          })
+        }
+
+      whenReady(resultF) { c =>
+        c shouldBe 1
+      }
+    }
+
+    "be spread in time" in {
+      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
+
+      val retries: AkkaRetries = new AkkaRetries {
+        override protected val configuration =
+          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+        override private[http] lazy val intervals = expectedIntervals
+        override val actorSystem                  = ActorSystem("test-actor-system")
+      }
+
+      @volatile var timestamps = List.empty[Instant]
+      def failingFuture: Future[Unit] = {
+        val now = Instant.now
+        timestamps = timestamps :+ now
+        Future.failed(new SSLException("SSLEngine closed already"))
+      }
+
+      val _ = Try(retries.retry("GET", "url")(failingFuture).futureValue)
+
+      val actualIntervals: List[Long] =
+        timestamps.sliding(2).toList.map {
+          case first :: second :: Nil => second.toEpochMilli - first.toEpochMilli
+          case _                      => 0
+        }
+
+      actualIntervals.zip(expectedIntervals).foreach {
+        case (actual, expected) =>
+          actual shouldBe expected.toMillis +- 50 // for error margin as akka scheduler is not very precise
+      }
+    }
+
+    "eventually return a failure for a Future that will never succeed" in {
+      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
+
+      val retries: AkkaRetries = new AkkaRetries {
+        override protected val configuration =
+          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+        override private[http] lazy val intervals = expectedIntervals
+        override val actorSystem                  = ActorSystem("test-actor-system")
+      }
+
+      val resultF =
+        retries.retry("GET", "url") {
+          Future.failed({
+            new SSLException("SSLEngine closed already")
+          })
+        }
+
+      whenReady(resultF.failed) { e =>
+        e shouldBe an[SSLException]
+      }
+
+    }
+
+    "return a success for a Future that eventually succeeds" in {
+      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
+
+      val retries: AkkaRetries with SucceedNthCall = new AkkaRetries with SucceedNthCall {
+        override protected val configuration =
+          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+        override private[http] lazy val intervals = expectedIntervals
+        override val actorSystem                  = ActorSystem("test-actor-system")
+      }
+
+      val expectedResponse = HttpResponse(404)
+      val resultF =
+        retries.retry("GET", "url") {
+          retries.failFewTimesAndThenSucceed(
+            success   = Future.successful(expectedResponse),
+            exception = new SSLException("SSLEngine closed already")
+          )
+        }
+
+      whenReady(resultF) { response =>
+        response shouldBe expectedResponse
+      }
+    }
+  }
 
   "GET" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-
       val http = new HttpGet with TestHttpVerb {
         override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
@@ -179,73 +311,6 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
     }
   }
 
-  "Retries" should {
-    "be spread in time" in {
-
-      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
-
-      val retries = new AkkaRetries {
-        override protected val configuration =
-          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
-        override private[http] lazy val intervals = expectedIntervals
-        override val actorSystem                  = ActorSystem("test-actor-system")
-      }
-
-      class KeepFailing {
-        var timestamps = List.empty[Instant]
-        def process: Future[Unit] = {
-          val now = Instant.now
-          timestamps = timestamps :+ now
-          Future.failed(new SSLException("SSLEngine closed already"))
-        }
-      }
-
-      val testObject = new KeepFailing
-
-      val _ = Try(retries.retry("GET", "url")(testObject.process).futureValue)
-
-      val actualIntervals: List[Long] =
-        testObject.timestamps.sliding(2).toList.map {
-          case first :: second :: Nil => second.toEpochMilli - first.toEpochMilli
-          case _                      => 0
-        }
-
-      actualIntervals.zip(expectedIntervals).foreach {
-        case (actual, expected) =>
-          actual shouldBe expected.toMillis +- 50 // for error margin as akka scheduler is not very precise
-      }
-    }
-
-    "have configurable intervals" in {
-      val retries = new AkkaRetries {
-        override protected val configuration =
-          Some(
-            Configuration(
-              "http-verbs.retries.intervals.0" -> "100 ms",
-              "http-verbs.retries.intervals.1" -> "200 ms",
-              "http-verbs.retries.intervals.2" -> "1 s"
-            ).underlying)
-        override val actorSystem = ActorSystem("test-actor-system")
-      }
-
-      retries.intervals shouldBe Seq(100.millis, 200.millis, 1.second)
-    }
-
-    "be disabled by default" in {
-      val retries = new AkkaRetries {
-        override protected val configuration = None
-        override val actorSystem             = ActorSystem("test-actor-system")
-      }
-
-      val resultF = retries.retry("GET", "url") { Future.failed(new SSLException("SSLEngine closed already")) }
-
-      whenReady(resultF.failed) { e =>
-        e shouldBe a[SSLException]
-      }
-
-    }
-  }
-
   trait TestHttpVerb extends HttpVerb with AkkaRetries with HttpHooks with SucceedNthCall {
     protected def configuration: Option[Config] =
       Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
@@ -256,7 +321,7 @@ class RetrySpec extends WordSpec with Matchers with MockitoSugar with ScalaFutur
 
   trait SucceedNthCall {
     var failureCounter: Int = 0
-    val maxFailures: Int    = Random.nextInt(3) + 1
+    val maxFailures: Int    = Random.nextInt(3)
     def failFewTimesAndThenSucceed[A, B](success: Future[A], exception: Exception): Future[A] =
       if (failureCounter < maxFailures) {
         failureCounter += 1
