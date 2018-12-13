@@ -52,6 +52,7 @@ class HttpGetSpec
 
   class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse)
       extends HttpGet
+      with NoRetries
       with ConnectionTracingCapturing {
     val testHook1 = mock[HttpHook]
     val testHook2 = mock[HttpHook]
@@ -62,7 +63,7 @@ class HttpGetSpec
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
   }
 
-  class UrlTestingHttpGet() extends HttpGet {
+  class UrlTestingHttpGet() extends HttpGet with NoRetries {
     val testHook1                              = mock[HttpHook]
     val testHook2                              = mock[HttpHook]
     val hooks                                  = Seq(testHook1, testHook2)

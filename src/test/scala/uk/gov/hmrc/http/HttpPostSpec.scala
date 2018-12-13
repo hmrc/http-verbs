@@ -30,6 +30,7 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
   class StubbedHttpPost(doPostResult: Future[HttpResponse])
       extends HttpPost
+      with NoRetries
       with MockitoSugar
       with ConnectionTracingCapturing {
     val testHook1                              = mock[HttpHook]
@@ -78,10 +79,6 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPOST = new StubbedHttpPost(Future.successful(response))
       testPOST.POSTForm(url, Map()).futureValue shouldBe response
     }
-//    "be able to return HTML responses" in new HtmlHttpReads {
-//      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
-//      testPOST.POSTForm(url, Map()).futureValue should be (an [Html])
-//    }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
       testPOST.POSTForm[TestClass](url, Map()).futureValue should be(TestClass("t", 10))
@@ -106,10 +103,6 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPOST = new StubbedHttpPost(Future.successful(response))
       testPOST.POSTString(url, testRequestBody).futureValue shouldBe response
     }
-//    "be able to return HTML responses" in new HtmlHttpReads {
-//      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
-//      testPOST.POSTString(url, testRequestBody).futureValue should be (an [Html])
-//    }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
       testPOST.POSTString[TestClass](url, testRequestBody).futureValue should be(TestClass("t", 10))
@@ -138,10 +131,6 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val testPOST = new StubbedHttpPost(Future.successful(response))
       testPOST.POSTEmpty(url).futureValue shouldBe response
     }
-//    "be able to return HTML responses" in new HtmlHttpReads {
-//      val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse(testBody, 200)))
-//      testPOST.POSTEmpty(url).futureValue should be (an [Html])
-//    }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
       testPOST.POSTEmpty[TestClass](url).futureValue should be(TestClass("t", 10))

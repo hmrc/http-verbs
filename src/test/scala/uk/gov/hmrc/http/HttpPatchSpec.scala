@@ -30,6 +30,7 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
 
   class StubbedHttpPatch(doPatchResult: Future[HttpResponse])
       extends HttpPatch
+      with NoRetries
       with ConnectionTracingCapturing
       with MockitoSugar {
     val testHook1                              = mock[HttpHook]

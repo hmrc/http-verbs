@@ -23,7 +23,13 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait HttpPost extends CorePost with PostHttpTransport with HttpVerb with ConnectionTracing with HttpHooks {
+trait HttpPost
+    extends CorePost
+    with PostHttpTransport
+    with HttpVerb
+    with ConnectionTracing
+    with HttpHooks
+    with Retries {
 
   override def POST[I, O](url: String, body: I, headers: Seq[(String, String)])(
     implicit wts: Writes[I],
@@ -31,7 +37,7 @@ trait HttpPost extends CorePost with PostHttpTransport with HttpVerb with Connec
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = doPost(url, body, headers)
+      val httpResponse = retry(POST_VERB, url)(doPost(url, body, headers))
       executeHooks(url, POST_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -41,7 +47,7 @@ trait HttpPost extends CorePost with PostHttpTransport with HttpVerb with Connec
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = doPostString(url, body, headers)
+      val httpResponse = retry(POST_VERB, url)(doPostString(url, body, headers))
       executeHooks(url, POST_VERB, Option(body), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -50,7 +56,7 @@ trait HttpPost extends CorePost with PostHttpTransport with HttpVerb with Connec
     url: String,
     body: Map[String, Seq[String]])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = doFormPost(url, body)
+      val httpResponse = retry(POST_VERB, url)(doFormPost(url, body))
       executeHooks(url, POST_VERB, Option(body), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -58,7 +64,7 @@ trait HttpPost extends CorePost with PostHttpTransport with HttpVerb with Connec
   override def POSTEmpty[O](
     url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = doEmptyPost(url)
+      val httpResponse = retry(POST_VERB, url)(doEmptyPost(url))
       executeHooks(url, POST_VERB, None, httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
