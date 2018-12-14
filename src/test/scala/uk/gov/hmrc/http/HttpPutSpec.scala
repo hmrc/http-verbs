@@ -16,7 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.mockito.ArgumentCaptor
+import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
@@ -30,15 +33,16 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
   class StubbedHttpPut(doPutResult: Future[HttpResponse])
       extends HttpPut
-      with NoRetries
       with MockitoSugar
       with ConnectionTracingCapturing {
-    val testHook1                              = mock[HttpHook]
-    val testHook2                              = mock[HttpHook]
-    val hooks                                  = Seq(testHook1, testHook2)
-    override def configuration: Option[Config] = None
+    val testHook1                                   = mock[HttpHook]
+    val testHook2                                   = mock[HttpHook]
+    val hooks                                       = Seq(testHook1, testHook2)
+    override def configuration: Option[Config]      = None
+    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
+
   }
 
   "HttpPut" should {
@@ -57,15 +61,23 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
 
     "Invoke any hooks provided" in {
-
-      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
+      val dummyResponse       = new DummyHttpResponse(testBody, 200)
+      val dummyResponseFuture = Future.successful(dummyResponse)
       val testPut             = new StubbedHttpPut(dummyResponseFuture)
+      val testJson            = Json.stringify(trcreads.writes(testObject))
+
       testPut.PUT(url, testObject).futureValue
 
-      val testJson = Json.stringify(trcreads.writes(testObject))
+      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testPut.testHook1)(url, "PUT", Some(testJson), dummyResponseFuture)
-      verify(testPut.testHook2)(url, "PUT", Some(testJson), dummyResponseFuture)
+      verify(testPut.testHook1).apply(is(url), is("PUT"), is(Some(testJson)), respArgCaptor1.capture())(any(), any())
+      verify(testPut.testHook2).apply(is(url), is("PUT"), is(Some(testJson)), respArgCaptor2.capture())(any(), any())
+
+      // verifying directly without ArgumentCaptor didn't work as Futures were different instances
+      // e.g. Future.successful(5) != Future.successful(5)
+      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
     }
   }
 }

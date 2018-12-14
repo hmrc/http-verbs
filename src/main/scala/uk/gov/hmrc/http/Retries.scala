@@ -27,10 +27,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait Retries {
-  def retry[A](verb: String, url: String)(block: => Future[A]): Future[A]
-}
-
-trait AkkaRetries extends Retries {
 
   protected def actorSystem: ActorSystem
 

@@ -25,7 +25,11 @@ object AppDependencies {
     PlayCrossCompilation.dependencies(
       shared = Seq(
         "com.typesafe" % "config"    % "1.3.2",
-        "org.slf4j"    % "slf4j-api" % "1.7.25"
+        "org.slf4j"    % "slf4j-api" % "1.7.25",
+        // empty http-core and http-verbs-play-25 added to force eviction
+        // as classes from these two libs have been inlined in http-verbs
+        "uk.gov.hmrc" %% "http-core"          % "2.0.0",
+        "uk.gov.hmrc" %% "http-verbs-play-25" % "1.0.0"
       ),
       play25 = Seq(
         "com.typesafe.play" %% "play-json" % play25Version,

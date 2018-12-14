@@ -16,7 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.mockito.ArgumentCaptor
+import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.mockito.MockitoSugar
@@ -29,14 +32,12 @@ import scala.concurrent.Future
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
 
-  class StubbedHttpDelete(response: Future[HttpResponse])
-      extends HttpDelete
-      with ConnectionTracingCapturing
-      with NoRetries {
-    val testHook1                              = mock[HttpHook]
-    val testHook2                              = mock[HttpHook]
-    val hooks                                  = Seq(testHook1, testHook2)
-    override def configuration: Option[Config] = None
+  class StubbedHttpDelete(response: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
+    val testHook1                                   = mock[HttpHook]
+    val testHook2                                   = mock[HttpHook]
+    val hooks                                       = Seq(testHook1, testHook2)
+    override def configuration: Option[Config]      = None
+    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     def appName: String                                   = ???
     def doDelete(url: String)(implicit hc: HeaderCarrier) = response
@@ -58,13 +59,22 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     behave like aTracingHttpCall("DELETE", "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE(url) }
 
     "Invoke any hooks provided" in {
+      val dummyResponse       = new DummyHttpResponse(testBody, 200)
+      val dummyResponseFuture = Future.successful(dummyResponse)
+      val testDelete          = new StubbedHttpDelete(dummyResponseFuture)
 
-      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
-      val testGet             = new StubbedHttpDelete(dummyResponseFuture)
-      testGet.DELETE(url).futureValue
+      testDelete.DELETE(url).futureValue
 
-      verify(testGet.testHook1)(url, "DELETE", None, dummyResponseFuture)
-      verify(testGet.testHook2)(url, "DELETE", None, dummyResponseFuture)
+      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+
+      verify(testDelete.testHook1).apply(is(url), is("DELETE"), is(None), respArgCaptor1.capture())(any(), any())
+      verify(testDelete.testHook2).apply(is(url), is("DELETE"), is(None), respArgCaptor2.capture())(any(), any())
+
+      // verifying directly without ArgumentCaptor didn't work as Futures were different instances
+      // e.g. Future.successful(5) != Future.successful(5)
+      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
     }
   }
 }

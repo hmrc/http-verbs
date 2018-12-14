@@ -16,7 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.mockito.ArgumentCaptor
+import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
@@ -30,15 +33,16 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
 
   class StubbedHttpPatch(doPatchResult: Future[HttpResponse])
       extends HttpPatch
-      with NoRetries
       with ConnectionTracingCapturing
       with MockitoSugar {
-    val testHook1                              = mock[HttpHook]
-    val testHook2                              = mock[HttpHook]
-    val hooks                                  = Seq(testHook1, testHook2)
-    override def configuration: Option[Config] = None
+    val testHook1                                   = mock[HttpHook]
+    val testHook2                                   = mock[HttpHook]
+    val hooks                                       = Seq(testHook1, testHook2)
+    override def configuration: Option[Config]      = None
+    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPatchResult
+
   }
 
   "HttpPatch" should {
@@ -61,15 +65,25 @@ class HttpPatchSpec extends WordSpecLike with Matchers with CommonHttpBehaviour 
     }
 
     "Invoke any hooks provided" in {
-
-      val dummyResponseFuture = Future.successful(new DummyHttpResponse(testBody, 200))
+      val dummyResponse       = new DummyHttpResponse(testBody, 200)
+      val dummyResponseFuture = Future.successful(dummyResponse)
       val testPatch           = new StubbedHttpPatch(dummyResponseFuture)
+      val testJson            = Json.stringify(trcreads.writes(testObject))
+
       testPatch.PATCH(url, testObject).futureValue
 
-      val testJson = Json.stringify(trcreads.writes(testObject))
+      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testPatch.testHook1)(url, "PATCH", Some(testJson), dummyResponseFuture)
-      verify(testPatch.testHook2)(url, "PATCH", Some(testJson), dummyResponseFuture)
+      verify(testPatch.testHook1)
+        .apply(is(url), is("PATCH"), is(Some(testJson)), respArgCaptor1.capture())(any(), any())
+      verify(testPatch.testHook2)
+        .apply(is(url), is("PATCH"), is(Some(testJson)), respArgCaptor2.capture())(any(), any())
+
+      // verifying directly without ArgumentCaptor didn't work as Futures were different instances
+      // e.g. Future.successful(5) != Future.successful(5)
+      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
     }
   }
 }
