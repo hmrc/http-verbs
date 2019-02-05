@@ -29,11 +29,21 @@ object AppDependencies {
         // empty http-core and http-verbs-play-25 added to force eviction
         // as classes from these two libs have been inlined in http-verbs
         "uk.gov.hmrc" %% "http-core"          % "2.0.0",
-        "uk.gov.hmrc" %% "http-verbs-play-25" % "1.0.0"
+        "uk.gov.hmrc" %% "http-verbs-play-25" % "1.0.0",
+        // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
+        "com.fasterxml.jackson.core"     % "jackson-core"            % "2.9.7",
+        "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.7",
+        "com.fasterxml.jackson.core"     % "jackson-annotations"     % "2.9.7",
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"   % "2.9.7",
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.7"
       ),
       play25 = Seq(
         "com.typesafe.play" %% "play-json" % play25Version,
-        "com.typesafe.play" %% "play-ws"   % play25Version
+        "com.typesafe.play" %% "play-ws"   % play25Version,
+        // force dependencies due to security flaws found in xercesImpl 2.11.0
+        // only applies to play 2.5 since it was removed from play 2.6 
+        // https://github.com/playframework/playframework/blob/master/documentation/manual/releases/release26/migration26/Migration26.md#xercesimpl-removal
+        "xerces" % "xercesImpl" % "2.12.0"
       ),
       play26 = Seq(
         "com.typesafe.play" %% "play-json" % "2.6.9",
