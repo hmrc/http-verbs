@@ -34,6 +34,8 @@ trait PatchHttpTransport {
 
 trait PutHttpTransport {
   def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
+  def doPutString(url: String, body: String, headers: Seq[(String, String)])(
+    implicit hc: HeaderCarrier): Future[HttpResponse]
 }
 
 trait PostHttpTransport {
@@ -77,6 +79,10 @@ trait CorePut {
   def PUT[I, O](
     url: String,
     body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
+  def PUTString[O](url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(
+    implicit rds: HttpReads[O],
+    hc: HeaderCarrier,
+    ec: ExecutionContext): Future[O]
 }
 
 trait CorePost {
