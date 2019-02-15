@@ -24,18 +24,18 @@ object AppDependencies {
   val compile: Seq[ModuleID] =
     PlayCrossCompilation.dependencies(
       shared = Seq(
-        "com.typesafe" % "config"    % "1.3.2",
+        "com.typesafe" % "config"    % "1.3.3",
         "org.slf4j"    % "slf4j-api" % "1.7.25",
         // empty http-core and http-verbs-play-25 added to force eviction
         // as classes from these two libs have been inlined in http-verbs
-        "uk.gov.hmrc" %% "http-core"          % "2.0.0",
+        "uk.gov.hmrc" %% "http-core"          % "2.1.0",
         "uk.gov.hmrc" %% "http-verbs-play-25" % "1.0.0",
         // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
-        "com.fasterxml.jackson.core"     % "jackson-core"            % "2.9.7",
-        "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.7",
-        "com.fasterxml.jackson.core"     % "jackson-annotations"     % "2.9.7",
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"   % "2.9.7",
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.7"
+        "com.fasterxml.jackson.core"     % "jackson-core"            % "2.9.8",
+        "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.8",
+        "com.fasterxml.jackson.core"     % "jackson-annotations"     % "2.9.8",
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"   % "2.9.8",
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8"
       ),
       play25 = Seq(
         "com.typesafe.play" %% "play-json" % play25Version,
@@ -53,11 +53,11 @@ object AppDependencies {
 
   val test: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
-      "commons-codec"          % "commons-codec"   % "1.7"     % Test,
+      "commons-codec"          % "commons-codec"   % "1.12"     % Test,
       "org.scalatest"          %% "scalatest"      % "3.0.5"   % Test,
-      "org.scalacheck"         %% "scalacheck"     % "1.13.4"  % Test,
+      "org.scalacheck"         %% "scalacheck"     % "1.14.0"  % Test,
       "org.pegdown"            % "pegdown"         % "1.6.0"   % Test,
-      "com.github.tomakehurst" % "wiremock"        % "1.52"    % Test,
+      "com.github.tomakehurst" % "wiremock"        % "1.58"    % Test,
       "ch.qos.logback"         % "logback-classic" % "1.2.3"   % Test,
       "ch.qos.logback"         % "logback-core"    % "1.2.3"   % Test,
       "org.mockito"            % "mockito-all"     % "1.10.19" % Test,
