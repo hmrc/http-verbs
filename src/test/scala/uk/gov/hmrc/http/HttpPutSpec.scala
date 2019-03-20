@@ -42,6 +42,8 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
+    def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) =
+      doPutResult
 
   }
 
@@ -73,6 +75,46 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
       verify(testPut.testHook1).apply(is(url), is("PUT"), is(Some(testJson)), respArgCaptor1.capture())(any(), any())
       verify(testPut.testHook2).apply(is(url), is("PUT"), is(Some(testJson)), respArgCaptor2.capture())(any(), any())
+
+      // verifying directly without ArgumentCaptor didn't work as Futures were different instances
+      // e.g. Future.successful(5) != Future.successful(5)
+      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+    }
+  }
+
+  "HttpPut.PUTString" should {
+    "be able to return plain responses" in {
+      val response = new DummyHttpResponse(testBody, 200)
+      val testPUT = new StubbedHttpPut(Future.successful(response))
+      testPUT.PUTString(url, testRequestBody, Seq.empty).futureValue shouldBe response
+    }
+    "be able to return objects deserialised from JSON" in {
+      val testPUT = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      testPUT.PUTString[TestClass](url, testRequestBody, Seq.empty).futureValue should be(TestClass("t", 10))
+    }
+
+    behave like anErrorMappingHttpCall(
+      "PUT",
+      (url, responseF) => new StubbedHttpPut(responseF).PUTString(url, testRequestBody, Seq.empty))
+    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) {
+      _.PUTString(url, testRequestBody, Seq.empty)
+    }
+
+    "Invoke any hooks provided" in {
+      val dummyResponse       = new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)
+      val dummyResponseFuture = Future.successful(dummyResponse)
+      val testPut            = new StubbedHttpPut(dummyResponseFuture)
+
+      testPut.PUTString[TestClass](url, testRequestBody, Seq.empty).futureValue
+
+      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+
+      verify(testPut.testHook1)
+        .apply(is(url), is("PUT"), is(Some(testRequestBody)), respArgCaptor1.capture())(any(), any())
+      verify(testPut.testHook2)
+        .apply(is(url), is("PUT"), is(Some(testRequestBody)), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
