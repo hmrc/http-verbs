@@ -24,9 +24,12 @@ import scala.concurrent.Future
 trait WSPut extends CorePut with PutHttpTransport with WSRequest {
 
   override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
+    doPut(url,body, Map.empty[String, String])(rds, hc)
+  }
 
-    buildRequest(url).put(Json.toJson(body)).map(new WSHttpResponse(_))
+  override def doPut[A](url: String, body: A, headers: Map[String, String])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+    import play.api.libs.concurrent.Execution.Implicits.defaultContext
+    buildRequest(url)(hc.withExtraHeaders(headers.toSeq: _*)).put(Json.toJson(body)).map(new WSHttpResponse(_))
   }
 
   override def doPutString(url: String, body: String, headers: Seq[(String, String)])(

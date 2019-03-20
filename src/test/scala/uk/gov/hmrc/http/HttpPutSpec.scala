@@ -31,7 +31,7 @@ import scala.concurrent.Future
 
 class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
 
-  class StubbedHttpPut(doPutResult: Future[HttpResponse])
+  class StubbedHttpPut(doPutResult: Future[HttpResponse], doPutWithHeaderResult: Future[HttpResponse])
       extends HttpPut
       with MockitoSugar
       with ConnectionTracingCapturing {
@@ -41,31 +41,44 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     override def configuration: Option[Config]      = None
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
-    def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) =
-      doPutResult
 
+    override def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) =
+      doPutResult
+    override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
+
+    override def doPut[A](url: String, body: A, headers: Map[String, String])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = doPutWithHeaderResult
   }
 
   "HttpPut" should {
     val testObject = TestRequestClass("a", 1)
     "be able to return plain responses" in {
-      val response = new DummyHttpResponse(testBody, 200)
-      val testPut  = new StubbedHttpPut(Future.successful(response))
-      testPut.PUT(url, testObject).futureValue shouldBe response
+      val payload = new DummyHttpResponse(testBody, 200)
+      val response = Future.successful(payload)
+      val testPut  = new StubbedHttpPut(response, response)
+      testPut.PUT(url, testObject).futureValue shouldBe payload
     }
     "be able to return objects deserialised from JSON" in {
-      val testPut = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      val payload = new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)
+      val response = Future.successful(payload)
+      val testPut = new StubbedHttpPut(response, response)
       testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall("PUT", (url, responseF) => new StubbedHttpPut(responseF).PUT(url, testObject))
-    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT(url, testObject) }
+    behave like anErrorMappingHttpCall("PUT", (url, responseF) => new StubbedHttpPut(responseF, responseF).PUT(url, testObject))
+    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse, defaultHttpResponse)) { _.PUT(url, testObject) }
+
+    "be able to pass additional headers on request" in {
+      val default = Future.successful(new DummyHttpResponse(testBody, 200))
+      val outcome = new DummyHttpResponse(testBody, 200)
+      val response = Future.successful(outcome)
+      val testPut  = new StubbedHttpPut(default, response)
+      testPut.PUT(url, testObject, Map("If-Match" -> "foobar")).futureValue shouldBe outcome
+    }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = new DummyHttpResponse(testBody, 200)
       val dummyResponseFuture = Future.successful(dummyResponse)
-      val testPut             = new StubbedHttpPut(dummyResponseFuture)
+      val testPut             = new StubbedHttpPut(dummyResponseFuture, dummyResponseFuture)
       val testJson            = Json.stringify(trcreads.writes(testObject))
 
       testPut.PUT(url, testObject).futureValue
@@ -86,25 +99,27 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
   "HttpPut.PUTString" should {
     "be able to return plain responses" in {
       val response = new DummyHttpResponse(testBody, 200)
-      val testPUT = new StubbedHttpPut(Future.successful(response))
+      val eventualResponse = Future.successful(response)
+      val testPUT = new StubbedHttpPut(eventualResponse, eventualResponse)
       testPUT.PUTString(url, testRequestBody, Seq.empty).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
-      val testPUT = new StubbedHttpPut(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      val eventualResponse = Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200))
+      val testPUT = new StubbedHttpPut(eventualResponse, eventualResponse)
       testPUT.PUTString[TestClass](url, testRequestBody, Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(
       "PUT",
-      (url, responseF) => new StubbedHttpPut(responseF).PUTString(url, testRequestBody, Seq.empty))
-    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) {
+      (url, responseF) => new StubbedHttpPut(responseF,responseF).PUTString(url, testRequestBody, Seq.empty))
+    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse, defaultHttpResponse)) {
       _.PUTString(url, testRequestBody, Seq.empty)
     }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)
       val dummyResponseFuture = Future.successful(dummyResponse)
-      val testPut            = new StubbedHttpPut(dummyResponseFuture)
+      val testPut            = new StubbedHttpPut(dummyResponseFuture, dummyResponseFuture)
 
       testPut.PUTString[TestClass](url, testRequestBody, Seq.empty).futureValue
 
