@@ -24,28 +24,29 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpPost
-    extends CorePost
-    with PostHttpTransport
-    with HttpVerb
-    with ConnectionTracing
-    with HttpHooks
-    with Retries {
+    extends CorePost with PostHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def POST[I, O](url: String, body: I, headers: Seq[(String, String)])(
-    implicit wts: Writes[I],
-    rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O] =
+  override def POST[I, O](
+    url: String,
+    body: I,
+    headers: Seq[(String, String)]
+  )(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = retry(POST_VERB, url)(doPost(url, body, headers))
-      executeHooks(url, POST_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
-      mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
+      body match {
+        case stringBody: String                 => POSTString(url, stringBody, headers)
+        case formBody: Map[String, Seq[String]] => POSTForm(url, formBody)
+        case _ =>
+          val httpResponse = retry(POST_VERB, url)(doPost(url, body, headers))
+          executeHooks(url, POST_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
+          mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
+      }
     }
 
-  override def POSTString[O](url: String, body: String, headers: Seq[(String, String)])(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O] =
+  override def POSTString[O](
+    url: String,
+    body: String,
+    headers: Seq[(String, String)]
+  )(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
       val httpResponse = retry(POST_VERB, url)(doPostString(url, body, headers))
       executeHooks(url, POST_VERB, Option(body), httpResponse)
@@ -54,7 +55,8 @@ trait HttpPost
 
   override def POSTForm[O](
     url: String,
-    body: Map[String, Seq[String]])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+    body: Map[String, Seq[String]]
+  )(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
       val httpResponse = retry(POST_VERB, url)(doFormPost(url, body))
       executeHooks(url, POST_VERB, Option(body), httpResponse)
@@ -62,7 +64,8 @@ trait HttpPost
     }
 
   override def POSTEmpty[O](
-    url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+    url: String
+  )(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
       val httpResponse = retry(POST_VERB, url)(doEmptyPost(url))
       executeHooks(url, POST_VERB, None, httpResponse)
