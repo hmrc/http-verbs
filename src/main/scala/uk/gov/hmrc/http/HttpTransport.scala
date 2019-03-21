@@ -34,9 +34,9 @@ trait PatchHttpTransport {
 
 trait PutHttpTransport {
   def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    doPut(url, body, Map.empty[String, String])(rds, hc)
+    doPut(url, body, Seq.empty[(String, String)])(rds, hc)
   }
-  def doPut[A](url: String, body: A, headers: Map[String, String])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
+  def doPut[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
   def doPutString(url: String, body: String, headers: Seq[(String, String)])(
     implicit hc: HeaderCarrier): Future[HttpResponse]
 }
@@ -81,10 +81,10 @@ trait CorePatch {
 trait CorePut {
   def PUT[I, O](url: String, body: I)
                (implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = {
-    PUT[I, O](url, body, Map.empty[String, String])(wts, rds, hc, ec)
+    PUT[I, O](url, body, Seq.empty[(String, String)])(wts, rds, hc, ec)
   }
 
-  def PUT[I, O](url: String, body: I, headers: Map[String, String])
+  def PUT[I, O](url: String, body: I, headers: Seq[(String, String)])
                (implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
 
   def PUTString[O](url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(

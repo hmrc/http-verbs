@@ -46,7 +46,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       doPutResult
     override def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier) = doPutResult
 
-    override def doPut[A](url: String, body: A, headers: Map[String, String])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = doPutWithHeaderResult
+    override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = doPutWithHeaderResult
   }
 
   "HttpPut" should {
@@ -72,7 +72,7 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
       val outcome = new DummyHttpResponse(testBody, 200)
       val response = Future.successful(outcome)
       val testPut  = new StubbedHttpPut(default, response)
-      testPut.PUT(url, testObject, Map("If-Match" -> "foobar")).futureValue shouldBe outcome
+      testPut.PUT(url, testObject, Seq("If-Match" -> "foobar")).futureValue shouldBe outcome
     }
 
     "Invoke any hooks provided" in {

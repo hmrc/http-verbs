@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def PUT[I, O](url: String, body: I, headers: Map[String, String])
+  override def PUT[I, O](url: String, body: I, headers: Seq[(String, String)])
                         (implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
       val httpResponse = retry(PUT_VERB, url)(doPut(url, body, headers))
