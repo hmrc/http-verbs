@@ -30,9 +30,9 @@ trait HttpDelete
     with HttpHooks
     with Retries {
 
-  override def DELETE[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+  override def DELETE[O](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(DELETE_VERB, url) {
-      val httpResponse = retry(DELETE_VERB, url)(doDelete(url))
+      val httpResponse = retry(DELETE_VERB, url)(doDelete(url, headers))
       executeHooks(url, DELETE_VERB, None, httpResponse)
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
     }

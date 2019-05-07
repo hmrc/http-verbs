@@ -190,7 +190,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   "DELETE" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new HttpDelete with TestHttpVerb {
-        override def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+        override def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -199,7 +199,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.DELETE[Option[String]](url = "doesnt-matter").futureValue shouldBe None
+      http.DELETE[Option[String]](url = "doesnt-matter", headers = Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }

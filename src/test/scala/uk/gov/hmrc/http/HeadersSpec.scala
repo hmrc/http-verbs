@@ -144,7 +144,7 @@ class HeadersSpec
         delete(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200)))
 
-      client.DELETE[HttpResponse](s"http://localhost:${server.port()}/").futureValue
+      client.DELETE[HttpResponse](s"http://localhost:${server.port()}/", Seq("header" -> "foo")).futureValue
 
       server.verify(
         deleteRequestedFor(urlEqualTo("/"))

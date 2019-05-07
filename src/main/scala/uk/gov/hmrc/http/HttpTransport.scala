@@ -25,7 +25,7 @@ trait GetHttpTransport {
 }
 
 trait DeleteHttpTransport {
-  def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
 }
 
 trait PatchHttpTransport {
@@ -69,7 +69,7 @@ trait CoreGet {
 }
 
 trait CoreDelete {
-  def DELETE[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
+  def DELETE[O](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
 }
 
 trait CorePatch {
