@@ -21,7 +21,7 @@ import play.api.libs.json.Writes
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GetHttpTransport {
-  def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
 }
 
 trait DeleteHttpTransport {
@@ -62,10 +62,12 @@ trait HttpTransport
     with PostHttpTransport {}
 
 trait CoreGet {
-  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A]
+  def GET[A](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A]
+
   def GET[A](
     url: String,
-    queryParams: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A]
+    queryParams: Seq[(String, String)],
+    headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A]
 }
 
 trait CoreDelete {

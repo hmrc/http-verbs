@@ -56,9 +56,9 @@ trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch wit
   override def POSTEmpty[O](
     url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = ???
 
-  override def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] = ???
+  override def GET[A](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] = ???
 
-  override def GET[A](url: String, queryParams: Seq[(String, String)])(
+  override def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
     implicit rds: HttpReads[A],
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[A] = ???

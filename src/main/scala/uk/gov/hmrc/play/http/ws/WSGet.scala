@@ -22,10 +22,10 @@ import scala.concurrent.Future
 
 trait WSGet extends WSRequest with CoreGet with GetHttpTransport {
 
-  override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-    buildRequest(url).get().map(new WSHttpResponse(_))
+    buildRequest(url).withHeaders(headers: _*).get().map(new WSHttpResponse(_))
   }
 
 }

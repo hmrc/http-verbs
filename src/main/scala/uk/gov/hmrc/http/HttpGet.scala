@@ -26,14 +26,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
+  override def GET[A](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
     withTracing(GET_VERB, url) {
-      val httpResponse = retry(GET_VERB, url)(doGet(url))
+      val httpResponse = retry(GET_VERB, url)(doGet(url, headers))
       executeHooks(url, GET_VERB, None, httpResponse)
       mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
     }
 
-  override def GET[A](url: String, queryParams: Seq[(String, String)])(
+  override def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
     implicit rds: HttpReads[A],
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[A] = {
@@ -44,7 +44,7 @@ trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with Connectio
         s"${this.getClass}.GET(url, queryParams)",
         "Query parameters must be provided as a Seq of tuples to this method")
     }
-    GET(url + queryString)
+    GET(url + queryString, headers)
   }
 
   private def makeQueryString(queryParams: Seq[(String, String)]) = {

@@ -124,7 +124,7 @@ class HeadersSpec
         get(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200)))
 
-      client.GET[HttpResponse](s"http://localhost:${server.port()}/").futureValue
+      client.GET[HttpResponse](s"http://localhost:${server.port()}/", Seq("header" -> "foo")).futureValue
 
       server.verify(
         getRequestedFor(urlEqualTo("/"))
