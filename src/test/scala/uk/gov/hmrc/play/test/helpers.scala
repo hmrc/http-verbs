@@ -65,7 +65,8 @@ trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch wit
 
   override def PUT[I, O](
     url: String,
-    body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = ???
+    body: I,
+    headers: Seq[(String, String)])(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = ???
 
   override def PUTString[O](url: String, body: String, headers: Seq[(String, String)])(
     implicit rds: HttpReads[O],
