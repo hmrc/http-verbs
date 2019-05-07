@@ -207,7 +207,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   "PATCH" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new HttpPatch with TestHttpVerb {
-        override def doPatch[A](url: String, body: A)(
+        override def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(
           implicit rds: Writes[A],
           hc: HeaderCarrier): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
@@ -218,7 +218,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.PATCH[JsValue, Option[String]](url = "doesnt-matter", Json.obj()).futureValue shouldBe None
+      http.PATCH[JsValue, Option[String]](url = "doesnt-matter", Json.obj(), Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }

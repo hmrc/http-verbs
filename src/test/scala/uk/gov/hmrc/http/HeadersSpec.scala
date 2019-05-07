@@ -164,7 +164,7 @@ class HeadersSpec
         patch(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200)))
 
-      client.PATCH[JsValue, HttpResponse](s"http://localhost:${server.port()}/", Json.obj()).futureValue
+      client.PATCH[JsValue, HttpResponse](s"http://localhost:${server.port()}/", Json.obj(), Seq("header" -> "foo")).futureValue
 
       server.verify(
         patchRequestedFor(urlEqualTo("/"))

@@ -32,7 +32,7 @@ import scala.concurrent.Future
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
 
-  class StubbedHttpDelete(response: Future[HttpResponse], headerResponse: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
+  class StubbedHttpDelete(doDeleteResult: Future[HttpResponse], doDeleteWithHeaderResult: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
     val testHook1                                   = mock[HttpHook]
     val testHook2                                   = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
@@ -40,7 +40,7 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     def appName: String                                   = ???
-    def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = response
+    def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doDeleteResult
   }
 
   "HttpDelete" should {

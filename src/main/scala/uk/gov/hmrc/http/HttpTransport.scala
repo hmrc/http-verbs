@@ -29,7 +29,7 @@ trait DeleteHttpTransport {
 }
 
 trait PatchHttpTransport {
-  def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
+  def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse]
 }
 
 trait PutHttpTransport {
@@ -75,7 +75,8 @@ trait CoreDelete {
 trait CorePatch {
   def PATCH[I, O](
     url: String,
-    body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
+    body: I,
+    headers: Seq[(String, String)])(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
 }
 
 trait CorePut {
