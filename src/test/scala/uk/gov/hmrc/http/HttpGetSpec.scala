@@ -62,7 +62,16 @@ class HttpGetSpec
     override def configuration: Option[Config]      = None
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
+    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
+
+    override def doGet(url: String, queryParams: Seq[(String, String)])(
+      implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
+
+    override def doGet(
+      url: String,
+      queryParams: Seq[(String, String)],
+      headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
+      doGetResult
   }
 
   class UrlTestingHttpGet() extends HttpGet {
@@ -73,7 +82,20 @@ class HttpGetSpec
     override def configuration: Option[Config]      = None
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+    override def doGet(url: String, queryParams: Seq[(String, String)])(
+      implicit hc: HeaderCarrier): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+    override def doGet(
+      url: String,
+      queryParams: Seq[(String, String)],
+      headers: Seq[(String, String)] = Seq.empty[(String, String)])(
+      implicit hc: HeaderCarrier): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
@@ -89,15 +111,19 @@ class HttpGetSpec
       val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
       testGet.GET[TestClass](url, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
     }
-    behave like anErrorMappingHttpCall("GET", (url, responseF) => new StubbedHttpGet(responseF).GET(url, Seq("header" -> "foo")))
-    behave like aTracingHttpCall("GET", "GET", new StubbedHttpGet(defaultHttpResponse)) { _.GET(url, Seq("header" -> "foo")) }
+    behave like anErrorMappingHttpCall(
+      "GET",
+      (url, responseF) => new StubbedHttpGet(responseF).GET(url, Seq("header" -> "foo")))
+    behave like aTracingHttpCall("GET", "GET", new StubbedHttpGet(defaultHttpResponse)) {
+      _.GET(url, Seq("header" -> "foo"))
+    }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = new DummyHttpResponse(testBody, 200)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testGet             = new StubbedHttpGet(dummyResponseFuture)
 
-      testGet.GET(url, Seq("header" -> "foo")).futureValue
+      testGet.GET(url).futureValue
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
@@ -123,14 +149,15 @@ class HttpGetSpec
     "return a url with a single param pair" in {
       val expected = Some("http://test.net?one=1")
       val testGet  = new UrlTestingHttpGet()
-      testGet.GET("http://test.net", Seq(("one", "1")), Seq("Accept" -> "application/json"))
+      testGet.GET("http://test.net", Seq(("one", "1")))
       testGet.lastUrl shouldBe expected
     }
 
     "return a url with a multiple param pairs" in {
       val expected = Some("http://test.net?one=1&two=2&three=3")
       val testGet  = new UrlTestingHttpGet()
-      testGet.GET("http://test.net", Seq(("one", "1"), ("two", "2"), ("three", "3")), Seq("Accept" -> "application/json"))
+      testGet
+        .GET("http://test.net", Seq(("one", "1"), ("two", "2"), ("three", "3")), Seq("Accept" -> "application/json"))
       testGet.lastUrl shouldBe expected
     }
 
@@ -139,21 +166,26 @@ class HttpGetSpec
         Some("http://test.net?email=test%2Balias%40email.com&data=%7B%22message%22%3A%22in+json+format%22%7D")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET("http://test.net", Seq(("email", "test+alias@email.com"), ("data", "{\"message\":\"in json format\"}")), Seq("Accept" -> "application/json"))
+        .GET(
+          "http://test.net",
+          Seq(("email", "test+alias@email.com"), ("data", "{\"message\":\"in json format\"}")),
+          Seq("Accept" -> "application/json"))
       testGet.lastUrl shouldBe expected
     }
 
     "return a url with duplicate param pairs" in {
       val expected = Some("http://test.net?one=1&two=2&one=11")
       val testGet  = new UrlTestingHttpGet()
-      testGet.GET("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")), Seq("Accept" -> "application/json"))
+      testGet
+        .GET("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")), Seq("Accept" -> "application/json"))
       testGet.lastUrl shouldBe expected
     }
 
     "raise an exception if the URL provided already has a query string" in {
       val testGet = new UrlTestingHttpGet()
 
-      a[UrlValidationException] should be thrownBy testGet.GET("http://test.net?should=not=be+here", Seq(("one", "1")), Seq("Accept" -> "application/json"))
+      a[UrlValidationException] should be thrownBy testGet
+        .GET("http://test.net?should=not=be+here", Seq(("one", "1")), Seq("Accept" -> "application/json"))
     }
   }
 }
