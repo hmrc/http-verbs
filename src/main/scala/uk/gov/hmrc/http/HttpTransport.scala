@@ -45,10 +45,10 @@ trait PatchHttpTransport {
 trait PutHttpTransport {
   def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] =
     doPut(url, body, Seq.empty[(String, String)])(rds, hc)
-  def doPut[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
+  def doPut[A](url: String, body: A, headers: Seq[(String, String)])(
     implicit rds: Writes[A],
     hc: HeaderCarrier): Future[HttpResponse]
-  def doPutString(url: String, body: String, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
+  def doPutString(url: String, body: String, headers: Seq[(String, String)])(
     implicit hc: HeaderCarrier): Future[HttpResponse]
 }
 

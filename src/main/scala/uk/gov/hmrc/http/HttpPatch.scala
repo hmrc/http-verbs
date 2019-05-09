@@ -34,7 +34,7 @@ trait HttpPatch
   override def PATCH[I, O](
     url: String,
     body: I,
-    headers: Seq[(String, String)])(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+    headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(PATCH_VERB, url) {
       val httpResponse = retry(PATCH_VERB, url)(doPatch(url, body, headers))
       executeHooks(url, PATCH_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
