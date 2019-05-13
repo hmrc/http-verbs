@@ -23,10 +23,10 @@ import scala.concurrent.Future
 
 trait WSPatch extends CorePatch with PatchHttpTransport with WSRequest {
 
-  override def doPatch[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doPatch[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-    buildRequest(url).patch(Json.toJson(body)).map(new WSHttpResponse(_))
+    buildRequest(url).withHeaders(headers: _*).patch(Json.toJson(body)).map(new WSHttpResponse(_))
   }
 
 }

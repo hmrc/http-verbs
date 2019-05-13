@@ -22,9 +22,9 @@ import scala.concurrent.Future
 
 trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequest {
 
-  override def doDelete(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doDelete(url: String, headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
-    buildRequest(url).delete().map(new WSHttpResponse(_))
+    buildRequest(url).withHeaders(headers: _*).delete().map(new WSHttpResponse(_))
   }
 
 }
