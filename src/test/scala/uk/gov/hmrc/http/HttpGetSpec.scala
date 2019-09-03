@@ -64,8 +64,6 @@ class HttpGetSpec
 
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
-
     override def doGet(
                         url: String,
                         headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
@@ -81,11 +79,6 @@ class HttpGetSpec
     override def configuration: Option[Config] = None
 
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
-
-    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-      lastUrl = Some(url)
-      defaultHttpResponse
-    }
 
     override def doGet(
                         url: String,
