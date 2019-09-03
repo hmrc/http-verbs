@@ -119,11 +119,18 @@ class HttpVersionNotSupportedException(message: String) extends HttpException(me
 
 class InsufficientStorageException(message: String) extends HttpException(message, INSUFFICIENT_STORAGE)
 
+sealed trait UpstreamErrorResponse {
+  val message: String
+  val upstreamResponseCode: Int
+  val reportAs: Int
+}
+
 case class Upstream4xxResponse(
   message: String,
   upstreamResponseCode: Int,
   reportAs: Int,
   headers: Map[String, Seq[String]] = Map.empty)
-    extends Exception(message)
+    extends Exception(message) with UpstreamErrorResponse
 
-case class Upstream5xxResponse(message: String, upstreamResponseCode: Int, reportAs: Int) extends Exception(message)
+case class Upstream5xxResponse(message: String, upstreamResponseCode: Int, reportAs: Int)
+  extends Exception(message) with UpstreamErrorResponse
