@@ -47,7 +47,7 @@ trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with Connectio
     implicit rds: HttpReads[A],
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[A] = withTracing(GET_VERB, url) {
-    val httpResponse = retry(GET_VERB, url)(doGet(url, headers))
+    val httpResponse = retry(GET_VERB, url)(doGet(url, headers = headers))
     executeHooks(url, GET_VERB, None, httpResponse)
     mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
   }

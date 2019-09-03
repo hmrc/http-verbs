@@ -177,13 +177,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
           )
-        override def doGet(url: String, queryParams: Seq[(String, String)])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
-          failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
-            exception = new SSLException("SSLEngine closed already")
-          )
-        override def doGet(url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
+        override def doGet(url: String, headers: Seq[(String, String)])(
           implicit hc: HeaderCarrier): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),

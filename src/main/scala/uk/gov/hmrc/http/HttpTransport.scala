@@ -23,11 +23,8 @@ import scala.concurrent.{ExecutionContext, Future}
 trait GetHttpTransport {
   def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
 
-  def doGet(url: String, queryParams: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
-
   def doGet(
     url: String,
-    queryParams: Seq[(String, String)],
     headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
 }
 

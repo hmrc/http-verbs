@@ -66,12 +66,8 @@ class HttpGetSpec
 
     override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
 
-    override def doGet(url: String, queryParams: Seq[(String, String)])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
-
     override def doGet(
                         url: String,
-                        queryParams: Seq[(String, String)],
                         headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
       doGetResult
   }
@@ -91,15 +87,8 @@ class HttpGetSpec
       defaultHttpResponse
     }
 
-    override def doGet(url: String, queryParams: Seq[(String, String)])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = {
-      lastUrl = Some(url)
-      defaultHttpResponse
-    }
-
     override def doGet(
                         url: String,
-                        queryParams: Seq[(String, String)],
                         headers: Seq[(String, String)] = Seq.empty[(String, String)])(
                         implicit hc: HeaderCarrier): Future[HttpResponse] = {
       lastUrl = Some(url)

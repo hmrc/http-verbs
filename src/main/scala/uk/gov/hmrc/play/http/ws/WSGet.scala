@@ -28,16 +28,9 @@ trait WSGet extends WSRequest with CoreGet with GetHttpTransport {
     buildRequest(url).get().map(new WSHttpResponse(_))
   }
 
-  override def doGet(url: String, queryParams: Seq[(String, String)])(
-    implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-    buildRequest(url).get().map(new WSHttpResponse(_))
-  }
 
   override def doGet(
     url: String,
-    queryParams: Seq[(String, String)],
     headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
