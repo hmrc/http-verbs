@@ -18,16 +18,15 @@ package uk.gov.hmrc.play.http.ws
 
 import uk.gov.hmrc.http._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait WSGet extends WSRequest with CoreGet with GetHttpTransport {
+trait WSGet extends WSRequest with WSExecute with CoreGet with GetHttpTransport {
 
   override def doGet(
     url: String,
-    headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-    buildRequest(url).withHeaders(headers: _*).get().map(new WSHttpResponse(_))
-  }
-
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url).withHeaders(headers: _*), "GET")
+      .map(new WSHttpResponse(_))
 }

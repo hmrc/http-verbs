@@ -42,8 +42,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.http.hooks.HttpHook
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class HttpGetSpec
     extends WordSpecLike
@@ -52,6 +51,8 @@ class HttpGetSpec
     with CommonHttpBehaviour
     with IntegrationPatience
     with MockitoSugar {
+
+  import ExecutionContext.Implicits.global
 
   class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse)
     extends HttpGet
@@ -65,8 +66,10 @@ class HttpGetSpec
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doGet(
-                        url: String,
-                        headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doGetResult
   }
 
@@ -81,9 +84,10 @@ class HttpGetSpec
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doGet(
-                        url: String,
-                        headers: Seq[(String, String)] = Seq.empty)(
-                        implicit hc: HeaderCarrier): Future[HttpResponse] = {
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }

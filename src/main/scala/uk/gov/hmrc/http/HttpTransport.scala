@@ -24,7 +24,8 @@ trait GetHttpTransport {
   def doGet(
     url: String,
     headers: Seq[(String, String)] = Seq.empty)(
-      implicit hc: HeaderCarrier): Future[HttpResponse]
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait DeleteHttpTransport {

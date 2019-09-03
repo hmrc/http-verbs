@@ -26,12 +26,12 @@ import org.scalatest.{Matchers, WordSpec}
 import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Random, Try}
 
 class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+  import ExecutionContext.Implicits.global
 
   "Retries" should {
     "be disabled by default" in {
@@ -173,7 +173,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new HttpGet with TestHttpVerb {
         override def doGet(url: String, headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
+          implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
