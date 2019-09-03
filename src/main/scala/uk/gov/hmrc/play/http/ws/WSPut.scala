@@ -19,20 +19,25 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.{CorePut, HeaderCarrier, HttpResponse, PutHttpTransport}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait WSPut extends CorePut with PutHttpTransport with WSRequest {
+trait WSPut extends CorePut with PutHttpTransport with WSRequest with WSExecute {
 
-  override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(
-    implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-    buildRequest(url).withHeaders(headers: _*).put(Json.toJson(body)).map(new WSHttpResponse(_))
-  }
+  override def doPut[A](
+    url: String,
+    body: A,
+    headers: Seq[(String, String)])(
+      implicit rds: Writes[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url).withHeaders(headers: _*).withBody(Json.toJson(body)), "PUT")
+      .map(new WSHttpResponse(_))
 
-  override def doPutString(url: String, body: String, headers: Seq[(String, String)])(
-    implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-    buildRequest(url).withHeaders(headers: _*).put(body).map(new WSHttpResponse(_))
-  }
+  override def doPutString(
+    url: String,
+    body: String,
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url).withHeaders(headers: _*).withBody(body), "PUT")
+      .map(new WSHttpResponse(_))
 }

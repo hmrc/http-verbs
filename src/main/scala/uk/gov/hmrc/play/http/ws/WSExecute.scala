@@ -20,20 +20,16 @@ import org.slf4j.MDC
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 
 trait WSExecute {
 
-  def execute(req: play.api.libs.ws.WSRequest, method: String)(implicit ec: ExecutionContext) = {
+  private[ws] def execute(req: play.api.libs.ws.WSRequest, method: String)(implicit ec: ExecutionContext) = {
     // Since AHC internally uses a different execution context, providing a MDC enabled Execution context
     // will not preserve MDC data for further futures.
     // We will copy over the data manually to preserve them.
-    val mdcData = Option(MDC.getCopyOfContextMap).map(_.asScala).getOrElse(Map.empty)
+    val mdcData = Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty)
     req.withMethod(method).execute()
-      .map { res =>
-        mdcData.foreach {
-          case (k, v) => MDC.put(k, v)
-        }
-        res
-      }
+      .map(identity)(new MdcLoggingExecutionContext(ec, mdcData))
   }
 }

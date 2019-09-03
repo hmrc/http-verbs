@@ -20,7 +20,7 @@ import uk.gov.hmrc.http._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait WSGet extends WSRequest with WSExecute with CoreGet with GetHttpTransport {
+trait WSGet extends CoreGet with GetHttpTransport with WSRequest with WSExecute {
 
   override def doGet(
     url: String,

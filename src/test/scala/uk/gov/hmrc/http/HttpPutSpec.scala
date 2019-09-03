@@ -26,10 +26,10 @@ import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.hooks.HttpHook
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
+  import ExecutionContext.Implicits.global
 
   class StubbedHttpPut(doPutResult: Future[HttpResponse])
       extends HttpPut
@@ -41,10 +41,10 @@ class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     override def configuration: Option[Config]      = None
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) =
+    override def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
       doPutResult
 
-    override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier) =
+    override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
   }
 

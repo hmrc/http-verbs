@@ -32,7 +32,8 @@ trait DeleteHttpTransport {
   def doDelete(
     url: String,
     headers: Seq[(String, String)] = Seq.empty)(
-      implicit hc: HeaderCarrier): Future[HttpResponse]
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait PatchHttpTransport {
@@ -41,7 +42,8 @@ trait PatchHttpTransport {
     body: A,
     headers: Seq[(String, String)] = Seq.empty)(
       implicit rds: Writes[A],
-      hc: HeaderCarrier): Future[HttpResponse]
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait PutHttpTransport {
@@ -50,13 +52,15 @@ trait PutHttpTransport {
     body: A,
     headers: Seq[(String, String)] = Seq.empty)(
       implicit rds: Writes[A],
-      hc: HeaderCarrier): Future[HttpResponse]
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
   def doPutString(
     url: String,
     body: String,
     headers: Seq[(String, String)] = Seq.empty)(
-      implicit hc: HeaderCarrier): Future[HttpResponse]
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait PostHttpTransport {
@@ -65,24 +69,28 @@ trait PostHttpTransport {
     body: A,
     headers: Seq[(String, String)] = Seq.empty)(
       implicit wts: Writes[A],
-      hc: HeaderCarrier): Future[HttpResponse]
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
   def doPostString(
     url: String,
     body: String,
     headers: Seq[(String, String)] = Seq.empty)(
-      implicit hc: HeaderCarrier): Future[HttpResponse]
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
   def doEmptyPost[A](
     url: String,
     headers: Seq[(String, String)] = Seq.empty)(
-      implicit hc: HeaderCarrier): Future[HttpResponse]
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
   def doFormPost(
     url: String,
     body: Map[String, Seq[String]],
     headers: Seq[(String, String)] = Seq.empty)(
-      implicit hc: HeaderCarrier): Future[HttpResponse]
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait HttpTransport

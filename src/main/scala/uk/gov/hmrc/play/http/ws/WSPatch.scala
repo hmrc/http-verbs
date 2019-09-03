@@ -19,14 +19,17 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait WSPatch extends CorePatch with PatchHttpTransport with WSRequest {
+trait WSPatch extends CorePatch with PatchHttpTransport with WSRequest with WSExecute {
 
-  override def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-    buildRequest(url).withHeaders(headers: _*).patch(Json.toJson(body)).map(new WSHttpResponse(_))
-  }
-
+  override def doPatch[A](
+    url: String,
+    body: A,
+    headers: Seq[(String, String)])(
+      implicit rds: Writes[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url).withHeaders(headers: _*).withBody(Json.toJson(body)), "PATCH")
+      .map(new WSHttpResponse(_))
 }
