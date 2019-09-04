@@ -6,7 +6,7 @@ val name = "http-verbs"
 lazy val library = Project(name, file("."))
   .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
   .settings(
-    majorVersion                     := 9,
+    majorVersion                     := 10,
     makePublicallyAvailableOnBintray := true
   ).settings(
     scalaVersion        := "2.11.12",
