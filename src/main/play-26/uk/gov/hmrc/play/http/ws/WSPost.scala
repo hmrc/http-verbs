@@ -32,11 +32,11 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest {
     buildRequest(url).addHttpHeaders(headers: _*).post(Json.toJson(body)).map(new WSHttpResponse(_))
   }
 
-  override def doFormPost(url: String, body: Map[String, Seq[String]])(
+  override def doFormPost(url: String, body: Map[String, Seq[String]], headers: Seq[(String, String)])(
     implicit hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-    buildRequest(url).post(body).map(new WSHttpResponse(_))
+    buildRequest(url).addHttpHeaders(headers: _*).post(body).map(new WSHttpResponse(_))
   }
 
   override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
@@ -46,9 +46,10 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest {
     buildRequest(url).addHttpHeaders(headers: _*).post(body).map(new WSHttpResponse(_))
   }
 
-  override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(
+    implicit hc: HeaderCarrier): Future[HttpResponse] = {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-    buildRequest(url).post(EmptyBody).map(new WSHttpResponse(_))
+    buildRequest(url).addHttpHeaders(headers: _*).post(EmptyBody).map(new WSHttpResponse(_))
   }
 }

@@ -26,24 +26,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
-    GET(url, queryParams = Seq.empty, headers = Seq.empty)
-
-  override def GET[A](url: String, queryParams: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] =
-    GET(url, queryParams, headers = Seq.empty)
-
-  override def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] = {
-    if (url.contains("?")) {
+  override def GET[A](
+    url: String,
+    queryParams: Seq[(String, String)],
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] = {
+    if (queryParams.nonEmpty && url.contains("?")) {
       throw new UrlValidationException(
         url,
         s"${this.getClass}.GET(url, queryParams)",
-        "Query parameters must be provided as a Seq of tuples to this method")
+        "Query parameters should be provided in either url or as a Seq of tuples")
     }
 
     val urlWithQuery = url + makeQueryString(queryParams)

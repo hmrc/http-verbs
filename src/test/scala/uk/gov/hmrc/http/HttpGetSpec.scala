@@ -66,11 +66,11 @@ class HttpGetSpec
 
     override def doGet(
                         url: String,
-                        headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
+                        headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): Future[HttpResponse] =
       doGetResult
   }
 
-  class UrlTestingHttpGet() extends HttpGet {
+  class UrlTestingHttpGet() extends HttpGet with GetHttpTransport {
     val testHook1 = mock[HttpHook]
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
@@ -82,7 +82,7 @@ class HttpGetSpec
 
     override def doGet(
                         url: String,
-                        headers: Seq[(String, String)] = Seq.empty[(String, String)])(
+                        headers: Seq[(String, String)] = Seq.empty)(
                         implicit hc: HeaderCarrier): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
