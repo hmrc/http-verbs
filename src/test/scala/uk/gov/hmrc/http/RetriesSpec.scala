@@ -23,9 +23,11 @@ import javax.net.ssl.SSLException
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import org.slf4j.MDC
 import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Random, Try}
@@ -162,6 +164,43 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
             exception = new SSLException("SSLEngine closed already")
           )
         }
+
+      whenReady(resultF) { response =>
+        response shouldBe expectedResponse
+      }
+    }
+
+    "preserve MDC" in {
+      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
+
+      val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
+        override protected val configuration =
+          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+        override private[http] lazy val intervals = expectedIntervals
+        override val actorSystem                  = ActorSystem("test-actor-system")
+      }
+
+      val mdcData = Map("key1" -> "value1")
+      mdcData.foreach { case (k, v) => MDC.put("key1", "value1") }
+      val mdcEc = new uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext(implicitly[ExecutionContext], mdcData)
+
+      val expectedResponse = HttpResponse(404)
+
+      val resultF =
+        retries.retry("GET", "url") {
+          // assert mdc available to block execution
+          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+
+          retries.failFewTimesAndThenSucceed(
+            success   = Future.successful(expectedResponse),
+            exception = new SSLException("SSLEngine closed already")
+          )
+        }(mdcEc)
+        .map { res =>
+          // assert mdc available to continuation
+          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+          res
+        }(mdcEc)
 
       whenReady(resultF) { response =>
         response shouldBe expectedResponse
