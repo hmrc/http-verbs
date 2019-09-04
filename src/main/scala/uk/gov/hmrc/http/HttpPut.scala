@@ -25,23 +25,30 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def PUT[I, O](url: String, body: I, headers: Seq[(String, String)])
-                        (implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+  override def PUT[I, O](
+    url: String,
+    body: I,
+    headers: Seq[(String, String)])(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
       val httpResponse = retry(PUT_VERB, url)(doPut(url, body, headers))
       executeHooks(url, PUT_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
     }
 
-  override def PUTString[O](url: String, body: String, headers: Seq[(String, String)])(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O] =
+  override def PUTString[O](
+    url: String,
+    body: String,
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
       val httpResponse = retry(PUT_VERB, url)(doPutString(url, body, headers))
       executeHooks(url, PUT_VERB, Option(body), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))
     }
-
-
 }

@@ -26,19 +26,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
-    GET(url, queryParams = Seq.empty, headers = Seq.empty)
-
-  override def GET[A](url: String, queryParams: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] =
-    GET(url, queryParams, headers = Seq.empty)
-
-  override def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] = {
+  override def GET[A](
+    url: String,
+    queryParams: Seq[(String, String)],
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] = {
     if (url.contains("?")) {
       throw new UrlValidationException(
         url,

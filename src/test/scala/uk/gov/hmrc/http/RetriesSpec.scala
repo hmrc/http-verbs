@@ -285,7 +285,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   "POSTForm" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new TestHttpPost with TestHttpVerb {
-        override def doFormPost(url: String, body: Map[String, Seq[String]])(
+        override def doFormPost(url: String, body: Map[String, Seq[String]], headers: Seq[(String, String)])(
           implicit hc: HeaderCarrier): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
@@ -303,7 +303,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   "POSTEmpty" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new TestHttpPost with TestHttpVerb {
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+        override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -345,9 +345,9 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
     override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
-    override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+    override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
-    override def doFormPost(url: String, body: Map[String, Seq[String]])(
+    override def doFormPost(url: String, body: Map[String, Seq[String]], headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier): Future[HttpResponse] = ???
   }
 
