@@ -30,6 +30,6 @@ trait WSPatch extends CorePatch with PatchHttpTransport with WSRequest with WSEx
       implicit rds: Writes[A],
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url).withHeaders(headers: _*).withBody(Json.toJson(body)), "PATCH")
+    execute(buildRequest(url, headers).withBody(Json.toJson(body)), "PATCH")
       .map(new WSHttpResponse(_))
 }

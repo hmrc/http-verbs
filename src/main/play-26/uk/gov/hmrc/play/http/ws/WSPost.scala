@@ -31,7 +31,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest with WSExecu
       implicit rds: Writes[A],
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url).addHttpHeaders(headers: _*).withBody(Json.toJson(body)), "POST")
+    execute(buildRequest(url, headers).withBody(Json.toJson(body)), "POST")
       .map(new WSHttpResponse(_))
 
   override def doFormPost(
@@ -40,7 +40,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest with WSExecu
     headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url).addHttpHeaders(headers: _*).withBody(body), "POST")
+    execute(buildRequest(url, headers).withBody(body), "POST")
       .map(new WSHttpResponse(_))
 
   override def doPostString(
@@ -49,7 +49,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest with WSExecu
     headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url).addHttpHeaders(headers: _*).withBody(body), "POST")
+    execute(buildRequest(url, headers).withBody(body), "POST")
       .map(new WSHttpResponse(_))
 
   override def doEmptyPost[A](
@@ -57,6 +57,6 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequest with WSExecu
     headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url).addHttpHeaders(headers: _*).withBody(EmptyBody), "POST")
+    execute(buildRequest(url, headers).withBody(EmptyBody), "POST")
       .map(new WSHttpResponse(_))
 }

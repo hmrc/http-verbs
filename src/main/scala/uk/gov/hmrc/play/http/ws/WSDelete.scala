@@ -27,6 +27,6 @@ trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequest with W
     headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url).withHeaders(headers: _*), "DELETE")
+    execute(buildRequest(url, headers), "DELETE")
       .map(new WSHttpResponse(_))
 }
