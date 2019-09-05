@@ -42,7 +42,7 @@ class WsProxySpec extends WordSpecLike with Matchers with MockitoSugar with Opti
         def wsProxyServer = Some(wSProxyServer)
       }
 
-      val request = ProxiedGet.buildRequest("http://example.com")
+      val request = ProxiedGet.buildRequest("http://example.com", headers = Seq.empty)
 
       request.proxyServer.value shouldBe (wSProxyServer)
     }
@@ -58,7 +58,7 @@ class WsProxySpec extends WordSpecLike with Matchers with MockitoSugar with Opti
         def wsProxyServer = None
       }
 
-      val request = ProxiedGet.buildRequest("http://example.com")
+      val request = ProxiedGet.buildRequest("http://example.com", headers = Seq.empty)
 
       request.proxyServer shouldBe (None)
     }

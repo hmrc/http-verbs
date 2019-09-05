@@ -23,15 +23,17 @@ import javax.net.ssl.SSLException
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import org.slf4j.MDC
 import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Random, Try}
 
 class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+  import ExecutionContext.Implicits.global
 
   "Retries" should {
     "be disabled by default" in {
@@ -167,24 +169,50 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
         response shouldBe expectedResponse
       }
     }
+
+    "preserve MDC" in {
+      val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
+
+      val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
+        override protected val configuration =
+          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+        override private[http] lazy val intervals = expectedIntervals
+        override val actorSystem                  = ActorSystem("test-actor-system")
+      }
+
+      val mdcData = Map("key1" -> "value1")
+      mdcData.foreach { case (k, v) => MDC.put("key1", "value1") }
+      val mdcEc = new uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext(implicitly[ExecutionContext], mdcData)
+
+      val expectedResponse = HttpResponse(404)
+
+      val resultF =
+        retries.retry("GET", "url") {
+          // assert mdc available to block execution
+          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+
+          retries.failFewTimesAndThenSucceed(
+            success   = Future.successful(expectedResponse),
+            exception = new SSLException("SSLEngine closed already")
+          )
+        }(mdcEc)
+        .map { res =>
+          // assert mdc available to continuation
+          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+          res
+        }(mdcEc)
+
+      whenReady(resultF) { response =>
+        response shouldBe expectedResponse
+      }
+    }
   }
 
   "GET" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new HttpGet with TestHttpVerb {
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
-          failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
-            exception = new SSLException("SSLEngine closed already")
-          )
-        override def doGet(url: String, queryParams: Seq[(String, String)])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
-          failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
-            exception = new SSLException("SSLEngine closed already")
-          )
-        override def doGet(url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
+        override def doGet(url: String, headers: Seq[(String, String)])(
+          implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -195,7 +223,6 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
 
       http.GET[Option[String]](url = "doesnt-matter", Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
-
     }
   }
 
@@ -203,7 +230,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new HttpDelete with TestHttpVerb {
         override def doDelete(url: String, headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
+          implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -221,8 +248,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new HttpPatch with TestHttpVerb {
         override def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(
-          implicit rds: Writes[A],
-          hc: HeaderCarrier): Future[HttpResponse] =
+          implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -242,8 +268,7 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new TestHttpPut with TestHttpVerb {
         override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(
-          implicit rds: Writes[A],
-          hc: HeaderCarrier): Future[HttpResponse] =
+          implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -262,7 +287,8 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
       val http = new TestHttpPost with TestHttpVerb {
         override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
           implicit rds: Writes[A],
-          hc: HeaderCarrier): Future[HttpResponse] =
+          hc: HeaderCarrier,
+          ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -280,7 +306,8 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new TestHttpPost with TestHttpVerb {
         override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
+          implicit hc: HeaderCarrier,
+          ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -297,8 +324,12 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   "POSTForm" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new TestHttpPost with TestHttpVerb {
-        override def doFormPost(url: String, body: Map[String, Seq[String]])(
-          implicit hc: HeaderCarrier): Future[HttpResponse] =
+        override def doFormPost(
+          url: String,
+          body: Map[String, Seq[String]],
+          headers: Seq[(String, String)])(
+            implicit hc: HeaderCarrier,
+            ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -315,7 +346,11 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   "POSTEmpty" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
       val http = new TestHttpPost with TestHttpVerb {
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+        override def doEmptyPost[A](
+          url: String,
+          headers: Seq[(String, String)])(
+            implicit hc: HeaderCarrier,
+            ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404)),
             exception = new SSLException("SSLEngine closed already")
@@ -352,19 +387,31 @@ class RetriesSpec extends WordSpec with Matchers with MockitoSugar with ScalaFut
   trait TestHttpPost extends HttpPost {
     override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
       implicit wts: Writes[A],
-      hc: HeaderCarrier): Future[HttpResponse] = ???
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] = ???
 
     override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] = ???
 
-    override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+    override def doEmptyPost[A](
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
+      ???
 
-    override def doFormPost(url: String, body: Map[String, Seq[String]])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+    override def doFormPost(
+      url: String,
+      body: Map[String, Seq[String]],
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
+      ???
   }
 
   trait TestHttpPut extends HttpPut {
     def doPutString(url: String, body: String, headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+      implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = ???
   }
 }

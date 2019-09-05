@@ -16,20 +16,17 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.http._
+import scala.concurrent.ExecutionContext
+import uk.gov.hmrc.play.http.logging.Mdc
 
-import scala.concurrent.{ExecutionContext, Future}
+trait WSExecute {
 
-trait WSPatch extends CorePatch with PatchHttpTransport with WSRequest with WSExecute {
-
-  override def doPatch[A](
-    url: String,
-    body: A,
-    headers: Seq[(String, String)])(
-      implicit rds: Writes[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url, headers).withBody(Json.toJson(body)), "PATCH")
-      .map(new WSHttpResponse(_))
+  private[ws] def execute(req: play.api.libs.ws.WSRequest, method: String)(implicit ec: ExecutionContext) = {
+    // Since AHC internally uses a different execution context, providing a MDC enabled Execution context
+    // will not preserve MDC data for further futures.
+    // We will copy over the data manually to preserve them.
+    Mdc.preservingMdc {
+      req.withMethod(method).execute()
+    }
+  }
 }

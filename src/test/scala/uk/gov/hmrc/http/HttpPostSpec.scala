@@ -26,10 +26,10 @@ import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.hooks.HttpHook
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
+  import ExecutionContext.Implicits.global
 
   class StubbedHttpPost(doPostResult: Future[HttpResponse])
       extends HttpPost
@@ -41,12 +41,17 @@ class HttpPostSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
     override def configuration: Option[Config]      = None
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier) =
+    override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext) =
       doPostResult
-    def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier) = doPostResult
-    def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) =
+
+    override def doFormPost(url: String, body: Map[String, Seq[String]], headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
       doPostResult
-    def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier) = doPostResult
+
+    override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+      doPostResult
+
+    override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+      doPostResult
   }
 
   "HttpPost.POST" should {

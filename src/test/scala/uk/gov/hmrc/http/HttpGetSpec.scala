@@ -42,8 +42,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.http.hooks.HttpHook
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class HttpGetSpec
     extends WordSpecLike
@@ -52,6 +51,8 @@ class HttpGetSpec
     with CommonHttpBehaviour
     with IntegrationPatience
     with MockitoSugar {
+
+  import ExecutionContext.Implicits.global
 
   class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse)
     extends HttpGet
@@ -64,19 +65,15 @@ class HttpGetSpec
 
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
-
-    override def doGet(url: String, queryParams: Seq[(String, String)])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = doGetResult
-
     override def doGet(
-                        url: String,
-                        queryParams: Seq[(String, String)],
-                        headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] =
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doGetResult
   }
 
-  class UrlTestingHttpGet() extends HttpGet {
+  class UrlTestingHttpGet() extends HttpGet with GetHttpTransport {
     val testHook1 = mock[HttpHook]
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
@@ -86,22 +83,11 @@ class HttpGetSpec
 
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-      lastUrl = Some(url)
-      defaultHttpResponse
-    }
-
-    override def doGet(url: String, queryParams: Seq[(String, String)])(
-      implicit hc: HeaderCarrier): Future[HttpResponse] = {
-      lastUrl = Some(url)
-      defaultHttpResponse
-    }
-
     override def doGet(
-                        url: String,
-                        queryParams: Seq[(String, String)],
-                        headers: Seq[(String, String)] = Seq.empty[(String, String)])(
-                        implicit hc: HeaderCarrier): Future[HttpResponse] = {
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }

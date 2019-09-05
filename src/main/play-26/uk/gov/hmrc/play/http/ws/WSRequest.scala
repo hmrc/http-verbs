@@ -25,8 +25,10 @@ trait WSRequest extends Request {
 
   def wsClient: WSClient
 
-  def buildRequest[A](url: String)(implicit hc: HeaderCarrier): ws.WSRequest =
-    wsClient.url(url).withHttpHeaders(applicableHeaders(url)(hc): _*)
+  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): ws.WSRequest =
+    wsClient.url(url)
+      .withHttpHeaders(applicableHeaders(url)(hc): _*)
+      .addHttpHeaders(headers: _*)
 
 }
 
@@ -34,10 +36,10 @@ trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String)(implicit hc: HeaderCarrier): ws.WSRequest =
+  override def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): ws.WSRequest =
     wsProxyServer match {
-      case Some(proxy) => super.buildRequest(url).withProxyServer(proxy)
-      case None        => super.buildRequest(url)
+      case Some(proxy) => super.buildRequest(url, headers).withProxyServer(proxy)
+      case None        => super.buildRequest(url, headers)
     }
 }
 

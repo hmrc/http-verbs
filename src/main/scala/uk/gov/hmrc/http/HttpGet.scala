@@ -26,36 +26,31 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
-  override def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
-    GET(url, Seq.empty[(String, String)], Seq.empty[(String, String)])
-
-  override def GET[A](url: String, queryParams: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] = {
-    val queryString = makeQueryString(queryParams)
-    if (url.contains("?")) {
+  override def GET[A](
+    url: String,
+    queryParams: Seq[(String, String)],
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] = {
+    if (queryParams.nonEmpty && url.contains("?")) {
       throw new UrlValidationException(
         url,
         s"${this.getClass}.GET(url, queryParams)",
-        "Query parameters must be provided as a Seq of tuples to this method")
+        "Query parameters should be provided in either url or as a Seq of tuples")
     }
-    GET(url + queryString)
-  }
 
-  override def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] = withTracing(GET_VERB, url) {
-    val httpResponse = retry(GET_VERB, url)(doGet(url, headers))
-    executeHooks(url, GET_VERB, None, httpResponse)
-    mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
+    val urlWithQuery = url + makeQueryString(queryParams)
+
+    withTracing(GET_VERB, urlWithQuery) {
+      val httpResponse = retry(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = headers))
+      executeHooks(url, GET_VERB, None, httpResponse)
+      mapErrors(GET_VERB, urlWithQuery, httpResponse).map(response => rds.read(GET_VERB, urlWithQuery, response))
+    }
   }
 
   private def makeQueryString(queryParams: Seq[(String, String)]) = {
-    val paramPairs = queryParams.map(Function.tupled((k, v) => s"$k=${URLEncoder.encode(v, "utf-8")}"))
-    val params     = paramPairs.mkString("&")
-
-    if (params.isEmpty) "" else s"?$params"
+    val paramPairs = queryParams.map { case (k, v) => s"$k=${URLEncoder.encode(v, "utf-8")}" }
+    if (paramPairs.isEmpty) "" else paramPairs.mkString("?", "&", "")
   }
 }

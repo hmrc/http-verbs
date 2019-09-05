@@ -31,9 +31,11 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.TestHttpCore
 
-import scala.concurrent.ExecutionContext.global
+import scala.concurrent.ExecutionContext
 
 class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
+
+  import ExecutionContext.Implicits.global
 
   lazy val fakeApplication =
     GuiceApplicationBuilder(configuration = Configuration("play.ws.timeout.request" -> "1000ms")).build()
@@ -60,13 +62,14 @@ class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with 
         // get an unused port
         val ss = new ServerSocket(0)
         ss.close()
+        val executor = ExecutionContext.global // fromExecutorService(ExecutionContext.global)
         val publicUri = URI.create(s"http://localhost:${ss.getLocalPort}")
-        val ws        = new NettyWebServer(global, ss.getLocalSocketAddress, publicUri)
+        val ws        = new NettyWebServer(executor, ss.getLocalSocketAddress, publicUri)
         try {
           //starts web server
           ws.add(
             "/test",
-            new DelayedHttpHandler(global, 2000, new StringHttpHandler("application/json", "{name:'pong'}")))
+            new DelayedHttpHandler(executor, 2000, new StringHttpHandler("application/json", "{name:'pong'}")))
           ws.start().get()
 
           implicit val hc = HeaderCarrier()

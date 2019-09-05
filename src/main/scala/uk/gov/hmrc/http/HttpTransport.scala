@@ -21,48 +21,76 @@ import play.api.libs.json.Writes
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GetHttpTransport {
-  def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
-
-  def doGet(url: String, queryParams: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
-
   def doGet(
     url: String,
-    queryParams: Seq[(String, String)],
-    headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse]
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait DeleteHttpTransport {
-  def doDelete(url: String, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
-    implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doDelete(
+    url: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait PatchHttpTransport {
-  def doPatch[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
-    implicit rds: Writes[A],
-    hc: HeaderCarrier): Future[HttpResponse]
+  def doPatch[A](
+    url: String,
+    body: A,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: Writes[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait PutHttpTransport {
-  def doPut[A](url: String, body: A)(implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] =
-    doPut(url, body, Seq.empty[(String, String)])(rds, hc)
-  def doPut[A](url: String, body: A, headers: Seq[(String, String)])(
-    implicit rds: Writes[A],
-    hc: HeaderCarrier): Future[HttpResponse]
-  def doPutString(url: String, body: String, headers: Seq[(String, String)])(
-    implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doPut[A](
+    url: String,
+    body: A,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: Writes[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
+
+  def doPutString(
+    url: String,
+    body: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait PostHttpTransport {
-  def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
-    implicit wts: Writes[A],
-    hc: HeaderCarrier): Future[HttpResponse]
+  def doPost[A](
+    url: String,
+    body: A,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit wts: Writes[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
-  def doPostString(url: String, body: String, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
-    implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doPostString(
+    url: String,
+    body: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
-  def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doEmptyPost[A](
+    url: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 
-  def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse]
+  def doFormPost(
+    url: String,
+    body: Map[String, Seq[String]],
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse]
 }
 
 trait HttpTransport
@@ -73,67 +101,100 @@ trait HttpTransport
     with PostHttpTransport {}
 
 trait CoreGet {
-  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
-    GET(url, Seq.empty[(String, String)], Seq.empty[(String, String)])
+  def GET[A](
+    url: String,
+    queryParams: Seq[(String, String)],
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A]
 
-  def GET[A](url: String, queryParams: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] =
-    GET(url, queryParams, Seq.empty[(String, String)])
+  def GET[A](
+    url: String)(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] =
+    GET(url, Seq.empty, Seq.empty)
 
-  def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A]
+  def GET[A](
+    url: String,
+    queryParams: Seq[(String, String)])(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] =
+    GET(url, queryParams, Seq.empty)
+
 }
 
 trait CoreDelete {
-  def DELETE[O](url: String, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O]
+  def DELETE[O](
+    url: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
 }
 
 trait CorePatch {
-  def PATCH[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty[(String, String)])(
-    implicit wts: Writes[I],
-    rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O]
+  def PATCH[I, O](
+    url: String,
+    body: I,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
 }
 
 trait CorePut {
   def PUT[I, O](
     url: String,
-    body: I)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
-    PUT[I, O](url, body, Seq.empty[(String, String)])(wts, rds, hc, ec)
+    body: I,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
 
-  def PUT[I, O](url: String, body: I, headers: Seq[(String, String)])(
-    implicit wts: Writes[I],
-    rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O]
-
-  def PUTString[O](url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O]
+  def PUTString[O](
+    url: String,
+    body: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
 }
 
 trait CorePost {
+  def POST[I, O](
+    url: String,
+    body: I,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
 
-  def POST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(
-    implicit wts: Writes[I],
-    rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O]
-  def POSTString[O](url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O]
+  def POSTString[O](
+    url: String,
+    body: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
+
   def POSTForm[O](
     url: String,
-    body: Map[String, Seq[String]])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
-  def POSTEmpty[O](url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O]
+    body: Map[String, Seq[String]],
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
+
+  def POSTEmpty[O](
+    url: String,
+    headers: Seq[(String, String)] = Seq.empty)(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O]
 }

@@ -20,7 +20,8 @@ import org.slf4j.MDC
 import play.api.libs.concurrent.Execution.defaultContext
 import uk.gov.hmrc.http.logging.LoggingDetails
 
-import scala.concurrent.ExecutionContext
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
 
 @deprecated("MdcLoggingExecutionContext no longer required, please inject Play's default EC instead", "8.9.0")
 object MdcLoggingExecutionContext {
@@ -48,4 +49,18 @@ class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String,
   }
 
   def reportFailure(t: Throwable): Unit = wrapped.reportFailure(t)
+}
+
+object Mdc {
+
+  def mdcData: Map[String, String] =
+    Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty)
+
+  def withMdc[A](block: => Future[A], mdcData: Map[String, String])(implicit ec: ExecutionContext): Future[A] =
+    block.map(identity)(new MdcLoggingExecutionContext(ec, mdcData))
+
+  /** Restores MDC data to the continuation of a block, which may be discarding MDC data (e.g. uses a different execution context)
+    */
+  def preservingMdc[A](block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
+    withMdc(block, mdcData)
 }

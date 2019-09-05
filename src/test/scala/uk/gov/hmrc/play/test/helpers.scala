@@ -37,47 +37,85 @@ trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch wit
 
   override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = Nil
 
-  override def POST[I, O](url: String, body: I, headers: Seq[(String, String)])(
-    implicit wts: Writes[I],
-    rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O] = ???
+  override def POST[I, O](
+    url: String,
+    body: I,
+    headers: Seq[(String, String)])(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
+    ???
 
-  override def POSTString[O](url: String, body: String, headers: Seq[(String, String)])(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O] = ???
+  override def POSTString[O](
+    url: String,
+    body: String,
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
+    ???
 
   override def POSTForm[O](
     url: String,
-    body: Map[String, Seq[String]])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+    body: Map[String, Seq[String]],
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
     ???
 
   override def POSTEmpty[O](
-    url: String)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = ???
+    url: String,
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
+    ???
 
-  override def GET[A](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] = ???
-
-  override def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
-    implicit rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] = ???
+  override def GET[A](
+    url: String,
+    queryParams: Seq[(String, String)],
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] =
+    ???
 
   override def PUT[I, O](
     url: String,
     body: I,
-    headers: Seq[(String, String)])(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = ???
+    headers: Seq[(String, String)])(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
+    ???
 
-  override def PUTString[O](url: String, body: String, headers: Seq[(String, String)])(
-    implicit rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext): Future[O] = ???
+  override def PUTString[O](
+    url: String,
+    body: String,
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
+    ???
 
   override def PATCH[I, O](
     url: String,
     body: I,
-    headers: Seq[(String, String)])(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] = ???
+    headers: Seq[(String, String)])(
+      implicit wts: Writes[I],
+      rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
+    ???
 
-  override def DELETE[O](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+  override def DELETE[O](
+    url: String,
+    headers: Seq[(String, String)])(
+      implicit rds: HttpReads[O],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[O] =
     ???
 }

@@ -20,37 +20,46 @@ import play.api.libs.json.{Json, Writes}
 import play.api.mvc.Results
 import uk.gov.hmrc.http.{CorePost, HeaderCarrier, HttpResponse, PostHttpTransport}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait WSPost extends CorePost with PostHttpTransport with WSRequest {
 
-  override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
-    implicit rds: Writes[A],
-    hc: HeaderCarrier): Future[HttpResponse] = {
+trait WSPost extends CorePost with PostHttpTransport with WSRequest with WSExecute {
 
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
+  override def doPost[A](
+    url: String,
+    body: A,
+    headers: Seq[(String, String)])(
+      implicit rds: Writes[A],
+      hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url, headers).withBody(Json.toJson(body)), "POST")
+      .map(new WSHttpResponse(_))
 
-    buildRequest(url).withHeaders(headers: _*).post(Json.toJson(body)).map(new WSHttpResponse(_))
-  }
+  override def doFormPost(
+    url: String,
+    body: Map[String, Seq[String]],
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url, headers).withBody(body), "POST")
+      .map(new WSHttpResponse(_))
 
-  override def doFormPost(url: String, body: Map[String, Seq[String]])(
-    implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
+  override def doPostString(
+    url: String,
+    body: String,
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url, headers).withBody(body), "POST")
+      .map(new WSHttpResponse(_))
 
-    buildRequest(url).post(body).map(new WSHttpResponse(_))
-  }
-
-  override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
-    implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-    buildRequest(url).withHeaders(headers: _*).post(body).map(new WSHttpResponse(_))
-  }
-
-  override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  override def doEmptyPost[A](
+    url: String,
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] = {
     import play.api.http.Writeable._
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-    buildRequest(url).post(Results.EmptyContent()).map(new WSHttpResponse(_))
+    execute(buildRequest(url, headers).withBody(Results.EmptyContent()), "POST")
+      .map(new WSHttpResponse(_))
   }
 }

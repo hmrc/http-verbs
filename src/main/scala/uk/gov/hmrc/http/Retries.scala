@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.http
 
-import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import akka.pattern.after
 import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.http.logging.Mdc
 
 trait Retries {
 
@@ -32,19 +33,19 @@ trait Retries {
 
   protected def configuration: Option[Config]
 
-  implicit lazy val ec: ExecutionContext = actorSystem.dispatcher
-
   private val logger = LoggerFactory.getLogger("application")
 
-  def retry[A](verb: String, url: String)(block: => Future[A]): Future[A] = {
-    def loop(remainingIntervals: Seq[FiniteDuration])(block: => Future[A]): Future[A] =
-      block.recoverWith {
-        case ex @ `sslEngineClosedMatcher`() if remainingIntervals.nonEmpty =>
-          val delay = remainingIntervals.head
-          logger.warn(s"Retrying $verb $url in $delay due to '${ex.getMessage}' error")
-          after(delay, actorSystem.scheduler)(loop(remainingIntervals.tail)(block))
-      }
-    loop(intervals)(block)
+  def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] = {
+    def loop(remainingIntervals: Seq[FiniteDuration])(mdcData: Map[String, String])(block: => Future[A]): Future[A] =
+      // scheduling will loose MDC data. Here we explicitly ensure it is available on block.
+      Mdc.withMdc(block, mdcData)
+        .recoverWith {
+          case ex @ `sslEngineClosedMatcher`() if remainingIntervals.nonEmpty =>
+            val delay = remainingIntervals.head
+            logger.warn(s"Retrying $verb $url in $delay due to '${ex.getMessage}' error")
+            after(delay, actorSystem.scheduler)(loop(remainingIntervals.tail)(mdcData)(block))
+        }
+    loop(intervals)(Mdc.mdcData)(block)
   }
 
   private[http] lazy val intervals: Seq[FiniteDuration] = {

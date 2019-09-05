@@ -18,13 +18,15 @@ package uk.gov.hmrc.play.http.ws
 
 import uk.gov.hmrc.http._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequest {
+trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequest with WSExecute {
 
-  override def doDelete(url: String, headers: Seq[(String, String)] = Seq.empty[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    import play.api.libs.concurrent.Execution.Implicits.defaultContext
-    buildRequest(url).withHeaders(headers: _*).delete().map(new WSHttpResponse(_))
-  }
-
+  override def doDelete(
+    url: String,
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url, headers), "DELETE")
+      .map(new WSHttpResponse(_))
 }

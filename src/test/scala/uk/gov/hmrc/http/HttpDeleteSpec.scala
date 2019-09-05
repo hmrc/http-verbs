@@ -27,10 +27,11 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.http.hooks.HttpHook
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
+
+  import ExecutionContext.Implicits.global
 
   class StubbedHttpDelete(doDeleteResult: Future[HttpResponse], doDeleteWithHeaderResult: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
     val testHook1                                   = mock[HttpHook]
@@ -39,8 +40,10 @@ class HttpDeleteSpec extends WordSpecLike with Matchers with MockitoSugar with C
     override def configuration: Option[Config]      = None
     override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    def appName: String                                   = ???
-    def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier) = doDeleteResult
+    def appName: String = ???
+
+    def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+      doDeleteResult
   }
 
   "HttpDelete" should {
