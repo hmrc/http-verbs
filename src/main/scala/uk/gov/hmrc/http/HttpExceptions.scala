@@ -52,7 +52,10 @@ private object HttpExceptions {
   val INSUFFICIENT_STORAGE       = 507
 }
 
-class HttpException(val message: String, val responseCode: Int) extends Exception(message)
+class HttpException(val message: String, val responseCode: Int) extends Exception(message) with UpstreamErrorResponse {
+  override val upstreamResponseCode: Int = responseCode
+  override val reportAs: Int = responseCode
+}
 
 //400s
 class BadRequestException(message: String) extends HttpException(message, BAD_REQUEST)
