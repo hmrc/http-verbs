@@ -15,9 +15,10 @@
  */
 
 package uk.gov.hmrc.play.http
-
-import org.scalatest.{Matchers, WordSpecLike}
-import play.api.Configuration
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import play.api.{Application, Configuration, Play}
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.{Configuration, Play}
 import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
@@ -27,7 +28,7 @@ import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import scala.concurrent.duration._
 
-class HeaderCarrierConverterSpec extends WordSpecLike with Matchers {
+class HeaderCarrierConverterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   "Extracting the request timestamp from the session and headers" should {
     "find it in the header if present and a valid Long" in {
@@ -224,4 +225,16 @@ class HeaderCarrierConverterSpec extends WordSpecLike with Matchers {
 
   }
 
+  lazy val fakeApplication =
+    GuiceApplicationBuilder(configuration = Configuration("play.allowGlobalApplication" -> true)).build()
+
+  override def beforeAll() {
+    super.beforeAll()
+    Play.start(fakeApplication)
+  }
+
+  override def afterAll() {
+    super.afterAll()
+    Play.stop(fakeApplication)
+  }
 }

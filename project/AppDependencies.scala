@@ -20,6 +20,7 @@ object AppDependencies {
 
   val play25Version = "2.5.19"
   val play26Version = "2.6.20"
+  val play27Version = "2.7.2"
 
   val compile: Seq[ModuleID] =
     PlayCrossCompilation.dependencies(
@@ -40,10 +41,9 @@ object AppDependencies {
         "com.typesafe.play" %% "play-json" % play25Version,
         "com.typesafe.play" %% "play-ws"   % play25Version,
         // force dependencies due to security flaws found in xercesImpl 2.11.0
-        // only applies to play 2.5 since it was removed from play 2.6 
+        // only applies to play 2.5 since it was removed from play 2.6
         // https://github.com/playframework/playframework/blob/master/documentation/manual/releases/release26/migration26/Migration26.md#xercesimpl-removal
         "xerces" % "xercesImpl" % "2.12.0",
-
         // empty http-verbs-play-25 added to force eviction
         // as classes from this lib have been inlined in http-verbs
         "uk.gov.hmrc" %% "http-verbs-play-25" % "1.0.0"
@@ -51,6 +51,10 @@ object AppDependencies {
       play26 = Seq(
         "com.typesafe.play" %% "play-json" % "2.6.9",
         "com.typesafe.play" %% "play-ws"   % play26Version
+      ),
+      play27 = Seq(
+        "com.typesafe.play" %% "play-json" % play27Version,
+        "com.typesafe.play" %% "play-ws"   % play27Version
       )
     )
 
@@ -74,6 +78,11 @@ object AppDependencies {
       "com.typesafe.play" %% "play-test"   % play26Version % Test,
       "com.typesafe.play" %% "play-specs2" % play26Version % Test,
       "com.typesafe.play" %% "play-ahc-ws" % play26Version % Test
+    ),
+    play27 = Seq(
+      "com.typesafe.play" %% "play-test"   % play27Version % Test,
+      "com.typesafe.play" %% "play-specs2" % play27Version % Test,
+      "com.typesafe.play" %% "play-ahc-ws" % play27Version % Test
     )
   )
 
