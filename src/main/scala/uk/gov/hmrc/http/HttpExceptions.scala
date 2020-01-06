@@ -125,6 +125,13 @@ sealed trait UpstreamErrorResponse {
   val reportAs: Int
 }
 
+case class Upstream3xxResponse(
+  message: String,
+  upstreamResponseCode: Int,
+  reportAs: Int,
+  headers: Map[String, Seq[String]] = Map.empty)
+    extends Exception(message) with UpstreamErrorResponse
+
 case class Upstream4xxResponse(
   message: String,
   upstreamResponseCode: Int,

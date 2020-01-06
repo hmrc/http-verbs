@@ -45,6 +45,8 @@ trait HttpErrorFunctions {
 
   def is2xx(status: Int) = status >= 200 && status < 300
 
+  def is3xx(status: Int) = status >= 300 && status < 400
+
   def is4xx(status: Int) = status >= 400 && status < 500
 
   def is5xx(status: Int) = status >= 500 && status < 600
@@ -54,14 +56,20 @@ trait HttpErrorFunctions {
       case status if is2xx(status) => response
       case 400                     => throw new BadRequestException(badRequestMessage(httpMethod, url, response.body))
       case 404                     => throw new NotFoundException(notFoundMessage(httpMethod, url, response.body))
+      case status if is3xx(status) =>
+        throw Upstream3xxResponse(
+          upstreamResponseMessage(httpMethod, url, status, response.body),
+          status,
+          500,
+          response.allHeaders)
       case status if is4xx(status) =>
-        throw new Upstream4xxResponse(
+        throw Upstream4xxResponse(
           upstreamResponseMessage(httpMethod, url, status, response.body),
           status,
           500,
           response.allHeaders)
       case status if is5xx(status) =>
-        throw new Upstream5xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 502)
+        throw Upstream5xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 502)
       case status =>
         throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
     }

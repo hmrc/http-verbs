@@ -40,6 +40,7 @@ class HttpErrorFunctionsSpec
     "return the correct exception if the status code is 404" in { expectA[NotFoundException](forStatus   = 404) }
     "return the correct exception for all other status codes" in {
       forAll(Gen.choose(0, 199))(expectA[Exception](_))
+      forAll(Gen.choose(300, 399))(expectA[Upstream3xxResponse](_, Some(500)))
       forAll(Gen.choose(400, 499).suchThat(!Seq(400, 404).contains(_)))(expectA[Upstream4xxResponse](_, Some(500)))
       forAll(Gen.choose(500, 599))(expectA[Upstream5xxResponse](_, Some(502)))
       forAll(Gen.choose(600, 1000))(expectA[Exception](_))
