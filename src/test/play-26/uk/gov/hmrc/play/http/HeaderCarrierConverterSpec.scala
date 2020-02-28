@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -209,11 +209,19 @@ class HeaderCarrierConverterSpec extends WordSpecLike with Matchers with BeforeA
 
   "utilise values from cookies" should {
 
-    "find the deviceID from the cookie" in {
+    "find the deviceID from the cookie if set in header" in {
       val cookieHeader = Cookies.encodeCookieHeader(Seq(Cookie(CookieNames.deviceID, "deviceIdCookie")))
       val req          = FakeRequest().withHeaders(play.api.http.HeaderNames.COOKIE -> cookieHeader)
 
       HeaderCarrierConverter.fromHeadersAndSession(req.headers, Some(req.session)).deviceID shouldBe Some(
+        "deviceIdCookie")
+    }
+
+    "find the deviceID from the cookie if set in the session" in {
+      val cookie  = Cookie(CookieNames.deviceID, "deviceIdCookie")
+      val req     = FakeRequest().withCookies(cookie)
+
+      HeaderCarrierConverter.fromHeadersAndSessionAndRequest(req.headers, Some(req.session), Some(req)).deviceID shouldBe Some(
         "deviceIdCookie")
     }
 
