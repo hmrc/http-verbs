@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import play.api.Configuration
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging._
+import play.api.http.{HeaderNames => PlayHeaderNames}
 
 import scala.util.Try
 
@@ -38,7 +39,13 @@ trait HeaderCarrierConverter {
     session: Option[Session]       = None,
     request: Option[RequestHeader] = None): HeaderCarrier =
     session.fold(fromHeaders(headers, request)) {
-      val cookies = Cookies.fromCookieHeader(headers.get(play.api.http.HeaderNames.COOKIE))
+      // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
+      // cookie can be set for backwards compatibility
+      val cookiesInHeader =
+        Cookies.fromCookieHeader(headers.get(PlayHeaderNames.COOKIE)).toList
+      val cookiesInSession =
+        request.map(_.cookies).map(_.toList).getOrElse(List.empty)
+      val cookies = Cookies(cookiesInSession ++ cookiesInHeader)
       fromSession(headers, cookies, request, _)
     }
 
