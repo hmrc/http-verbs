@@ -22,6 +22,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.AppenderBase
 import org.scalatest._
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import org.slf4j.{LoggerFactory, MDC}
 import play.core.NamedThreadFactory
 
@@ -32,7 +34,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect._
 
 class MdcLoggingExecutionContextSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with LoneElement
     with Inspectors

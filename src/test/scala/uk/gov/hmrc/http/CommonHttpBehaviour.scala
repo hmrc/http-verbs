@@ -20,14 +20,15 @@ import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.logging.{ConnectionTracing, LoggingDetails}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
-trait CommonHttpBehaviour extends ScalaFutures with Matchers with WordSpecLike {
+trait CommonHttpBehaviour extends ScalaFutures with Matchers with AnyWordSpecLike {
 
   case class TestClass(foo: String, bar: Int)
   implicit val tcreads = Json.format[TestClass]

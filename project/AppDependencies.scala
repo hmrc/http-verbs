@@ -20,7 +20,7 @@ object AppDependencies {
 
   val play25Version = "2.5.19"
   val play26Version = "2.6.20"
-  val play27Version = "2.7.2"
+  val play27Version = "2.7.4"
 
   val compile: Seq[ModuleID] =
     PlayCrossCompilation.dependencies(
@@ -61,14 +61,17 @@ object AppDependencies {
   val test: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
       "commons-codec"          % "commons-codec"   % "1.12"     % Test,
-      "org.scalatest"          %% "scalatest"      % "3.0.5"   % Test,
+      "org.scalatest"          %% "scalatest"      % "3.1.1"   % Test,
+      "org.scalatestplus"      %% "scalatestplus-mockito" % "1.0.0-M2" % Test,
+      "org.scalatestplus"      %% "scalatestplus-scalacheck"  % "3.1.0.0-RC2" % Test,
       "org.scalacheck"         %% "scalacheck"     % "1.14.0"  % Test,
       "org.pegdown"            % "pegdown"         % "1.6.0"   % Test,
       "com.github.tomakehurst" % "wiremock"        % "1.58"    % Test,
       "ch.qos.logback"         % "logback-classic" % "1.2.3"   % Test,
       "ch.qos.logback"         % "logback-core"    % "1.2.3"   % Test,
       "org.mockito"            % "mockito-all"     % "1.10.19" % Test,
-      "org.webbitserver"       % "webbit"          % "0.4.15"  % Test
+      "org.webbitserver"       % "webbit"          % "0.4.15"  % Test,
+      "com.vladsch.flexmark"   % "flexmark-all"    % "0.35.10" % Test,
     ),
     play25 = Seq(
       "com.typesafe.play" %% "play-test"   % play25Version % Test,
@@ -76,12 +79,10 @@ object AppDependencies {
     ),
     play26 = Seq(
       "com.typesafe.play" %% "play-test"   % play26Version % Test,
-      "com.typesafe.play" %% "play-specs2" % play26Version % Test,
       "com.typesafe.play" %% "play-ahc-ws" % play26Version % Test
     ),
     play27 = Seq(
       "com.typesafe.play" %% "play-test"   % play27Version % Test,
-      "com.typesafe.play" %% "play-specs2" % play27Version % Test,
       "com.typesafe.play" %% "play-ahc-ws" % play27Version % Test
     )
   )

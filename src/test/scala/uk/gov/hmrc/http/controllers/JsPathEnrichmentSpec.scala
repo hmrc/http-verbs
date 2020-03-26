@@ -16,10 +16,11 @@
 
 package uk.gov.hmrc.http.controllers
 
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json._
 
-class JsPathEnrichmentSpec extends WordSpecLike with Matchers {
+class JsPathEnrichmentSpec extends AnyWordSpecLike with Matchers {
 
   "Parsing json when the path does not exist prior to the structure being parsed" should {
 

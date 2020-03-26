@@ -11,6 +11,8 @@ matrix:
       env: PLAY_VERSION=2.6
     - scala: 2.12.10
       env: PLAY_VERSION=2.6
+     - scala: 2.12.10
+     env: PLAY_VERSION=2.7
 
 cache:
   directories:
