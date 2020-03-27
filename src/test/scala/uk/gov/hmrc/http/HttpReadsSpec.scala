@@ -17,11 +17,12 @@
 package uk.gov.hmrc.http
 
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.Json
 
-class HttpReadsSpec extends WordSpec with GeneratorDrivenPropertyChecks with Matchers {
+class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
   "RawReads" should {
     "return the bare response if returned" in {
       val reads = new RawReads with StubThatReturnsTheResponse

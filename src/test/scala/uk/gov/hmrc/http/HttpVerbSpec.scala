@@ -21,11 +21,13 @@ import java.util
 import com.typesafe.config.Config
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{LoneElement, Matchers, WordSpecLike}
+import org.scalatest.LoneElement
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
-class HttpVerbSpec extends WordSpecLike with Matchers with MockitoSugar with LoneElement {
+class HttpVerbSpec extends AnyWordSpecLike with Matchers with MockitoSugar with LoneElement {
 
   "applicableHeaders" should {
 

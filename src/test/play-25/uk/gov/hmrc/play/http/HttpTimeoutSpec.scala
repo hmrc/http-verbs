@@ -20,7 +20,9 @@ import java.net.{ServerSocket, URI}
 import java.util.concurrent.TimeoutException
 
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import org.webbitserver.handler.{DelayedHttpHandler, StringHttpHandler}
 import org.webbitserver.netty.NettyWebServer
 import play.api.Play
@@ -31,7 +33,7 @@ import uk.gov.hmrc.play.test.TestHttpCore
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class HttpTimeoutSpec extends WordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
+class HttpTimeoutSpec extends AnyWordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
 
   lazy val fakeApplication = FakeApplication(additionalConfiguration = Map("ws.timeout.request" -> "1000"))
 

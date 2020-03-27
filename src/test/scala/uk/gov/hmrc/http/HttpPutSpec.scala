@@ -21,14 +21,15 @@ import com.typesafe.config.Config
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class HttpPutSpec extends WordSpecLike with Matchers with CommonHttpBehaviour {
+class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour {
   import ExecutionContext.Implicits.global
 
   class StubbedHttpPut(doPutResult: Future[HttpResponse])

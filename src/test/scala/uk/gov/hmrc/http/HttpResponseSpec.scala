@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.http
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{JsString, Json}
 
 /**
   * Created by jonathan on 25/07/16.
   */
-class HttpResponseSpec extends WordSpec with Matchers {
+class HttpResponseSpec extends AnyWordSpec with Matchers {
   "unapply" should {
     "return matching object in" in {
       HttpResponse(1, Some(JsString("test json")), Map("a" -> List("1", "2", "3")), Some("test body")) match {

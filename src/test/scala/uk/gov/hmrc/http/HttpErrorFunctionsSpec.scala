@@ -17,15 +17,18 @@
 package uk.gov.hmrc.http
 
 import org.scalacheck.Gen
-import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
-import org.scalatest.{Matchers, TryValues, WordSpec}
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.TryValues
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.util.Try
 
 class HttpErrorFunctionsSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
-    with GeneratorDrivenPropertyChecks
+    with ScalaCheckDrivenPropertyChecks
     with TableDrivenPropertyChecks
     with TryValues {
 

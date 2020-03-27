@@ -17,10 +17,11 @@
 package uk.gov.hmrc.http.controllers
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{JsSuccess, _}
 
-class RestFormatsSpec extends WordSpecLike with Matchers {
+class RestFormatsSpec extends AnyWordSpecLike with Matchers {
   "localDateTimeRead" should {
     "return a LocalDateTime for correctly formatted JsString" in {
       val testDate = new LocalDateTime(0)
