@@ -65,7 +65,6 @@ object AppDependencies {
       "org.scalatestplus"      %% "scalatestplus-mockito" % "1.0.0-M2" % Test,
       "org.scalatestplus"      %% "scalatestplus-scalacheck"  % "3.1.0.0-RC2" % Test,
       "org.scalacheck"         %% "scalacheck"     % "1.14.0"  % Test,
-      "org.pegdown"            % "pegdown"         % "1.6.0"   % Test,
       "com.github.tomakehurst" % "wiremock"        % "1.58"    % Test,
       "ch.qos.logback"         % "logback-classic" % "1.2.3"   % Test,
       "ch.qos.logback"         % "logback-core"    % "1.2.3"   % Test,
