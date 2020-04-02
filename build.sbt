@@ -64,7 +64,7 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
-    crossScalaVersions := Seq(scala2_12),
+    crossScalaVersions := Seq(scala2_11, scala2_12),
     libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay27 ++ AppDependencies.testCommon ++ AppDependencies.testPlay27,
     unmanagedSourceDirectories in Compile += (httpVerbsCommon / Compile / scalaSource).value,
     unmanagedSourceDirectories in Test += (httpVerbsCommon / Test / scalaSource).value,

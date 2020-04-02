@@ -57,7 +57,12 @@ object Mdc {
     Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty)
 
   def withMdc[A](block: => Future[A], mdcData: Map[String, String])(implicit ec: ExecutionContext): Future[A] =
-    block.map(identity)(new MdcLoggingExecutionContext(ec, mdcData))
+    block.map { a =>
+      mdcData.foreach {
+        case (k, v) => MDC.put(k, v)
+      }
+      a
+    }(ec)
 
   /** Restores MDC data to the continuation of a block, which may be discarding MDC data (e.g. uses a different execution context)
     */
