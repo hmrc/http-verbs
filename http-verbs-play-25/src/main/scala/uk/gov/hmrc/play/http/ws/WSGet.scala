@@ -16,16 +16,4 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.json.JsValue
-import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.http.HttpResponse
-
-class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
-
-  override def status: Int = wsResponse.status
-
-  override def json: JsValue = wsResponse.json
-
-  override def body: String = wsResponse.body
-}
+trait WSGet extends default.WSGet with WSRequest

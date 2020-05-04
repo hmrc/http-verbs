@@ -16,17 +16,4 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import uk.gov.hmrc.http._
-
-import scala.concurrent.{ExecutionContext, Future}
-
-trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequest with WSExecute {
-
-  override def doDelete(
-    url: String,
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url, headers), "DELETE")
-      .map(new WSHttpResponse(_))
-}
+trait WSDelete extends default.WSDelete with WSRequest

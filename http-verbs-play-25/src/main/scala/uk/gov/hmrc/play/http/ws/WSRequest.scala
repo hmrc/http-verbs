@@ -19,9 +19,9 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.ws
 import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer}
 import play.api.{Configuration, Play}
-import uk.gov.hmrc.http.{HeaderCarrier, Request}
+import uk.gov.hmrc.http.HeaderCarrier
 
-trait WSRequest extends Request {
+trait WSRequest extends WSRequestBuilder {
 
   import play.api.libs.ws.WS
 
