@@ -16,20 +16,4 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.http._
-
-import scala.concurrent.{ExecutionContext, Future}
-
-trait WSPatch extends CorePatch with PatchHttpTransport with WSRequest with WSExecute {
-
-  override def doPatch[A](
-    url: String,
-    body: A,
-    headers: Seq[(String, String)])(
-      implicit rds: Writes[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url, headers).withBody(Json.toJson(body)), "PATCH")
-      .map(new WSHttpResponse(_))
-}
+trait WSDelete extends default.WSDelete with WSRequest

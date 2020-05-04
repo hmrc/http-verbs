@@ -22,9 +22,9 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
