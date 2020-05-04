@@ -1,3 +1,4 @@
+import AppDependencies.{Play25, Play26, Play27, PlayVersion}
 import sbt.Keys.crossScalaVersions
 import sbt._
 
@@ -13,6 +14,7 @@ parallelExecution in Global := false
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
   majorVersion := 10,
+  scalaVersion := scala2_11,
   makePublicallyAvailableOnBintray := true,
   resolvers := Seq(
     Resolver.bintrayRepo("hmrc", "releases"),
@@ -29,46 +31,65 @@ lazy val library = (project in file("."))
     crossScalaVersions := Seq.empty
   )
   .aggregate(
+    httpVerbsCommon25,
+    httpVerbsCommon26,
+    httpVerbsCommon27,
     httpVerbsPlay25,
     httpVerbsPlay26,
     httpVerbsPlay27
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
-lazy val httpVerbsCommon = Project("http-verbs-common", file("http-verbs-common"))
+lazy val httpVerbsCommon25 =   Project("http-verbs-common", file("http-verbs-common"))
   .disablePlugins(SbtGitVersioning)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= AppDependencies.compileCommon(Play25) ++ AppDependencies.testCommon(Play25),
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+
+lazy val httpVerbsCommon26 = duplicateProject(httpVerbsCommon25, Play26)
+lazy val httpVerbsCommon27 = duplicateProject(httpVerbsCommon25, Play27)
 
 lazy val httpVerbsPlay25 = Project("http-verbs-play-25", file("http-verbs-play-25"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
-    unmanagedSourceDirectories in Compile += (httpVerbsCommon / Compile / scalaSource).value,
-    unmanagedSourceDirectories in Test += (httpVerbsCommon / Test / scalaSource).value,
     crossScalaVersions := Seq(scala2_11),
-    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay25 ++ AppDependencies.testCommon ++ AppDependencies.testPlay25,
+    libraryDependencies ++= AppDependencies.compilePlay25 ++ AppDependencies.testPlay25,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
-  )
+  ).dependsOn(httpVerbsCommon25  % "test->test;compile->compile")
 
 lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-26"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay26 ++ AppDependencies.testCommon ++ AppDependencies.testPlay26,
-    unmanagedSourceDirectories in Compile += (httpVerbsCommon / Compile / scalaSource).value,
-    unmanagedSourceDirectories in Test += (httpVerbsCommon / Test / scalaSource).value,
+    libraryDependencies ++= AppDependencies.compilePlay26 ++ AppDependencies.testPlay26,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
-  )
+  ).dependsOn(httpVerbsCommon26 % "test->test;compile->compile")
 
 lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-27"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay27 ++ AppDependencies.testCommon ++ AppDependencies.testPlay27,
-    unmanagedSourceDirectories in Compile += (httpVerbsCommon / Compile / scalaSource).value,
-    unmanagedSourceDirectories in Test += (httpVerbsCommon / Test / scalaSource).value,
+    libraryDependencies ++= AppDependencies.compilePlay27 ++ AppDependencies.testPlay27,
     scalaSource in Compile := (httpVerbsPlay26 / Compile / scalaSource).value,
     scalaSource in Test := (httpVerbsPlay26 / Test / scalaSource).value,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
-  )
+  ).dependsOn(httpVerbsCommon27 % "test->test;compile->compile")
+
+def duplicateProject(project: Project, playVersion: PlayVersion): Project = {
+  val name = s"${project.id}-${playVersion.name}"
+  Project(name, file(s"target/$name"))
+    .disablePlugins(SbtGitVersioning)
+    .settings(
+      commonSettings,
+      crossScalaVersions := Seq(scala2_11, scala2_12),
+      libraryDependencies ++= AppDependencies.compileCommon(playVersion) ++ AppDependencies.testCommon(playVersion),
+      Test / fork := true, // akka is not unloaded properly, which can affect other tests
+      scalaSource in Compile := (project / Compile / scalaSource).value,
+      scalaSource in Test := (project / Test / scalaSource).value,
+    )
+}
