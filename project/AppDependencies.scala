@@ -33,8 +33,7 @@ object AppDependencies {
 
   val compilePlay27 = Seq(
     "com.typesafe.play" %% "play-json" % play27Version,
-    "com.typesafe.play" %% "play-ws"   % play27Version,
-    "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.0.4"
+    "com.typesafe.play" %% "play-ahc-ws" % play27Version
   )
 
   val testCommon = Seq(
