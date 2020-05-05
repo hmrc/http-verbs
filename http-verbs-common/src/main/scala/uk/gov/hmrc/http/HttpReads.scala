@@ -30,15 +30,17 @@ trait HttpReads[O] {
   def read(method: String, url: String, response: HttpResponse): O
 }
 
-trait RawReads extends HttpErrorFunctions {
-  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
-  }
+trait RawReads {
+  implicit val readRaw: HttpReads[HttpResponse] =
+    new HttpReads[HttpResponse] {
+      def read(method: String, url: String, response: HttpResponse) =
+        response
+    }
 }
 
 object RawReads extends RawReads
 
-trait OptionHttpReads extends HttpErrorFunctions {
+trait OptionHttpReads {
   implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
     def read(method: String, url: String, response: HttpResponse) = response.status match {
       case 204 | 404 => None
@@ -47,7 +49,9 @@ trait OptionHttpReads extends HttpErrorFunctions {
   }
 }
 
-trait JsonHttpReads extends HttpErrorFunctions {
+trait JsonHttpReads {
+  import HttpErrorFunctions.handleResponse
+
   implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) =
       readJson(method, url, handleResponse(method, url)(response).json)

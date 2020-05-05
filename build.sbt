@@ -12,7 +12,7 @@ parallelExecution in Global := false
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
-  majorVersion := 10,
+  majorVersion := 11,
   makePublicallyAvailableOnBintray := true,
   resolvers := Seq(
     Resolver.bintrayRepo("hmrc", "releases"),

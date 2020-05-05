@@ -73,3 +73,5 @@ trait HttpErrorFunctions {
       case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
     }
 }
+
+object HttpErrorFunctions extends HttpErrorFunctions
