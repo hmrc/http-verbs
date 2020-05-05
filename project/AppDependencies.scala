@@ -28,7 +28,7 @@ object AppDependencies {
 
   val compilePlay26 = Seq(
     "com.typesafe.play" %% "play-json" % "2.6.9",
-    "com.typesafe.play" %% "play-ws"   % play26Version
+    "com.typesafe.play" %% "play-ahc-ws" % play26Version
   )
 
   val compilePlay27 = Seq(
@@ -56,12 +56,10 @@ object AppDependencies {
   )
 
   val testPlay26 = Seq(
-    "com.typesafe.play" %% "play-test"   % play26Version % Test,
-    "com.typesafe.play" %% "play-ahc-ws" % play26Version % Test
+    "com.typesafe.play" %% "play-test"   % play26Version % Test
   )
 
   val testPlay27 = Seq(
-    "com.typesafe.play" %% "play-test"   % play27Version % Test,
-    "com.typesafe.play" %% "play-ahc-ws" % play27Version % Test
+    "com.typesafe.play" %% "play-test"   % play27Version % Test
   )
 }
