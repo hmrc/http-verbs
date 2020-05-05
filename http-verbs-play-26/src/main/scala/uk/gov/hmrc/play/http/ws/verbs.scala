@@ -16,4 +16,15 @@
 
 package uk.gov.hmrc.play.http.ws
 
+import play.api.libs.ws.{EmptyBody, WSRequest => PlayWSRequest}
+
 trait WSDelete extends default.WSDelete with WSRequest
+trait WSGet    extends default.WSGet    with WSRequest
+trait WSPatch  extends default.WSPatch  with WSRequest
+trait WSPut    extends default.WSPut    with WSRequest
+trait WSPost   extends default.WSPost   with WSRequest {
+  override def withEmptyBody(request: PlayWSRequest): PlayWSRequest =
+    request.withBody(EmptyBody)
+}
+
+trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch

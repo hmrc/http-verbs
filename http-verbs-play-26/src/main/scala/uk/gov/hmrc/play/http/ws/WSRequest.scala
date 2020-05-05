@@ -17,15 +17,14 @@
 package uk.gov.hmrc.play.http.ws
 
 import play.api.Configuration
-import play.api.libs.ws
-import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer}
+import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer, WSRequest => PlayWSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
 trait WSRequest extends WSRequestBuilder {
 
   def wsClient: WSClient
 
-  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): ws.WSRequest =
+  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest =
     wsClient.url(url)
       .withHttpHeaders(applicableHeaders(url)(hc): _*)
       .addHttpHeaders(headers: _*)
@@ -36,7 +35,7 @@ trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): ws.WSRequest =
+  override def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest =
     wsProxyServer match {
       case Some(proxy) => super.buildRequest(url, headers).withProxyServer(proxy)
       case None        => super.buildRequest(url, headers)
@@ -66,5 +65,4 @@ object WSProxyConfiguration {
 
   case class ProxyConfigurationException(key: String)
       extends RuntimeException(s"Missing proxy configuration - key '$key' not found")
-
 }
