@@ -14,19 +14,31 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http.ws
+package uk.gov.hmrc.play.http.ws.default
 
-import uk.gov.hmrc.http._
+import play.api.libs.json.{Json, Writes}
+import uk.gov.hmrc.http.{CorePut, HeaderCarrier, HttpResponse, PutHttpTransport}
+import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequest with WSExecute {
+trait WSPut extends CorePut with PutHttpTransport with WSRequestBuilder with WSExecute{
 
-  override def doDelete(
+  override def doPut[A](
     url: String,
+    body: A,
     headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
+      implicit rds: Writes[A],
+      hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url, headers), "DELETE")
+    execute(buildRequest(url, headers).withBody(Json.toJson(body)), "PUT")
+      .map(new WSHttpResponse(_))
+
+  override def doPutString(
+    url: String,
+    body: String,
+    headers: Seq[(String, String)])(
+      implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+    execute(buildRequest(url, headers).withBody(body), "PUT")
       .map(new WSHttpResponse(_))
 }

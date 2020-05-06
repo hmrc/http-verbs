@@ -366,8 +366,11 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
   }
 
   trait TestHttpVerb extends HttpVerb with Retries with HttpHooks with SucceedNthCall {
+    System.setProperty("akka.jvm-shutdown-hooks", "off")
     protected def configuration: Option[Config] =
-      Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+      Some(Configuration(
+        "http-verbs.retries.ssl-engine-closed-already.enabled" -> true
+      ).underlying)
     override val hooks: Seq[HttpHook]                              = Nil
     override private[http] lazy val intervals: Seq[FiniteDuration] = List.fill(3)(1.millis)
     override def actorSystem: ActorSystem                          = ActorSystem("test-actor-system")

@@ -16,16 +16,15 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.json.JsValue
-import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.http.HttpResponse
+import play.api.libs.ws.{EmptyBody, WSRequest => PlayWSRequest}
 
-class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
-
-  override def status: Int = wsResponse.status
-
-  override def json: JsValue = wsResponse.json
-
-  override def body: String = wsResponse.body
+trait WSDelete extends default.WSDelete with WSRequest
+trait WSGet    extends default.WSGet    with WSRequest
+trait WSPatch  extends default.WSPatch  with WSRequest
+trait WSPut    extends default.WSPut    with WSRequest
+trait WSPost   extends default.WSPost   with WSRequest {
+  override def withEmptyBody(request: PlayWSRequest): PlayWSRequest =
+    request.withBody(EmptyBody)
 }
+
+trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch

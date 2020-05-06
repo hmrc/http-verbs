@@ -14,49 +14,60 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http.ws
+package uk.gov.hmrc.play.http.ws.default
 
 import play.api.libs.json.{Json, Writes}
-import play.api.libs.ws.EmptyBody
-import uk.gov.hmrc.http._
+import play.api.libs.ws.WSRequest
+import uk.gov.hmrc.http.{CorePost, HeaderCarrier, HttpResponse, PostHttpTransport}
+import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait WSPost extends CorePost with PostHttpTransport with WSRequest with WSExecute {
+trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with WSExecute {
+
+  def withEmptyBody(request: WSRequest): WSRequest
 
   override def doPost[A](
     url: String,
     body: A,
-    headers: Seq[(String, String)])(
-      implicit rds: Writes[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
+    headers: Seq[(String, String)]
+  )(
+    implicit rds: Writes[A],
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(Json.toJson(body)), "POST")
       .map(new WSHttpResponse(_))
 
   override def doFormPost(
     url: String,
     body: Map[String, Seq[String]],
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
+    headers: Seq[(String, String)]
+  )(
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(body), "POST")
       .map(new WSHttpResponse(_))
 
   override def doPostString(
     url: String,
     body: String,
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
+    headers: Seq[(String, String)]
+  )(
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(body), "POST")
       .map(new WSHttpResponse(_))
 
   override def doEmptyPost[A](
     url: String,
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
-    execute(buildRequest(url, headers).withBody(EmptyBody), "POST")
+    headers: Seq[(String, String)]
+  )(
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
+    execute(withEmptyBody(buildRequest(url, headers)), "POST")
       .map(new WSHttpResponse(_))
 }
