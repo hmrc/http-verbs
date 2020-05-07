@@ -25,61 +25,62 @@ import play.api.libs.json.Json
 class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
   "RawReads" should {
     "return the bare response if returned" in {
-      val reads = new RawReads with StubThatReturnsTheResponse
-      reads.readRaw.read(exampleVerb, exampleUrl, exampleResponse) should be(exampleResponse)
-    }
-    "pass through any failure" in {
-      val reads = new RawReads with StubThatThrowsAnException
-      an[Exception] should be thrownBy reads.readRaw.read(exampleVerb, exampleUrl, exampleResponse)
+      val reads = HttpReads.readRaw
+      forAll(Gen.posNum[Int]) { s =>
+        val response = exampleResponse(s)
+        reads.read(exampleVerb, exampleUrl, response) should be(response)
+      }
     }
   }
+
   "OptionHttpReads" should {
-    val reads = new OptionHttpReads with StubThatShouldNotBeCalled
     "return None if the status code is 204 or 404" in {
       val otherReads = new HttpReads[String] {
         def read(method: String, url: String, response: HttpResponse) = fail("called the nested reads")
       }
+      val reads = HttpReads.readOptionOf(otherReads)
 
-      reads.readOptionOf(otherReads).read(exampleVerb, exampleUrl, HttpResponse(204)) should be(None)
-      reads.readOptionOf(otherReads).read(exampleVerb, exampleUrl, HttpResponse(404)) should be(None)
+      reads.read(exampleVerb, exampleUrl, exampleResponse(204)) should be(None)
+      reads.read(exampleVerb, exampleUrl, exampleResponse(404)) should be(None)
     }
+
     "defer to the nested reads otherwise" in {
       val otherReads = new HttpReads[String] {
         def read(method: String, url: String, response: HttpResponse) = "hi"
       }
+      val reads = HttpReads.readOptionOf(otherReads)
 
       forAll(Gen.posNum[Int].filter(_ != 204).filter(_ != 404)) { s =>
-        reads.readOptionOf(otherReads).read(exampleVerb, exampleUrl, HttpResponse(s)) should be(Some("hi"))
+        reads.read(exampleVerb, exampleUrl, exampleResponse(s)) should be(Some("hi"))
       }
-    }
-    "pass through any failure" in {
-      val reads = new OptionHttpReads with StubThatThrowsAnException
-      an[Exception] should be thrownBy reads.readOptionOf.read(exampleVerb, exampleUrl, exampleResponse)
     }
   }
 
   implicit val r = Json.reads[Example]
   "JsonHttpReads.readFromJson" should {
+    val reads = HttpReads.readFromJson[Example]
     "convert a successful response body to the given class" in {
-      val reads    = new JsonHttpReads with StubThatReturnsTheResponse
-      val response = HttpResponse(0, responseJson = Some(Json.obj("v1" -> "test", "v2" -> 5)))
-      reads.readFromJson[Example].read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
+      val response = HttpResponse(200, responseJson = Some(Json.obj("v1" -> "test", "v2" -> 5)))
+      reads.read(exampleVerb, exampleUrl, response) should be(Example("test", 5))
     }
+
     "convert a successful response body with json that doesn't validate into an exception" in {
-      val reads    = new JsonHttpReads with StubThatReturnsTheResponse
-      val response = HttpResponse(0, responseJson = Some(Json.obj("v1" -> "test")))
-      a[JsValidationException] should be thrownBy reads.readFromJson[Example].read(exampleVerb, exampleUrl, response)
+      val response = HttpResponse(200, responseJson = Some(Json.obj("v1" -> "test")))
+      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
-    "pass through any failure" in {
-      val reads = new JsonHttpReads with StubThatThrowsAnException
-      an[Exception] should be thrownBy reads.readFromJson[Example].read(exampleVerb, exampleUrl, exampleResponse)
+
+    "throw Exception for any failure" in {
+      forAll(Gen.posNum[Int].filter(!_.toString.startsWith("2"))) { s =>
+        an[Exception] should be thrownBy reads.read(exampleVerb, exampleUrl, exampleResponse(s))
+      }
     }
   }
+
   "JsonHttpReads.readSeqFromJsonProperty" should {
+    val reads = HttpReads.readSeqFromJsonProperty[Example]("items")
     "convert a successful response body to the given class" in {
-      val reads = new JsonHttpReads with StubThatReturnsTheResponse
       val response = HttpResponse(
-        0,
+        200,
         responseJson = Some(
           Json.obj(
             "items" ->
@@ -88,13 +89,13 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
                 Json.obj("v1" -> "test", "v2" -> 2)
               ))
         ))
-      reads.readSeqFromJsonProperty[Example]("items").read(exampleVerb, exampleUrl, response) should
+      reads.read(exampleVerb, exampleUrl, response) should
         contain theSameElementsInOrderAs Seq(Example("test", 1), Example("test", 2))
     }
+
     "convert a successful response body with json that doesn't validate into an exception" in {
-      val reads = new JsonHttpReads with StubThatReturnsTheResponse
       val response = HttpResponse(
-        0,
+        200,
         responseJson = Some(
           Json.obj(
             "items" ->
@@ -103,14 +104,12 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
                 Json.obj("v1" -> "test", "v2" -> 2)
               ))
         ))
-      a[JsValidationException] should be thrownBy reads
-        .readSeqFromJsonProperty[Example]("items")
-        .read(exampleVerb, exampleUrl, response)
+      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
+
     "convert a successful response body with json that is missing the given property into an exception" in {
-      val reads = new JsonHttpReads with StubThatReturnsTheResponse
       val response = HttpResponse(
-        0,
+        200,
         responseJson = Some(
           Json.obj(
             "missing" ->
@@ -119,42 +118,30 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
                 Json.obj("v1" -> "test", "v2" -> 2)
               ))
         ))
-      a[JsValidationException] should be thrownBy reads
-        .readSeqFromJsonProperty[Example]("items")
-        .read(exampleVerb, exampleUrl, response)
+      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
+
     "return None if the status code is 204 or 404" in {
-      val reads = new JsonHttpReads with StubThatShouldNotBeCalled
-      reads.readSeqFromJsonProperty[Example]("items").read(exampleVerb, exampleUrl, HttpResponse(204)) should be(empty)
-      reads.readSeqFromJsonProperty[Example]("items").read(exampleVerb, exampleUrl, HttpResponse(404)) should be(empty)
+      reads.read(exampleVerb, exampleUrl, exampleResponse(204)) should be(empty)
+      reads.read(exampleVerb, exampleUrl, exampleResponse(404)) should be(empty)
     }
-    "pass through any failure" in {
-      val reads = new JsonHttpReads with StubThatThrowsAnException
-      an[Exception] should be thrownBy reads.readFromJson[Example].read(exampleVerb, exampleUrl, exampleResponse)
+
+    "throw an Exception for any failure" in {
+      forAll(Gen.posNum[Int].filter(!_.toString.startsWith("2"))) { s =>
+        an[Exception] should be thrownBy reads.read(exampleVerb, exampleUrl, exampleResponse(s))
+      }
     }
   }
 
   val exampleVerb = "GET"
   val exampleUrl  = "http://example.com/something"
-  val exampleBody = "this is the string body"
-  val exampleResponse = HttpResponse(
-    responseStatus  = 0,
+
+  def exampleResponse(statusCode: Int) = HttpResponse(
+    responseStatus  = statusCode,
     responseJson    = Some(Json.parse("""{"test":1}""")),
     responseHeaders = Map("X-something" -> Seq("some value")),
-    responseString  = Some(exampleBody)
+    responseString  = Some("this is the string body")
   )
-
-  trait StubThatShouldNotBeCalled extends HttpErrorFunctions {
-    override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) =
-      fail("called handleResponse when not expected to")
-  }
-
-  trait StubThatReturnsTheResponse extends HttpErrorFunctions {
-    override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) = response
-  }
-
-  trait StubThatThrowsAnException extends HttpErrorFunctions {
-    override def handleResponse(httpMethod: String, url: String)(response: HttpResponse) = throw new Exception
-  }
 }
+
 case class Example(v1: String, v2: Int)

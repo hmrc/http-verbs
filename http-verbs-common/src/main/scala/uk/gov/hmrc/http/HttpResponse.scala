@@ -27,9 +27,8 @@ import play.api.libs.json.{JsValue, Json}
 trait HttpResponse {
   def allHeaders: Map[String, Seq[String]] = ???
 
-  def header(key: String): Option[String] = allHeaders.get(key).flatMap { list =>
-    list.headOption
-  }
+  def header(key: String): Option[String] =
+    allHeaders.get(key).flatMap(_.headOption)
 
   def status: Int = ???
 
