@@ -34,9 +34,9 @@ trait HttpVerb extends Request {
 
   def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
     implicit ec: ExecutionContext): Future[HttpResponse] =
-    f.recover {
-      case e: TimeoutException => throw new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e))
-      case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
+    f.recoverWith {
+      case e: TimeoutException => Future.failed(new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e)))
+      case e: ConnectException => Future.failed(new BadGatewayException(badGatewayMessage(httpMethod, url, e)))
     }
 
   def badGatewayMessage(verbName: String, url: String, e: Exception): String =

@@ -56,6 +56,46 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
     }
   }
 
+
+  "EitherHttpReads" should {
+    "return None if the status code is 204 or 404" in {
+      val otherReads = new HttpReads[String] {
+        def read(method: String, url: String, response: HttpResponse) = fail("called the nested reads")
+      }
+      val reads = HttpReads.readEitherOf(otherReads)
+
+      forAll(Gen.choose(400, 499)) { s =>
+        val errorResponse = exampleResponse(s)
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream4xxResponse(
+          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          upstreamResponseCode = errorResponse.status,
+          reportAs             = 500,
+          headers              = errorResponse.allHeaders
+        ))
+      }
+
+      forAll(Gen.choose(500, 599)) { s =>
+        val errorResponse = exampleResponse(s)
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream5xxResponse(
+          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          upstreamResponseCode = errorResponse.status,
+          reportAs             = 502
+        ))
+      }
+    }
+
+    "defer to the nested reads otherwise" in {
+      val otherReads = new HttpReads[String] {
+        def read(method: String, url: String, response: HttpResponse) = "hi"
+      }
+      val reads = HttpReads.readEitherOf(otherReads)
+
+      forAll(Gen.choose(200, 299)) { s =>
+        reads.read(exampleVerb, exampleUrl, exampleResponse(s)) should be(Right("hi"))
+      }
+    }
+  }
+
   implicit val r = Json.reads[Example]
   "JsonHttpReads.readFromJson" should {
     val reads = HttpReads.readFromJson[Example]

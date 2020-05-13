@@ -19,7 +19,7 @@ package uk.gov.hmrc.http
 import play.api.libs.json
 import play.api.libs.json.{JsNull, JsValue}
 
-object HttpReads extends OptionHttpReads with JsonHttpReads {
+object HttpReads extends OptionHttpReads with EitherHttpReads with JsonHttpReads {
   // readRaw is brought in like this rather than in a trait as this gives it
   // compilation priority during implicit resolution. This means, unless
   // specified otherwise a verb call will return a plain HttpResponse
@@ -47,6 +47,19 @@ trait OptionHttpReads {
       case _         => Some(rds.read(method, url, response))
     }
   }
+}
+
+trait EitherHttpReads {
+   // Note - Either[UpstreamResponse, Option[A]]] will return Right(None) for 204, and Left(Upstream(404)) for 404
+   // the type is ambiguous (2 ways to represent 404) - to return Right(None) for 404, we'd have to delegate to rds, to see
+   // if what errors can be handled first, then recover?
+   // Or just provide an instance of `Either[UpstreamResponse, Option[A]]]`
+  implicit def readEitherOf[P](implicit rds: HttpReads[P]): HttpReads[Either[UpstreamErrorResponse, P]] =
+    new HttpReads[Either[UpstreamErrorResponse, P]] {
+      def read(method: String, url: String, response: HttpResponse) =
+        HttpErrorFunctions.handleResponseEither(method, url)(response)
+          .right.map(rds.read(method, url, _))
+    }
 }
 
 trait JsonHttpReads {

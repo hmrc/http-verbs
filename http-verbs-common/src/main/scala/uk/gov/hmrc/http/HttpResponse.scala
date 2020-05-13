@@ -24,6 +24,10 @@ import play.api.libs.json.{JsValue, Json}
   * need in methods that we are passing the response to for processing, making it
   * much easier to provide dummy data in our specs.
   */
+// TODO Convert to a case-class, allowing to use `copy(...)` in tests
+// ensuring field names in apply/unapply match
+// removes "???"
+// the only classes which extends this DummyHttpResponse and WSHttpResponse can be provided by constructors (e.g. `httpResponsefromWsResponse`)
 trait HttpResponse {
   def allHeaders: Map[String, Seq[String]] = ???
 

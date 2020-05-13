@@ -66,6 +66,22 @@ trait HttpErrorFunctions {
         throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
     }
 
+  def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
+    response.status match {
+      case status if is2xx(status) => Right(response)
+      case status if is4xx(status) =>
+        Left(Upstream4xxResponse(
+          upstreamResponseMessage(httpMethod, url, status, response.body),
+          status,
+          500,
+          response.allHeaders))
+      case status if is5xx(status) =>
+        Left(Upstream5xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 502))
+      case status =>
+        // Or another UpstreamErrorResponse?
+        throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
+    }
+
   def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
     implicit ec: ExecutionContext): Future[HttpResponse] =
     f.recover {

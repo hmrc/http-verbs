@@ -106,6 +106,7 @@ class InternalServerException(message: String) extends HttpException(message, IN
 
 class NotImplementedException(message: String) extends HttpException(message, NOT_IMPLEMENTED)
 
+// thrown by HttpErrorFunctions on ConnectException
 class BadGatewayException(message: String) extends HttpException(message, BAD_GATEWAY)
 
 class ServiceUnavailableException(message: String) extends HttpException(message, SERVICE_UNAVAILABLE)
@@ -113,6 +114,7 @@ class ServiceUnavailableException(message: String) extends HttpException(message
 @deprecated("use GatewayTimeoutException instead", "0.1.0")
 class GatewayTimeout(message: String) extends HttpException(message, GATEWAY_TIMEOUT)
 
+// thrown by HttpErrorFunctions on TimeoutException
 class GatewayTimeoutException(message: String) extends HttpException(message, GATEWAY_TIMEOUT)
 
 class HttpVersionNotSupportedException(message: String) extends HttpException(message, HTTP_VERSION_NOT_SUPPORTED)
@@ -128,8 +130,8 @@ sealed trait UpstreamErrorResponse {
 case class Upstream4xxResponse(
   message: String,
   upstreamResponseCode: Int,
-  reportAs: Int,
-  headers: Map[String, Seq[String]] = Map.empty)
+  reportAs: Int, // TODO remove this - i.e. no context on how it should be reported - move to bootstrap error handler
+  headers: Map[String, Seq[String]] = Map.empty) // why not add headers to all UpstreamErrorResponse?
     extends Exception(message) with UpstreamErrorResponse
 
 case class Upstream5xxResponse(message: String, upstreamResponseCode: Int, reportAs: Int)
