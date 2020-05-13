@@ -27,7 +27,16 @@ object HttpReads extends OptionHttpReads with EitherHttpReads with JsonHttpReads
 }
 
 trait HttpReads[O] {
+  outer =>
+
   def read(method: String, url: String, response: HttpResponse): O
+
+  // TODO this should allow us to define other reads from HttpReads[HttpResponse] more sensibly...
+  def map[P](fn: O => P): HttpReads[P] =
+    new HttpReads[P] {
+      def read(method: String, url: String, response: HttpResponse): P =
+        fn(outer.read(method, url, response))
+    }
 }
 
 trait RawReads {

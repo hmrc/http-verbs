@@ -173,6 +173,23 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
     }
   }
 
+  "HttpReads.map" should {
+    "work" in {
+      val reads: HttpReads[Either[Int, String]] =
+        HttpReads.readRaw.map { response =>
+          if (response.status == 200) Right(response.body)
+          else Left(response.status)
+        }
+
+      val response = exampleResponse(200)
+      reads.read(exampleVerb, exampleUrl, response) shouldBe Right(response.body)
+
+      forAll(Gen.posNum[Int].filter(_ != 200)) { s =>
+        reads.read(exampleVerb, exampleUrl, exampleResponse(s)) shouldBe Left(s)
+      }
+    }
+  }
+
   val exampleVerb = "GET"
   val exampleUrl  = "http://example.com/something"
 
