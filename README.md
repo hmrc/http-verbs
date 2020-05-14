@@ -24,10 +24,10 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 ### Version 11.0.0
 
 The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself.
-If you are using `http.GET[HttpResponse]` and want to preserve the older behaviour, you can do:
+If you are using `http.GET[HttpResponse]` and want to preserve the older behaviour, you can use the following reads:
 
 ```scala
-http.GET[HttpResponse].map(HttpErrorFunctions.handleResponse(method, url))
+implicit val legacyRawReads = HttpReads.legacyRawReads
 ```
 
 

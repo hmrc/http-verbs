@@ -58,7 +58,7 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
 
 
   "EitherHttpReads" should {
-    "return None if the status code is 204 or 404" in {
+    "return Left if is an error code" in {
       val otherReads = new HttpReads[String] {
         def read(method: String, url: String, response: HttpResponse) = fail("called the nested reads")
       }

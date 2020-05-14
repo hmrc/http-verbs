@@ -39,6 +39,9 @@ trait HttpResponse {
   def json: JsValue = ???
 
   def body: String = ???
+
+  override def toString: String =
+    s"HttpResponse status=$status"
 }
 
 object HttpResponse {
@@ -46,7 +49,8 @@ object HttpResponse {
     responseStatus: Int,
     responseJson: Option[JsValue]             = None,
     responseHeaders: Map[String, Seq[String]] = Map.empty,
-    responseString: Option[String]            = None) = new HttpResponse {
+    responseString: Option[String]            = None
+  ) = new HttpResponse {
     override def allHeaders: Map[String, Seq[String]] = responseHeaders
     override def body: String                         = responseString orElse responseJson.map(Json.prettyPrint) orNull
     override def json: JsValue                        = responseJson.orNull

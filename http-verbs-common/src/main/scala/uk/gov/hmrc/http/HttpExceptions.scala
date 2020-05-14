@@ -121,7 +121,7 @@ class HttpVersionNotSupportedException(message: String) extends HttpException(me
 
 class InsufficientStorageException(message: String) extends HttpException(message, INSUFFICIENT_STORAGE)
 
-sealed trait UpstreamErrorResponse {
+sealed trait UpstreamErrorResponse extends Throwable {
   val message: String
   val upstreamResponseCode: Int
   val reportAs: Int

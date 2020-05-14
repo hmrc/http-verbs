@@ -66,9 +66,10 @@ trait HttpErrorFunctions {
         throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
     }
 
+  // Note, no special handling of BadRequestException or NotFoundException
+  // they will be returned as `Left(Upstream4xxResponse(status = 400))` and `Left(Upstream4xxResponse(status = 404))` respectively
   def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
     response.status match {
-      case status if is2xx(status) => Right(response)
       case status if is4xx(status) =>
         Left(Upstream4xxResponse(
           upstreamResponseMessage(httpMethod, url, status, response.body),
@@ -77,17 +78,18 @@ trait HttpErrorFunctions {
           response.allHeaders))
       case status if is5xx(status) =>
         Left(Upstream5xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 502))
-      case status =>
-        // Or another UpstreamErrorResponse?
-        throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
+      // Note all cases not handled above (e.g. 1xx, 2xx and 3xx) will be returned as is
+      // default followRedirect should mean we don't see 3xx...
+      case status  => Right(response)
     }
 
-  def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
+  // defined in HttpVerb - this version is not used?
+  /*def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
     implicit ec: ExecutionContext): Future[HttpResponse] =
-    f.recover {
-      case e: TimeoutException => throw new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e))
-      case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
-    }
+    f.recoverWith {
+      case e: TimeoutException => Future.failed(new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e)))
+      case e: ConnectException => Future.failed(new BadGatewayException(badGatewayMessage(httpMethod, url, e)))
+    }*/
 }
 
 object HttpErrorFunctions extends HttpErrorFunctions
