@@ -16,11 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import java.net.ConnectException
-import java.util.concurrent.TimeoutException
-
-import scala.concurrent.{ExecutionContext, Future}
-
 trait HttpErrorFunctions {
   def notFoundMessage(verbName: String, url: String, responseBody: String): String =
     s"$verbName of '$url' returned 404 (Not Found). Response body: '$responseBody'"
@@ -82,14 +77,6 @@ trait HttpErrorFunctions {
       // default followRedirect should mean we don't see 3xx...
       case status  => Right(response)
     }
-
-  // defined in HttpVerb - this version is not used?
-  /*def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
-    implicit ec: ExecutionContext): Future[HttpResponse] =
-    f.recoverWith {
-      case e: TimeoutException => Future.failed(new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e)))
-      case e: ConnectException => Future.failed(new BadGatewayException(badGatewayMessage(httpMethod, url, e)))
-    }*/
 }
 
 object HttpErrorFunctions extends HttpErrorFunctions

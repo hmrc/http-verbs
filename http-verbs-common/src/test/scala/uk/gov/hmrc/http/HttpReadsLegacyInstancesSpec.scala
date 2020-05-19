@@ -22,13 +22,19 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.Json
 
-class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
+class HttpReadsLegacyInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
   "RawReads" should {
-    "return the bare response if returned" in {
-      val reads = HttpReads.readRaw
-      forAll(Gen.posNum[Int]) { s =>
+    val reads = HttpReads.readRaw
+    "return the bare response if success" in {
+      forAll(Gen.choose(200, 299)) { s =>
         val response = exampleResponse(s)
         reads.read(exampleVerb, exampleUrl, response) should be(response)
+      }
+    }
+    "throw exception for non-success codes" in {
+      forAll(Gen.choose(400, 599)) { s =>
+        val errorResponse = exampleResponse(s)
+        an[Exception] should be thrownBy reads.read(exampleVerb, exampleUrl, errorResponse)
       }
     }
   }
@@ -52,46 +58,6 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
 
       forAll(Gen.posNum[Int].filter(_ != 204).filter(_ != 404)) { s =>
         reads.read(exampleVerb, exampleUrl, exampleResponse(s)) should be(Some("hi"))
-      }
-    }
-  }
-
-
-  "EitherHttpReads" should {
-    "return Left if is an error code" in {
-      val otherReads = new HttpReads[String] {
-        def read(method: String, url: String, response: HttpResponse) = fail("called the nested reads")
-      }
-      val reads = HttpReads.readEitherOf(otherReads)
-
-      forAll(Gen.choose(400, 499)) { s =>
-        val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream4xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 500,
-          headers              = errorResponse.allHeaders
-        ))
-      }
-
-      forAll(Gen.choose(500, 599)) { s =>
-        val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream5xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 502
-        ))
-      }
-    }
-
-    "defer to the nested reads otherwise" in {
-      val otherReads = new HttpReads[String] {
-        def read(method: String, url: String, response: HttpResponse) = "hi"
-      }
-      val reads = HttpReads.readEitherOf(otherReads)
-
-      forAll(Gen.choose(200, 299)) { s =>
-        reads.read(exampleVerb, exampleUrl, exampleResponse(s)) should be(Right("hi"))
       }
     }
   }
@@ -144,7 +110,7 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
                 Json.obj("v1" -> "test", "v2" -> 2)
               ))
         ))
-      a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
+       a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
 
     "convert a successful response body with json that is missing the given property into an exception" in {
@@ -173,32 +139,14 @@ class HttpReadsSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with
     }
   }
 
-  "HttpReads.map" should {
-    "work" in {
-      val reads: HttpReads[Either[Int, String]] =
-        HttpReads.readRaw.map { response =>
-          if (response.status == 200) Right(response.body)
-          else Left(response.status)
-        }
-
-      val response = exampleResponse(200)
-      reads.read(exampleVerb, exampleUrl, response) shouldBe Right(response.body)
-
-      forAll(Gen.posNum[Int].filter(_ != 200)) { s =>
-        reads.read(exampleVerb, exampleUrl, exampleResponse(s)) shouldBe Left(s)
-      }
-    }
-  }
-
   val exampleVerb = "GET"
   val exampleUrl  = "http://example.com/something"
-
   def exampleResponse(statusCode: Int) = HttpResponse(
     responseStatus  = statusCode,
     responseJson    = Some(Json.parse("""{"test":1}""")),
     responseHeaders = Map("X-something" -> Seq("some value")),
     responseString  = Some("this is the string body")
   )
-}
 
-case class Example(v1: String, v2: Int)
+  case class Example(v1: String, v2: Int)
+}

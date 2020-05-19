@@ -23,12 +23,20 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 ### Version 11.0.0
 
-The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself.
-If you are using `http.GET[HttpResponse]` and want to preserve the older behaviour, you can use the following reads:
-
+The default implicits for `HttpRead` have been deprecated. There are new implicits, which need to be pulled in explicitly with
 ```scala
-implicit val legacyRawReads = HttpReads.legacyRawReads
+import uk.gov.hmrc.http.HttpReads.Implicits._
 ```
+The behaviour of the implicits is not quite the same as the deprecated ones:
+* You will have to explicitly state the type of the reponse - it will not resolve to `HttpResponse` if none is specified.
+* The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. You may get the previous behaviour with
+```scala
+implicit val legacyRawReads = HttpReads.throwOnFailure(HttpReads.readEither)
+```
+* There is an `HttpReads[Either[UpstreamErrorResponse, A]]` defined which will return all non-2xx reponse codes as an `UpstreamErrorResponse`
+* There is an `HttpReads[Either[UpstreamErrorResponse, JsResult[A]]]` defined for reading Json responses, which additionally will return all Json errors as JsError.
+* For previous behaviour, use `HttpReads[A]`, which will throw exceptions for all errors.
+
 
 
 ## Adding to your build
