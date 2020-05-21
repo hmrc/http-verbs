@@ -29,5 +29,5 @@ trait WSGet extends CoreGet with GetHttpTransport with WSRequestBuilder with WSE
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
     execute(buildRequest(url, headers), "GET")
-      .map(new WSHttpResponse(_))
+      .map(WSHttpResponse.apply)
 }

@@ -18,6 +18,7 @@ package uk.gov.hmrc.http
 
 import play.api.libs.json.{JsValue, Json}
 
+@deprecated("Use uk.gov.hmrc.http.HttpResponse instead.", "11.0.0")
 class DummyHttpResponse(
   override val body: String,
   override val status: Int,

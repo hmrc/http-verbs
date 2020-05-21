@@ -81,7 +81,8 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
         reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream5xxResponse(
           message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
           upstreamResponseCode = errorResponse.status,
-          reportAs             = 502
+          reportAs             = 502,
+          headers              = errorResponse.allHeaders
         ))
       }
     }
@@ -129,7 +130,8 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
         reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream5xxResponse(
           message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
           upstreamResponseCode = errorResponse.status,
-          reportAs             = 502
+          reportAs             = 502,
+          headers              = errorResponse.allHeaders
         ))
       }
     }
@@ -148,14 +150,9 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
     }
 
     "throw Exception for any failure" in {
-      forAll(Gen.choose(400, 499)) { s =>
+      forAll(Gen.choose(400, 599)) { s =>
         val errorResponse = exampleResponse(s)
-        a[Upstream4xxResponse] should be thrownBy reads.read(exampleVerb, exampleUrl, errorResponse)
-      }
-
-      forAll(Gen.choose(500, 599)) { s =>
-        val errorResponse = exampleResponse(s)
-        a[Upstream5xxResponse] should be thrownBy reads.read(exampleVerb, exampleUrl, errorResponse)
+        a[UpstreamErrorResponse] should be thrownBy reads.read(exampleVerb, exampleUrl, errorResponse)
       }
     }
   }

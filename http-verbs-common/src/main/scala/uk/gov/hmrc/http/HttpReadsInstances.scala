@@ -33,20 +33,20 @@ trait HttpReadsHttpResponse {
 }
 
 trait HttpReadsEither {
-  implicit val readEither: HttpReads[Either[UnhandledStatusCodeException, HttpResponse]] =
+  implicit val readEither: HttpReads[Either[UpstreamErrorResponse, HttpResponse]] =
     HttpReads.ask.map { case (method, url, response) =>
       HttpErrorFunctions.handleResponseEither(method, url)(response)
     }
 
   // Note - Either[UpstreamResponse, Option[A]]] will return Right(None) for 204, and Left(Upstream(404)) for 404
   // Option[Either[UpstreamResponse, A]] will return Right(None) for 204, 404, and
-  implicit def readEitherOf[A : HttpReads]: HttpReads[Either[UnhandledStatusCodeException, A]] =
+  implicit def readEitherOf[A : HttpReads]: HttpReads[Either[UpstreamErrorResponse, A]] =
     readEither.flatMap {
       case Left(err)       => HttpReads.pure(Left(err))
       case Right(response) => HttpReads[A].map(Right.apply)
     }
 
-  def throwOnFailure[A](reads: HttpReads[Either[UnhandledStatusCodeException, A]]): HttpReads[A] =
+  def throwOnFailure[A](reads: HttpReads[Either[UpstreamErrorResponse, A]]): HttpReads[A] =
     reads
       .map {
         case Left(err)    => throw err
@@ -79,14 +79,14 @@ trait HttpReadsJson {
     * })
     * }}}
     */
-  implicit def readFromJsonSafe[A : json.Reads]: HttpReads[Either[UnhandledStatusCodeException, JsResult[A]]] =
-    HttpReads[Either[UnhandledStatusCodeException, HttpResponse]].map(_.right.map(_.json.validate[A]))
+  implicit def readFromJsonSafe[A : json.Reads]: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]] =
+    HttpReads[Either[UpstreamErrorResponse, HttpResponse]].map(_.right.map(_.json.validate[A]))
 
   /** variant of [[readFromJsonSafe]] which throws all failures as exceptions */
   implicit def readFromJson[A](implicit rds: json.Reads[A], mf: Manifest[A]): HttpReads[A] =
     throwOnJsonFailure(readFromJsonSafe)
 
-  def throwOnJsonFailure[A](reads: HttpReads[Either[UnhandledStatusCodeException, JsResult[A]]])(implicit mf: Manifest[A]): HttpReads[A] =
+  def throwOnJsonFailure[A](reads: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]])(implicit mf: Manifest[A]): HttpReads[A] =
     reads
       .flatMap {
         case Left(err)                  => throw err

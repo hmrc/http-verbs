@@ -64,14 +64,14 @@ trait HttpErrorFunctions {
 
   // Note, no special handling of BadRequest or NotFound
   // they will be returned as `Left(Upstream4xxResponse(status = 400))` and `Left(Upstream4xxResponse(status = 404))` respectively
-  def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UnhandledStatusCodeException, HttpResponse] =
+  def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
     response.status match {
       case status if is4xx(status) || is5xx(status) =>
-        Left(UnhandledStatusCodeException(
+        Left(UpstreamErrorResponse(
           message    = upstreamResponseMessage(httpMethod, url, status, response.body),
           statusCode = status,
           reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
-          headers    = response.allHeaders
+          headers    = response.headers
         ))
       // Note all cases not handled above (e.g. 1xx, 2xx and 3xx) will be returned as is
       // default followRedirect should mean we don't see 3xx...
