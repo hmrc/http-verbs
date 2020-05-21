@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import com.github.ghik.silencer.silent
 import play.api.libs.json
 import play.api.libs.json.{JsNull, JsValue}
 
@@ -25,6 +26,7 @@ trait HttpReadsLegacyInstances extends HttpReadsLegacyOption with HttpReadsLegac
 trait HttpReadsLegacyRawReads extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
   implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
+    @silent("deprecated")
     def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
   }
 }

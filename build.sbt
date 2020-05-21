@@ -10,6 +10,8 @@ val scala2_12 = "2.12.8"
 // TODO: restrict parallelExecution to tests only (the obvious way to do this using Test scope does not seem to work correctly)
 parallelExecution in Global := false
 
+val silencerVersion = "1.4.4"
+
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
   majorVersion := 11,
@@ -17,6 +19,11 @@ lazy val commonSettings = Seq(
   resolvers := Seq(
     Resolver.bintrayRepo("hmrc", "releases"),
     Resolver.typesafeRepo("releases")
+  ),
+  scalacOptions ++= Seq("-deprecation", "-feature"),
+  libraryDependencies ++= Seq(
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
+    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
   )
 )
 

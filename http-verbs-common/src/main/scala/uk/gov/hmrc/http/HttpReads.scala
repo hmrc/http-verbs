@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.http
 
+import com.github.ghik.silencer.silent
+
 object HttpReads extends HttpReadsLegacyInstances {
   def apply[A : HttpReads] =
     implicitly[HttpReads[A]]
@@ -38,6 +40,7 @@ object HttpReads extends HttpReadsLegacyInstances {
   // compilation priority during implicit resolution. This means, unless
   // specified otherwise a verb call will return a plain HttpResponse
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
+  @silent("deprecated")
   implicit val readRaw: HttpReads[HttpResponse] = HttpReadsLegacyRawReads.readRaw
 
   object Implicits extends HttpReadsInstances

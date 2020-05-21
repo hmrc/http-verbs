@@ -71,22 +71,22 @@ trait HeaderCarrierConverter {
 
   private def fromHeaders(headers: Headers, requestHeader: Option[RequestHeader]): HeaderCarrier =
     HeaderCarrier(
-      headers.get(HeaderNames.authorisation).map(Authorization),
-      None,
-      headers.get(HeaderNames.token).map(Token),
-      forwardedFor(headers),
-      headers.get(HeaderNames.xSessionId).map(SessionId),
-      headers.get(HeaderNames.xRequestId).map(RequestId),
-      buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      requestTimestamp(headers),
-      Seq.empty,
-      headers.get(HeaderNames.trueClientIp),
-      headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
-      headers.get(HeaderNames.deviceID),
-      headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders(headers, requestHeader)
+      authorization    = headers.get(HeaderNames.authorisation).map(Authorization),
+      userId           = None,
+      token            = headers.get(HeaderNames.token).map(Token),
+      forwarded        = forwardedFor(headers),
+      sessionId        = headers.get(HeaderNames.xSessionId).map(SessionId),
+      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
+      requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
+      nsStamp          = requestTimestamp(headers),
+      extraHeaders     = Seq.empty,
+      trueClientIp     = headers.get(HeaderNames.trueClientIp),
+      trueClientPort   = headers.get(HeaderNames.trueClientPort),
+      gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
+      gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
+      deviceID         = headers.get(HeaderNames.deviceID),
+      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      otherHeaders     = otherHeaders(headers, requestHeader)
     )
 
   private def fromSession(
@@ -95,22 +95,22 @@ trait HeaderCarrierConverter {
     requestHeader: Option[RequestHeader],
     s: Session): HeaderCarrier =
     HeaderCarrier(
-      s.get(SessionKeys.authToken).map(Authorization),
-      s.get(SessionKeys.userId).map(UserId),
-      s.get(SessionKeys.token).map(Token),
-      forwardedFor(headers),
-      getSessionId(s, headers).map(SessionId),
-      headers.get(HeaderNames.xRequestId).map(RequestId),
-      buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      requestTimestamp(headers),
-      Seq.empty,
-      headers.get(HeaderNames.trueClientIp),
-      headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
-      getDeviceId(cookies, headers),
-      headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders(headers, requestHeader)
+      authorization    = s.get(SessionKeys.authToken).map(Authorization),
+      userId           = s.get(SessionKeys.userId).map(UserId),
+      token            = s.get(SessionKeys.token).map(Token),
+      forwarded        = forwardedFor(headers),
+      sessionId        = getSessionId(s, headers).map(SessionId),
+      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
+      requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
+      nsStamp          = requestTimestamp(headers),
+      extraHeaders     = Seq.empty,
+      trueClientIp     = headers.get(HeaderNames.trueClientIp),
+      trueClientPort   = headers.get(HeaderNames.trueClientPort),
+      gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
+      gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
+      deviceID         = getDeviceId(cookies, headers),
+      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      otherHeaders     = otherHeaders(headers, requestHeader)
     )
 
   private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] = {

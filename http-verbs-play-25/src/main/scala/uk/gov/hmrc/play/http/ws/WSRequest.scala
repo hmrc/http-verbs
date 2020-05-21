@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http.ws
 
+import com.github.ghik.silencer.silent
 import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer, WSRequest => PlayWSRequest }
 import play.api.{Configuration, Play}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -24,16 +25,14 @@ trait WSRequest extends WSRequestBuilder {
 
   import play.api.libs.ws.WS
 
-  def wsClient: WSClient = {
-    import play.api.Play.current
-    WS.client
-  }
+  @silent("deprecated")
+  def wsClient: WSClient =
+    WS.client(play.api.Play.current)
 
   def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest =
     wsClient.url(url)
       .withHeaders(applicableHeaders(url)(hc): _*)
       .withHeaders(headers: _*)
-
 }
 
 trait WSProxy extends WSRequest {
@@ -55,12 +54,9 @@ object WSProxyConfiguration {
     if (proxyRequired) Some(parseProxyConfiguration(configPrefix, configuration)) else None
   }
 
-  def apply(configPrefix: String): Option[WSProxyServer] = {
-
-    import play.api.Play.current
-    apply(configPrefix, Play.configuration)
-
-  }
+  @silent("deprecated")
+  def apply(configPrefix: String): Option[WSProxyServer] =
+    apply(configPrefix, play.api.Play.current.configuration)
 
   private def parseProxyConfiguration(configPrefix: String, configuration: Configuration) =
     DefaultWSProxyServer(

@@ -16,11 +16,14 @@
 
 package uk.gov.hmrc.play.http.ws
 
+import com.github.ghik.silencer.silent
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.http.HttpResponse
 
 class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
+
+  @silent("deprecated") // is required for Play 2.5
   override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
 
   override def status: Int = wsResponse.status

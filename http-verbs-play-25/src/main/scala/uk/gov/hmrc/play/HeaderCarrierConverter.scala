@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play
 
+import com.github.ghik.silencer.silent
 import play.api.Play
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
@@ -25,9 +26,8 @@ import scala.util.Try
 
 object HeaderCarrierConverter {
 
-  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) = {
+  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) =
     fromHeadersAndSessionAndRequest(headers, session, None)
-  }
 
   def fromHeadersAndSessionAndRequest(headers: Headers, session: Option[Session] = None, request: Option[RequestHeader] = None) = {
     lazy val cookies: Cookies = Cookies.fromCookieHeader(headers.get(play.api.http.HeaderNames.COOKIE))
@@ -36,6 +36,7 @@ object HeaderCarrierConverter {
     }
   }
 
+  @silent("deprecated")
   def whitelistedHeaders: Seq[String] =
     Play.maybeApplication.flatMap(_.configuration.getStringSeq("httpHeadersWhitelist")).getOrElse(Seq())
 
@@ -116,5 +117,4 @@ object HeaderCarrierConverter {
       case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
       case (Some(tcip), Some(xff))                         => Some(s"$tcip, $xff")
     }).map(ForwardedFor)
-
 }

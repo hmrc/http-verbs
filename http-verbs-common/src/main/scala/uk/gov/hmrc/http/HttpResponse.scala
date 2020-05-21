@@ -52,7 +52,7 @@ object HttpResponse {
     responseString: Option[String]            = None
   ) = new HttpResponse {
     override def allHeaders: Map[String, Seq[String]] = responseHeaders
-    override def body: String                         = responseString orElse responseJson.map(Json.prettyPrint) orNull
+    override def body: String                         = responseString.orElse(responseJson.map(Json.prettyPrint)).orNull
     override def json: JsValue                        = responseJson.orNull
     override def status: Int                          = responseStatus
   }
