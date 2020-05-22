@@ -107,8 +107,6 @@ object HttpResponse {
     }
   }
 
-  // Note this has changed - there was only one usage of previous unapply (https://github.com/hmrc/bc-passengers-frontend/blob/fac0c3bd5ceb312449380e943da4119a7f86b4d2/app/services/DeclarationService.scala)
-  // and they only use status...
   def unapply(that: HttpResponse): Option[(Int, String, Map[String, Seq[String]])] =
     Some((that.status, that.body, that.headers))
 }

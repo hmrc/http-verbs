@@ -166,9 +166,6 @@ trait CorePut {
 }
 
 trait CorePost {
-  // TODO shouldn't we just define an HttpWrites to handle json/form/string/empty? similary for Put, Patch
-  // then we have symmetry with Reads.
-  // also to avoid specifying [I, O], can use curried types - since should only specify O, I should be inferrable from param...
   def POST[I, O](
     url: String,
     body: I,

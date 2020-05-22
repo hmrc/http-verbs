@@ -201,16 +201,3 @@ object UpstreamErrorResponse {
       Some((e.upstreamResponseCode, e))
   }
 }
-
-private object Test {
-  UpstreamErrorResponse("BadRequest", 400, 400, Map.empty) match {
-    case e: UpstreamErrorResponse if (e.upstreamResponseCode == 400) => println(s"msg=${e.message}, code = ${e.upstreamResponseCode}")
-    case UpstreamErrorResponse.WithStatusCode(400, e)      => println(s"msg=${e.message}, code = ${e.upstreamResponseCode}")
-    case UpstreamErrorResponse.Upstream4xxResponse(e)      => println(s"msg=${e.message}, code = ${e.upstreamResponseCode}")
-    case UpstreamErrorResponse.Upstream5xxResponse(e)      => println(s"msg=${e.message}, code = ${e.upstreamResponseCode}")
-    case UpstreamErrorResponse(message, statusCode, reportAs, headers) => println(s"msg=$message, code = $statusCode")
-    // and for backward compatibilty
-    case e: Upstream4xxResponse      => println(s"msg=${e.message}, code = ${e.upstreamResponseCode}")
-    case e: Upstream5xxResponse      => println(s"msg=${e.message}, code = ${e.upstreamResponseCode}")
-  }
-}

@@ -19,7 +19,6 @@ package uk.gov.hmrc.http
 import play.api.libs.json
 import play.api.libs.json.{JsError, JsResult, JsSuccess}
 
-// Note, we're not doing the readRaw trick - we expect calls to GET to explicitly specify the type, not defaulting to HttpResponse
 trait HttpReadsInstances extends HttpReadsHttpResponse with HttpReadsEither with HttpReadsOption with HttpReadsJson
 
 object HttpReadsInstances extends HttpReadsInstances
@@ -51,7 +50,10 @@ trait HttpReadsEither {
 
 trait HttpReadsOption {
   /** An opinionated HttpReads which returns None for 404/204.
-    * If you need a None for any UpstreamErrorResponse, consider using `HttpReads[Either[UpstreamErrorResponse, A]].map(_.toOption)`
+    * If you need a None for any UpstreamErrorResponse, consider using:
+    * {{{
+    *  HttpReads[Either[UpstreamErrorResponse, A]].map(_.toOption)
+    * }}}
     */
   implicit def readOptionOf[A : HttpReads]: HttpReads[Option[A]] =
     HttpReads[HttpResponse]
@@ -75,9 +77,6 @@ trait HttpReadsJson {
     * })
     * }}}
     */
-  // is this awkward? Should we have a union of UpstreamErrorResponse and JsValidationException
-  // e.g. HttpReads[Either[UpstreamErrorResponse or JsValidationException, A]]
-  // HttpReads[Either[Throwable, A]] too broad?
   implicit def readFromJsonSafe[A : json.Reads]: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]] =
     HttpReads[Either[UpstreamErrorResponse, HttpResponse]].map(_.right.map(_.json.validate[A]))
 
