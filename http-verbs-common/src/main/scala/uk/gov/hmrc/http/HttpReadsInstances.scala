@@ -33,17 +33,12 @@ trait HttpReadsHttpResponse {
 }
 
 trait HttpReadsEither {
-  implicit val readEither: HttpReads[Either[UpstreamErrorResponse, HttpResponse]] =
-    HttpReads.ask.map { case (method, url, response) =>
-      HttpErrorFunctions.handleResponseEither(method, url)(response)
-    }
-
-  // Note - Either[UpstreamResponse, Option[A]]] will return Right(None) for 204, and Left(Upstream(404)) for 404
-  // Option[Either[UpstreamResponse, A]] will return Right(None) for 204, 404, and
   implicit def readEitherOf[A : HttpReads]: HttpReads[Either[UpstreamErrorResponse, A]] =
-    readEither.flatMap {
-      case Left(err)       => HttpReads.pure(Left(err))
-      case Right(response) => HttpReads[A].map(Right.apply)
+    HttpReads.ask.flatMap { case (method, url, response) =>
+      HttpErrorFunctions.handleResponseEither(method, url)(response) match {
+        case Left(err)       => HttpReads.pure(Left(err))
+        case Right(response) => HttpReads[A].map(Right.apply)
+      }
     }
 
   def throwOnFailure[A](reads: HttpReads[Either[UpstreamErrorResponse, A]]): HttpReads[A] =
@@ -55,8 +50,9 @@ trait HttpReadsEither {
 }
 
 trait HttpReadsOption {
-  // TODO the Option is possibly ambiguous - e.g. wouldn't we expect None for all failures? (since no other avenue for failure, depending on A..)
-  // maybe it should just not be implicit (or add implicit to a scope to be explicitly imported)
+  /** An opinionated HttpReads which returns None for 404/204.
+    * If you need a None for any UpstreamErrorResponse, consider using `HttpReads[Either[UpstreamErrorResponse, A]].map(_.toOption)`
+    */
   implicit def readOptionOf[A : HttpReads]: HttpReads[Option[A]] =
     HttpReads[HttpResponse]
       .flatMap(_.status match {

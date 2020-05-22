@@ -29,9 +29,6 @@ trait HttpVerb extends Request {
 
   protected def configuration: Option[Config]
 
-  @deprecated("ProcessingFunction is obsolete, use the relevant HttpReads[A] instead", "18/03/2015")
-  type ProcessingFunction = (Future[HttpResponse], String) => Future[HttpResponse]
-
   def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
     implicit ec: ExecutionContext): Future[HttpResponse] =
     f.recoverWith {

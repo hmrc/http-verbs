@@ -34,6 +34,7 @@ import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, Session
 import uk.gov.hmrc.play.http.ws.{PortTester, WSHttp}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 class HeadersSpec
     extends AnyFreeSpec
