@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import com.github.ghik.silencer.silent
 import org.scalacheck.Gen
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.TryValues
@@ -25,6 +26,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.util.Try
 
+@silent("deprecated")
 class HttpErrorFunctionsSpec
     extends AnyWordSpec
     with Matchers
@@ -35,12 +37,19 @@ class HttpErrorFunctionsSpec
   "HttpErrorFunctions" should {
     "return the response if the status code is between 200 and 299" in new HttpErrorFunctions {
       forAll(Gen.choose(200, 299)) { statusCode: Int =>
-        val expectedResponse = HttpResponse(statusCode)
+        val expectedResponse = HttpResponse(statusCode, "")
         handleResponse(exampleVerb, exampleUrl)(expectedResponse) should be(expectedResponse)
       }
     }
-    "return the correct exception if the status code is 400" in { expectA[BadRequestException](forStatus = 400) }
-    "return the correct exception if the status code is 404" in { expectA[NotFoundException](forStatus   = 404) }
+
+    "return the correct exception if the status code is 400" in {
+      expectA[BadRequestException](forStatus = 400)
+    }
+
+    "return the correct exception if the status code is 404" in {
+      expectA[NotFoundException](forStatus   = 404)
+    }
+
     "return the correct exception for all other status codes" in {
       forAll(Gen.choose(0, 199))(expectA[Exception](_))
       forAll(Gen.choose(400, 499).suchThat(!Seq(400, 404).contains(_)))(expectA[Upstream4xxResponse](_, Some(500)))
@@ -55,7 +64,7 @@ class HttpErrorFunctionsSpec
 
   def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None): Unit = new HttpErrorFunctions {
     val e =
-      Try(handleResponse(exampleVerb, exampleUrl)(HttpResponse(forStatus, responseString = Some(exampleBody)))).failure.exception
+      Try(handleResponse(exampleVerb, exampleUrl)(HttpResponse(forStatus, exampleBody))).failure.exception
     e            should be(a[T])
     e.getMessage should (include(exampleUrl) and include(exampleVerb) and include(exampleBody))
     reportStatus.map { s =>

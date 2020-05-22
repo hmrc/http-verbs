@@ -42,7 +42,10 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with AnyWordSpecLik
   val url             = "http://some.url"
 
   def response(returnValue: Option[String] = None, statusCode: Int = 200) =
-    Future.successful(HttpResponse(statusCode, returnValue.map(Json.parse(_))))
+    Future.successful(HttpResponse(
+      status = statusCode,
+      body   = returnValue.getOrElse("")
+    ))
 
   val defaultHttpResponse = response()
 

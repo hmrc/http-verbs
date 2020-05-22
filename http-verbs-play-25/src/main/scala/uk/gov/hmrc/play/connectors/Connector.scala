@@ -42,6 +42,3 @@ trait WSClientRequestBuilder extends RequestBuilder {
   this: WSClientProvider =>
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = client.url(url).withHeaders(RequestBuilder.headers(hc): _*)
 }
-
-@deprecated("Please use PlayWSRequestBuilder instead", "3.1.0")
-trait Connector extends PlayWSRequestBuilder

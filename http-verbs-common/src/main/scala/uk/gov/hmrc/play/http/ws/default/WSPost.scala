@@ -27,6 +27,9 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with 
 
   def withEmptyBody(request: WSRequest): WSRequest
 
+  // TODO shouldn't we just define an HttpWrites to handle json/form/string/empty? similarly for POST, POSTForm etc.
+  // similary for Put, Patch
+  // then we have symmetry with Reads. (also to avoid specifying [I, O], can use curried types - since I should be inferrable...)
   override def doPost[A](
     url: String,
     body: A,

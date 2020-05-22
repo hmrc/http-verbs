@@ -72,7 +72,7 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
           message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
           upstreamResponseCode = errorResponse.status,
           reportAs             = 500,
-          headers              = errorResponse.allHeaders
+          headers              = errorResponse.headers
         ))
       }
 
@@ -82,7 +82,7 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
           message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
           upstreamResponseCode = errorResponse.status,
           reportAs             = 502,
-          headers              = errorResponse.allHeaders
+          headers              = errorResponse.headers
         ))
       }
     }
@@ -105,12 +105,20 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
     val reads = HttpReads[Either[UpstreamErrorResponse, JsResult[Example]]]
 
     "convert a successful response body to a JsSuccess" in {
-      val response = HttpResponse(200, responseJson = Some(Json.obj("v1" -> "test", "v2" -> 5)))
+      val response = HttpResponse(
+        status  = 200,
+        json    = Json.obj("v1" -> "test", "v2" -> 5),
+        headers = Map.empty
+      )
       reads.read(exampleVerb, exampleUrl, response) shouldBe Right(JsSuccess(Example("test", 5)))
     }
 
     "convert a successful response body with json that doesn't validate to a JsError" in {
-      val response = HttpResponse(200, responseJson = Some(Json.obj("v1" -> "test")))
+      val response = HttpResponse(
+        status  = 200,
+        json    = Json.obj("v1" -> "test"),
+        headers = Map.empty
+      )
       reads.read(exampleVerb, exampleUrl, response) shouldBe Right(JsError(__ \ "v2", "error.path.missing"))
     }
 
@@ -121,7 +129,7 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
           message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
           upstreamResponseCode = errorResponse.status,
           reportAs             = 500,
-          headers              = errorResponse.allHeaders
+          headers              = errorResponse.headers
         ))
       }
 
@@ -131,7 +139,7 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
           message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
           upstreamResponseCode = errorResponse.status,
           reportAs             = 502,
-          headers              = errorResponse.allHeaders
+          headers              = errorResponse.headers
         ))
       }
     }
@@ -140,12 +148,20 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
   "JsonHttpReads.readFromJson" should {
     val reads = HttpReads[Example]
     "convert a successful response body to the given class" in {
-      val response = HttpResponse(200, responseJson = Some(Json.obj("v1" -> "test", "v2" -> 5)))
+      val response = HttpResponse(
+        status  = 200,
+        json    = Json.obj("v1" -> "test", "v2" -> 5),
+        headers = Map.empty
+      )
       reads.read(exampleVerb, exampleUrl, response) shouldBe Example("test", 5)
     }
 
     "convert a successful response body with json that doesn't validate into an exception" in {
-      val response = HttpResponse(200, responseJson = Some(Json.obj("v1" -> "test")))
+      val response = HttpResponse(
+        status  = 200,
+        json    = Json.obj("v1" -> "test"),
+        headers = Map.empty
+      )
       a[JsValidationException] should be thrownBy reads.read(exampleVerb, exampleUrl, response)
     }
 
@@ -161,10 +177,9 @@ class HttpReadsInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyCh
   val exampleUrl  = "http://example.com/something"
 
   def exampleResponse(statusCode: Int) = HttpResponse(
-    responseStatus  = statusCode,
-    responseJson    = Some(Json.parse("""{"test":1}""")),
-    responseHeaders = Map("X-something" -> Seq("some value")),
-    responseString  = Some("this is the string body")
+    status  = statusCode,
+    body    = "this is the string body",
+    headers = Map("X-something" -> Seq("some value"))
   )
 
   case class Example(v1: String, v2: Int)

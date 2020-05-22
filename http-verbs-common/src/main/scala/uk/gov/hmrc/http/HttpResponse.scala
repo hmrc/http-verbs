@@ -112,26 +112,3 @@ object HttpResponse {
   def unapply(that: HttpResponse): Option[(Int, String, Map[String, Seq[String]])] =
     Some((that.status, that.body, that.headers))
 }
-
-/*
-class DummyHttpResponse(
-  override val body: String,
-  override val status: Int,
-  override val allHeaders: Map[String, Seq[String]] = Map.empty)
-    extends HttpResponse {
-  override def json: JsValue = Json.parse(body)
-}
-*/
-/*
-class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
-
-  @silent("deprecated") // is required for Play 2.5
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
-
-  override def status = wsResponse.status
-
-  override def json = wsResponse.json
-
-  override def body = wsResponse.body
-}
-*/

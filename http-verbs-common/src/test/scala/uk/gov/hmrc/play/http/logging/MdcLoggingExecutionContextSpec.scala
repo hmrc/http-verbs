@@ -137,11 +137,11 @@ class MdcLoggingExecutionContextSpec
   def logEventInsideAFutureUsing(ec: ExecutionContext) {
     Await.ready(Future {
       LoggerFactory.getLogger(classOf[MdcLoggingExecutionContextSpec]).info("")
-    }(ec), 2 second)
+    }(ec), 2.second)
   }
 
   def doSomethingInsideAFutureButDontLog(ec: ExecutionContext) {
-    Await.ready(Future {}(ec), 2 second)
+    Await.ready(Future {}(ec), 2.second)
   }
 
   def throwAnExceptionInATaskOn(ec: ExecutionContext) {
@@ -156,7 +156,7 @@ class MdcLoggingExecutionContextSpec
     * ThreadLocal.
     */
   def initialise(ec: ExecutionContext) {
-    Await.ready(Future {}(ec), 2 second)
+    Await.ready(Future {}(ec), 2.second)
   }
 
   def withCaptureOfLoggingFrom[T: ClassTag](body: (=> List[(ILoggingEvent, Map[String, String])]) => Any) = {
@@ -173,6 +173,7 @@ class MdcLoggingExecutionContextSpec
     logger.addAppender(appender)
     logger.setLevel(Level.ALL)
     logger.setAdditive(true)
+    import scala.language.reflectiveCalls
     body(appender.list.toList)
   }
 }

@@ -49,5 +49,3 @@ object WSHttpResponse {
       headers = wsResponse.allHeaders
     )
 }
-
-trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch

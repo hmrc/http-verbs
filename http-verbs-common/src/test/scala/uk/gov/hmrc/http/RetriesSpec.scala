@@ -33,6 +33,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Random, Try}
 
+import uk.gov.hmrc.http.HttpReads.Implicits._
+
 class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
   import ExecutionContext.Implicits.global
 
@@ -157,7 +159,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
         override val actorSystem                  = ActorSystem("test-actor-system")
       }
 
-      val expectedResponse = HttpResponse(404)
+      val expectedResponse = HttpResponse(404, "")
       val resultF =
         retries.retry("GET", "url") {
           retries.failFewTimesAndThenSucceed(
@@ -185,7 +187,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       mdcData.foreach { case (k, v) => MDC.put("key1", "value1") }
       val mdcEc = new uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext(implicitly[ExecutionContext], mdcData)
 
-      val expectedResponse = HttpResponse(404)
+      val expectedResponse = HttpResponse(404, "")
 
       val resultF =
         retries.retry("GET", "url") {
@@ -215,7 +217,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
         override def doGet(url: String, headers: Seq[(String, String)])(
           implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -233,7 +235,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
         override def doDelete(url: String, headers: Seq[(String, String)])(
           implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -251,7 +253,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
         override def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(
           implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -271,7 +273,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
         override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(
           implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -291,7 +293,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
           hc: HeaderCarrier,
           ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -310,7 +312,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
           implicit hc: HeaderCarrier,
           ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -332,7 +334,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
             implicit hc: HeaderCarrier,
             ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }
@@ -353,7 +355,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
             implicit hc: HeaderCarrier,
             ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
-            success   = Future.successful(HttpResponse(404)),
+            success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
           )
       }

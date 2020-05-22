@@ -26,46 +26,11 @@ import play.api.libs.json.{JsString, Json}
 class HttpResponseSpec extends AnyWordSpec with Matchers {
   "unapply" should {
     "return matching object in" in {
-      HttpResponse(1, Some(JsString("test json")), Map("a" -> List("1", "2", "3")), Some("test body")) match {
-        case HttpResponse(status, json, headers, body) => {
+      HttpResponse(status = 1, body = "test body", headers = Map("a" -> List("1", "2", "3"))) match {
+        case HttpResponse(status, body, headers) =>
           status  shouldBe 1
-          json    shouldBe JsString("test json")
-          headers shouldBe Map("a" -> List("1", "2", "3"))
           body    shouldBe "test body"
-        }
-      }
-    }
-
-    "return matching object when json is null" in {
-      HttpResponse(1, None, Map("a" -> List("1", "2", "3")), Some("test body")) match {
-        case HttpResponse(status, json, headers, body) => {
-          status  shouldBe 1
-          json    shouldBe null
           headers shouldBe Map("a" -> List("1", "2", "3"))
-          body    shouldBe "test body"
-        }
-      }
-    }
-
-    "return matching object with response json as response body when response string is None" in {
-      HttpResponse(1, Some(JsString("test json")), Map("a" -> List("1", "2", "3")), None) match {
-        case HttpResponse(status, json, headers, body) => {
-          status  shouldBe 1
-          json    shouldBe JsString("test json")
-          headers shouldBe Map("a" -> List("1", "2", "3"))
-          body    shouldBe Json.prettyPrint(JsString("test json"))
-        }
-      }
-    }
-
-    "return matching object with response json and response body are null" in {
-      HttpResponse(1, None, Map("a" -> List("1", "2", "3")), None) match {
-        case HttpResponse(status, json, headers, body) => {
-          status  shouldBe 1
-          json    shouldBe null
-          headers shouldBe Map("a" -> List("1", "2", "3"))
-          body    shouldBe null
-        }
       }
     }
   }
