@@ -23,7 +23,9 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 ### Version 11.0.0
 
-The default implicits for `HttpRead` have been deprecated. There are new implicits, which need to be pulled in explicitly with
+#### HttpReads
+
+The default implicits for `HttpReads` have been deprecated. There are new implicits, which need to be pulled in explicitly with
 ```scala
 import uk.gov.hmrc.http.HttpReads.Implicits._
 ```
@@ -37,6 +39,15 @@ implicit val legacyRawReads = HttpReads.throwOnFailure(HttpReads.readEither)
 * There is an `HttpReads[Either[UpstreamErrorResponse, JsResult[A]]]` defined for reading Json responses, which additionally will return all Json errors as JsError.
 * For previous behaviour, use `HttpReads[A]`, which will throw exceptions for all errors.
 
+#### HttpResponse
+
+The trait for HttpResponse will be replaced with a case class. You should only create instances with the `HttpResponse.apply` function, and not extend it.
+If your clients previously relied on an instance of `WSHttpResponse` being returned, they will have to change to use the `HttpResponse` abstraction.
+
+#### Exceptions
+
+The new `HttpReads` instances only return `UpstreamErrorResponse` for failures returned from upstream services. They will no longer return `HttpException` which will be reserved for problems in making the request (e.g. `GatewayTimeoutException` for timeout exceptions and `BadGatewayException` for connect exceptions), and originate in the service itself.
+The trait `UpstreamErrorResponse` will be replaced with a case class, and the subclasses `Upstream4xxResponse` and `Upstream5xxResponse` have been deprecated in preparation. If you need to pattern match on these types, use `UpstreamErrorResponse.Upstream4xxResponse` and `UpstreamErrorResponse.Upstream5xxResponse` instead.
 
 
 ## Adding to your build

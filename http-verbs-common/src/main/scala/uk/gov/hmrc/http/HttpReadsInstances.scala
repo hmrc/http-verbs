@@ -19,8 +19,7 @@ package uk.gov.hmrc.http
 import play.api.libs.json
 import play.api.libs.json.{JsError, JsResult, JsSuccess}
 
-// Note, we're not doing the readRaw trick - i.e. we expect calls to GET to explicitly specify the type, not defaulting to HttpResponse
-// we should be explicit about how exceptions should be handled etc.
+// Note, we're not doing the readRaw trick - we expect calls to GET to explicitly specify the type, not defaulting to HttpResponse
 trait HttpReadsInstances extends HttpReadsHttpResponse with HttpReadsEither with HttpReadsOption with HttpReadsJson
 
 object HttpReadsInstances extends HttpReadsInstances
