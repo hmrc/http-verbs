@@ -20,7 +20,7 @@ lazy val commonSettings = Seq(
     Resolver.bintrayRepo("hmrc", "releases"),
     Resolver.typesafeRepo("releases")
   ),
-  scalacOptions ++= Seq("-deprecation", "-feature"),
+  scalacOptions ++= Seq("-feature"),
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
     "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
