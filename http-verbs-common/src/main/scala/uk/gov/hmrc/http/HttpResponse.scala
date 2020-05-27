@@ -35,7 +35,6 @@ trait HttpResponse {
 
   @deprecated("For reading use headers instead. If setting, use HttpResponse.apply instead. You should not extend HttpResponse, but create instances with HttpResponse.apply", "11.0.0")
   def allHeaders: Map[String, Seq[String]]
-    = headers
 
   // final to help migrate away from allHeaders (i.e. read only - set via HttpResponse.apply)
   @silent("deprecated")

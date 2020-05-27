@@ -31,7 +31,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 ```
 The behaviour of the implicits is not quite the same as the deprecated ones:
 * You will have to explicitly state the type of the reponse - it will not resolve to `HttpResponse` if none is specified.
-* The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. You may get the previous behaviour with
+* The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. To get the behaviour similar to previous (see Exceptions for differences), use:
 ```scala
 implicit val legacyRawReads = HttpReads.throwOnFailure(HttpReads.readEither)
 ```

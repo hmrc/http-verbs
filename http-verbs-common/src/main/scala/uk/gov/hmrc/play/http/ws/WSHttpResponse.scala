@@ -37,6 +37,9 @@ class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
 object WSHttpResponse {
   @silent("deprecated") // allHeaders is required for Play 2.5
   def apply(wsResponse: WSResponse): HttpResponse =
+    // Note that HttpResponse defines `def json` as `Json.parse(body)` - this may be different from wsResponse.json depending on version.
+    // https://github.com/playframework/play-ws/commits/master/play-ws-standalone-json/src/main/scala/play/api/libs/ws/JsonBodyReadables.scala shows that is was redefined
+    // to handle an encoding issue, but subsequently reverted.
     HttpResponse(
       status  = wsResponse.status,
       body    = wsResponse.body,
