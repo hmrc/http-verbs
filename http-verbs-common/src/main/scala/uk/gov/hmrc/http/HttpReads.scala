@@ -52,10 +52,7 @@ trait HttpReads[A] {
   def read(method: String, url: String, response: HttpResponse): A
 
   def map[B](fn: A => B): HttpReads[B] =
-    new HttpReads[B] {
-      def read(method: String, url: String, response: HttpResponse): B =
-        fn(outer.read(method, url, response))
-    }
+    flatMap(a => HttpReads.pure(fn(a)))
 
   def flatMap[B](fn: A => HttpReads[B]): HttpReads[B] =
     new HttpReads[B] {

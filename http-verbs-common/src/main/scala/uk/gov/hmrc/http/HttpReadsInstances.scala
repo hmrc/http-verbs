@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.http
 
-import play.api.libs.json
-import play.api.libs.json.{JsError, JsResult, JsSuccess}
+import play.api.libs.json.{JsValue, JsError, JsResult, JsSuccess, Reads => JsonReads}
+import scala.util.{Failure, Success, Try}
 
 trait HttpReadsInstances extends HttpReadsHttpResponse with HttpReadsEither with HttpReadsOption with HttpReadsJson
 
@@ -64,6 +64,10 @@ trait HttpReadsOption {
 }
 
 trait HttpReadsJson {
+  implicit val readJson: HttpReads[Either[UpstreamErrorResponse, JsValue]] =
+    HttpReads[Either[UpstreamErrorResponse, HttpResponse]]
+      .map(_.right.map(_.json))
+
   /** Note to read json regardless of error response - can define your own:
     * {{{
     *   HttpReads[HttpResponse].map(_.json.validate[A])
@@ -77,20 +81,23 @@ trait HttpReadsJson {
     * })
     * }}}
     */
-  implicit def readFromJsonSafe[A : json.Reads]: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]] =
-    HttpReads[Either[UpstreamErrorResponse, HttpResponse]].map(_.right.map(_.json.validate[A]))
+  implicit def readJsonWithValidate[A : JsonReads]: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]] =
+    HttpReads[Either[UpstreamErrorResponse, JsValue]]
+      .map(_.right.map(_.validate[A]))
 
-  /** variant of [[readFromJsonSafe]] which throws all failures as exceptions */
-  implicit def readFromJson[A](implicit rds: json.Reads[A], mf: Manifest[A]): HttpReads[A] =
-    throwOnJsonFailure(readFromJsonSafe)
-
-  def throwOnJsonFailure[A](reads: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]])(implicit mf: Manifest[A]): HttpReads[A] =
-    reads
+  implicit def readFromJsonAsTry[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[Try[A]] =
+    HttpReads[Either[UpstreamErrorResponse, JsResult[A]]]
       .flatMap {
-        case Left(err)                  => throw err
+        case Left(err)                  => HttpReads.pure(err).map(Failure.apply)
         case Right(JsError(errors))     => HttpReads.ask.map { case (method, url, response) =>
-                                             throw new JsValidationException(method, url, mf.runtimeClass, errors.toString)
+                                             Failure(new JsValidationException(method, url, mf.runtimeClass, errors.toString))
                                            }
-        case Right(JsSuccess(value, _)) => HttpReads.pure(value)
+        case Right(JsSuccess(value, _)) => HttpReads.pure(value).map(Success.apply)
       }
+
+  /** Variant of [[readFromJsonSafe]] which throws all failures as exceptions.
+    * This is probably the typical instance to use, since all http calls occur within `Future`, allowing recovery.
+    */
+  implicit def readFromJson[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[A] =
+    readFromJsonAsTry.map(_.get)
 }
