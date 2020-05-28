@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import com.github.ghik.silencer.silent
 import uk.gov.hmrc.http.HttpExceptions._
 
 private object HttpExceptions {
@@ -166,6 +167,7 @@ object UpstreamErrorResponse {
       headers    = Map.empty
     )
 
+  @silent("deprecated")
   def apply(message: String, statusCode: Int, reportAs: Int, headers: Map[String, Seq[String]]): UpstreamErrorResponse =
     if (statusCode >= 400 && statusCode < 500)
       uk.gov.hmrc.http.Upstream4xxResponse(

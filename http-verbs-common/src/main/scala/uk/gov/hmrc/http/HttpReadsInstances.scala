@@ -95,7 +95,7 @@ trait HttpReadsJson {
         case Right(JsSuccess(value, _)) => HttpReads.pure(value).map(Success.apply)
       }
 
-  /** Variant of [[readFromJsonSafe]] which throws all failures as exceptions.
+  /** Variant of [[readFromJsonAsTry]] which throws all failures as exceptions.
     * This is probably the typical instance to use, since all http calls occur within `Future`, allowing recovery.
     */
   implicit def readFromJson[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[A] =
