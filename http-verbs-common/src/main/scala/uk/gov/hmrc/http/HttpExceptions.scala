@@ -178,14 +178,14 @@ object UpstreamErrorResponse {
 
   @silent("deprecated")
   def apply(message: String, statusCode: Int, reportAs: Int, headers: Map[String, Seq[String]]): UpstreamErrorResponse =
-    if (statusCode >= 400 && statusCode < 500)
+    if (HttpErrorFunctions.is4xx(statusCode))
       uk.gov.hmrc.http.Upstream4xxResponse(
         message              = message,
         upstreamResponseCode = statusCode,
         reportAs             = reportAs,
         headers              = headers
       )
-    else if (statusCode >= 500 && statusCode < 600)
+    else if (HttpErrorFunctions.is5xx(statusCode))
       uk.gov.hmrc.http.Upstream5xxResponse(
         message              = message,
         upstreamResponseCode = statusCode,

@@ -19,7 +19,13 @@ package uk.gov.hmrc.http
 import play.api.libs.json.{JsValue, JsError, JsResult, JsSuccess, Reads => JsonReads}
 import scala.util.{Failure, Success, Try}
 
-trait HttpReadsInstances extends HttpReadsHttpResponse with HttpReadsEither with HttpReadsOption with HttpReadsJson
+trait HttpReadsInstances
+  extends HttpReadsHttpResponse
+     with HttpReadsEither
+     with HttpReadsTry
+     with HttpReadsOption
+     with HttpReadsJson
+     with LowPriorityHttpReadsJson
 
 object HttpReadsInstances extends HttpReadsInstances
 
@@ -29,6 +35,12 @@ trait HttpReadsHttpResponse {
   /** returns the HttpResponse as is - you will be responsible for checking any status codes. */
   implicit val readRaw: HttpReads[HttpResponse] =
     HttpReads.ask.map { case (_, _, response) => response }
+
+  /** Ignores the response and returns Unit - useful for handling 204 etc.
+    * It can be combined with error handling types (e.g. `Either[UpstreamErrorResponse, Unit]`)
+    */
+  implicit val readUnit: HttpReads[Unit] =
+    HttpReads.pure(())
 }
 
 trait HttpReadsEither {
@@ -48,25 +60,34 @@ trait HttpReadsEither {
       }
 }
 
+trait HttpReadsTry {
+  implicit def readTryOf[A : HttpReads]: HttpReads[Try[A]] =
+    new HttpReads[Try[A]] {
+      def read(method: String, url: String, response: HttpResponse): Try[A] =
+        Try(HttpReads[A].read(method, url, response))
+    }
+}
+
 trait HttpReadsOption {
-  /** An opinionated HttpReads which returns None for 404/204.
+  /** An opinionated HttpReads which returns None for 404.
+    * This does not have any special treatment for 204, as did the previous version.
     * If you need a None for any UpstreamErrorResponse, consider using:
     * {{{
     *  HttpReads[Either[UpstreamErrorResponse, A]].map(_.toOption)
     * }}}
     */
-  implicit def readOptionOf[A : HttpReads]: HttpReads[Option[A]] =
+  implicit def readOptionOfNotFound[A : HttpReads]: HttpReads[Option[A]] =
     HttpReads[HttpResponse]
       .flatMap(_.status match {
-        case 204 | 404 => HttpReads.pure(None)
-        case _         => HttpReads[A].map(Some.apply) // this delegates error handling to HttpReads[A]
+        case 404 => HttpReads.pure(None)
+        case _   => HttpReads[A].map(Some.apply) // this delegates error handling to HttpReads[A]
       })
 }
 
 trait HttpReadsJson {
-  implicit val readJson: HttpReads[Either[UpstreamErrorResponse, JsValue]] =
-    HttpReads[Either[UpstreamErrorResponse, HttpResponse]]
-      .map(_.right.map(_.json))
+  implicit val readJsValue: HttpReads[JsValue] =
+    HttpReads[HttpResponse]
+      .map(_.json)
 
   /** Note to read json regardless of error response - can define your own:
     * {{{
@@ -81,23 +102,24 @@ trait HttpReadsJson {
     * })
     * }}}
     */
-  implicit def readJsonWithValidate[A : JsonReads]: HttpReads[Either[UpstreamErrorResponse, JsResult[A]]] =
-    HttpReads[Either[UpstreamErrorResponse, JsValue]]
-      .map(_.right.map(_.validate[A]))
+  implicit def readJsResult[A : JsonReads]: HttpReads[JsResult[A]] =
+    HttpReads[JsValue]
+      .map(_.validate[A])
+}
 
-  implicit def readFromJsonAsTry[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[Try[A]] =
+trait LowPriorityHttpReadsJson {
+
+  /** This is probably the typical instance to use, since all http calls occur within `Future`, allowing recovery.
+    */
+  @throws(classOf[UpstreamErrorResponse])
+  @throws(classOf[JsValidationException])
+  implicit def readFromJson[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[A] =
     HttpReads[Either[UpstreamErrorResponse, JsResult[A]]]
       .flatMap {
-        case Left(err)                  => HttpReads.pure(err).map(Failure.apply)
+        case Left(err)                  => throw err
         case Right(JsError(errors))     => HttpReads.ask.map { case (method, url, response) =>
-                                             Failure(new JsValidationException(method, url, mf.runtimeClass, errors.toString))
+                                             throw new JsValidationException(method, url, mf.runtimeClass, errors.toString)
                                            }
-        case Right(JsSuccess(value, _)) => HttpReads.pure(value).map(Success.apply)
+        case Right(JsSuccess(value, _)) => HttpReads.pure(value)
       }
-
-  /** Variant of [[readFromJsonAsTry]] which throws all failures as exceptions.
-    * This is probably the typical instance to use, since all http calls occur within `Future`, allowing recovery.
-    */
-  implicit def readFromJson[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[A] =
-    readFromJsonAsTry.map(_.get)
 }
