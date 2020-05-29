@@ -126,8 +126,17 @@ class InsufficientStorageException(message: String) extends HttpException(messag
 // They should be created via UpstreamErrorResponse.apply and deconstructed via the UpstreamErrorResponse.unapply functions
 sealed trait UpstreamErrorResponse extends Exception {
   def message: String
+
+  @deprecated("Use statusCode instead", "11.0.0")
   def upstreamResponseCode: Int
+
+  // final to help migrate away from upstreamResponseCode (i.e. read only - set via UpstreamErrorResponse.apply)
+  @silent("deprecated")
+  final def statusCode: Int =
+    upstreamResponseCode
+
   def reportAs: Int
+
   def headers: Map[String, Seq[String]]
 
   override def getMessage = message
@@ -186,20 +195,20 @@ object UpstreamErrorResponse {
     else throw new IllegalArgumentException(s"Unsupported statusCode $statusCode")
 
   def unapply(e: UpstreamErrorResponse): Option[(String, Int, Int, Map[String, Seq[String]])] =
-    Some((e.message, e.upstreamResponseCode, e.reportAs, e.headers))
+    Some((e.message, e.statusCode, e.reportAs, e.headers))
 
   object Upstream4xxResponse {
     def unapply(e: UpstreamErrorResponse): Option[UpstreamErrorResponse] =
-      if (e.upstreamResponseCode >= 400 && e.upstreamResponseCode < 500) Some(e) else None
+      if (e.statusCode >= 400 && e.statusCode < 500) Some(e) else None
   }
 
   object Upstream5xxResponse {
     def unapply(e: UpstreamErrorResponse): Option[UpstreamErrorResponse] =
-      if (e.upstreamResponseCode >= 500 && e.upstreamResponseCode < 600) Some(e) else None
+      if (e.statusCode >= 500 && e.statusCode < 600) Some(e) else None
   }
 
   object WithStatusCode {
     def unapply(e: UpstreamErrorResponse): Option[(Int, UpstreamErrorResponse)] =
-      Some((e.upstreamResponseCode, e))
+      Some((e.statusCode, e))
   }
 }
