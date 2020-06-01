@@ -26,11 +26,11 @@ import uk.gov.hmrc.http._
 
 import scala.util.{Failure, Success}
 
-class ConnectionTracingTest extends AnyWordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {
+class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {
 
   val mockPlayLogger = mock[Logger]
 
-  val logger = new ConnectionTracing {
+  val connectionTracing = new ConnectionTracing {
     override lazy val connectionLogger = mockPlayLogger
   }
 
@@ -45,10 +45,9 @@ class ConnectionTracingTest extends AnyWordSpecLike with Matchers with MockitoSu
 
       val httpResult = Success("response")
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).debug("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:ok")
-
     }
 
     "log 404 error as INFO" in {
@@ -57,58 +56,53 @@ class ConnectionTracingTest extends AnyWordSpecLike with Matchers with MockitoSu
 
       val httpResult = Failure(new NotFoundException("not found"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed not found")
-
     }
 
     "log 404 upstream error as INFO" in {
 
       val ld = new StubLoggingDetails()
 
-      val httpResult = Failure(new Upstream4xxResponse("404 error", 404, 404))
+      val httpResult = Failure(UpstreamErrorResponse(message = "404 error", statusCode = 404, reportAs = 404))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 404 error")
-
     }
 
     "log 401 upstream error as WARN" in {
 
       val ld = new StubLoggingDetails()
 
-      val httpResult = Failure(new Upstream4xxResponse("401 error", 401, 401))
+      val httpResult = Failure(UpstreamErrorResponse(message = "401 error", statusCode = 401, reportAs = 401))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 401 error")
-
     }
 
     "log 400 error as WARN" in {
 
       val ld = new StubLoggingDetails()
 
-      val httpResult = Failure(new BadRequestException("400 error"))
+      val httpResult = Failure(UpstreamErrorResponse(message = "400 error", statusCode = 400, reportAs = 400))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 400 error")
-
     }
 
     "log 500 upstream error as WARN" in {
 
       val ld = new StubLoggingDetails()
 
-      val httpResult = Failure(new Upstream5xxResponse("500 error", 500, 500))
+      val httpResult = Failure(UpstreamErrorResponse(message = "500 error", statusCode = 500, reportAs = 500))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 500 error")
-
     }
 
     "log 502 error as WARN" in {
@@ -117,10 +111,9 @@ class ConnectionTracingTest extends AnyWordSpecLike with Matchers with MockitoSu
 
       val httpResult = Failure(new BadGatewayException("502 error"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 502 error")
-
     }
 
     "log unrecognised exception as WARN" in {
@@ -129,12 +122,10 @@ class ConnectionTracingTest extends AnyWordSpecLike with Matchers with MockitoSu
 
       val httpResult = Failure(new Exception("unknown error"))
 
-      logger.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
 
       verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed unknown error")
-
     }
-
   }
 
   private class StubLoggingDetails extends LoggingDetails {
@@ -150,5 +141,4 @@ class ConnectionTracingTest extends AnyWordSpecLike with Matchers with MockitoSu
 
     override def requestChain: RequestChain = new RequestChain("requestChain")
   }
-
 }

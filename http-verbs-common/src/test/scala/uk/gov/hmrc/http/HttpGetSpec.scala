@@ -45,6 +45,8 @@ import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import uk.gov.hmrc.http.HttpReads.Implicits._
+
 class HttpGetSpec
     extends AnyWordSpecLike
     with Matchers
@@ -96,27 +98,27 @@ class HttpGetSpec
 
   "HttpGet" should {
     "be able to return plain responses" in {
-      val response = new DummyHttpResponse(testBody, 200)
+      val response = HttpResponse(200, testBody)
       val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET(url, Seq("header" -> "foo")).futureValue shouldBe response
+      testGet.GET[HttpResponse](url, Seq("header" -> "foo")).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
-      val testGet = new StubbedHttpGet(Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200)))
+      val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
       testGet.GET[TestClass](url, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
     }
     behave like anErrorMappingHttpCall(
       "GET",
-      (url, responseF) => new StubbedHttpGet(responseF).GET(url, Seq("header" -> "foo")))
+      (url, responseF) => new StubbedHttpGet(responseF).GET[HttpResponse](url, Seq("header" -> "foo")))
     behave like aTracingHttpCall("GET", "GET", new StubbedHttpGet(defaultHttpResponse)) {
-      _.GET(url, Seq("header" -> "foo"))
+      _.GET[HttpResponse](url, Seq("header" -> "foo"))
     }
 
     "Invoke any hooks provided" in {
-      val dummyResponse = new DummyHttpResponse(testBody, 200)
+      val dummyResponse = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testGet = new StubbedHttpGet(dummyResponseFuture)
 
-      testGet.GET(url).futureValue
+      testGet.GET[HttpResponse](url).futureValue
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
@@ -135,14 +137,14 @@ class HttpGetSpec
     "return an empty string if the query parameters is empty" in {
       val expected = Some("http://test.net")
       val testGet = new UrlTestingHttpGet()
-      testGet.GET("http://test.net", Seq())
+      testGet.GET[HttpResponse]("http://test.net", Seq())
       testGet.lastUrl shouldBe expected
     }
 
     "return a url with a single param pair" in {
       val expected = Some("http://test.net?one=1")
       val testGet = new UrlTestingHttpGet()
-      testGet.GET("http://test.net", Seq(("one", "1")))
+      testGet.GET[HttpResponse]("http://test.net", Seq(("one", "1")))
       testGet.lastUrl shouldBe expected
     }
 
@@ -150,7 +152,7 @@ class HttpGetSpec
       val expected = Some("http://test.net?one=1&two=2&three=3")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET("http://test.net", Seq(("one", "1"), ("two", "2"), ("three", "3")))
+        .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("three", "3")))
       testGet.lastUrl shouldBe expected
     }
 
@@ -159,7 +161,7 @@ class HttpGetSpec
         Some("http://test.net?email=test%2Balias%40email.com&data=%7B%22message%22%3A%22in+json+format%22%7D")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET(
+        .GET[HttpResponse](
           "http://test.net",
           Seq(("email", "test+alias@email.com"), ("data", "{\"message\":\"in json format\"}")))
       testGet.lastUrl shouldBe expected
@@ -169,7 +171,7 @@ class HttpGetSpec
       val expected = Some("http://test.net?one=1&two=2&one=11")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")))
+        .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")))
       testGet.lastUrl shouldBe expected
     }
 
@@ -177,14 +179,14 @@ class HttpGetSpec
       val testGet = new UrlTestingHttpGet()
 
       a[UrlValidationException] should be thrownBy testGet
-        .GET("http://test.net?should=not=be+here", Seq(("one", "1")))
+        .GET[HttpResponse]("http://test.net?should=not=be+here", Seq(("one", "1")))
     }
 
 
     "be able to return plain responses provided already has Query and Header String" in {
-      val response = new DummyHttpResponse(testBody, 200)
+      val response = HttpResponse(200, testBody)
       val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET(url, Seq(("one", "1")), Seq("header" -> "foo")).futureValue shouldBe response
+      testGet.GET[HttpResponse](url, Seq(("one", "1")), Seq("header" -> "foo")).futureValue shouldBe response
     }
   }
 }

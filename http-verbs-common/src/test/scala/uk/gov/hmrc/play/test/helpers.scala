@@ -21,18 +21,6 @@ import uk.gov.hmrc.http._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object Concurrent {
-  import scala.concurrent.{Await, Future}
-  import scala.concurrent.duration._
-
-  val defaultTimeout = 5 seconds
-
-  implicit def extractAwait[A](future: Future[A]) = await[A](future)
-  implicit def liftFuture[A](v: A)                = Future.successful(v)
-
-  def await[A](future: Future[A]) = Await.result(future, defaultTimeout)
-}
-
 trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch with CoreDelete with Request {
 
   override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = Nil

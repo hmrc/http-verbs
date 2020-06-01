@@ -3,7 +3,7 @@ http-verbs
 
 [![Build Status](https://travis-ci.org/hmrc/http-verbs.svg)](https://travis-ci.org/hmrc/http-verbs) [ ![Download](https://api.bintray.com/packages/hmrc/releases/http-verbs/images/download.svg) ](https://bintray.com/hmrc/releases/http-verbs/_latestVersion)
 
-http-verbs is a Scala library providing an interface to make asynchronous HTTP calls. 
+http-verbs is a Scala library providing an interface to make asynchronous HTTP calls.
 
 It encapsulates some common concerns for calling other HTTP services on the HMRC Tax Platform, including:
 
@@ -18,7 +18,39 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 * Propagation of common headers
 * Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be * automatically propagated to the caller
 * Request & Response de-serializations
-    
+
+## Migration
+
+### Version 11.0.0
+
+#### HttpReads
+
+The default implicits for `HttpReads` have been deprecated. There are new implicits, which need to be pulled in explicitly with
+```scala
+import uk.gov.hmrc.http.HttpReads.Implicits._
+```
+The behaviour of the predefined implicits are not quite the same as the deprecated ones, and you are encouraged to define your own HttpReads if none are apropriate. The differences are:
+* You will have to explicitly state the type of the reponse - it will not resolve to `HttpResponse` if none is specified. (i.e. `GET(url)` will now be `GET[HttpResponse](url)`). It is deemed better to be explicit since the type will dictate how errors are handled.
+* The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. To get the behaviour similar to previous (see Exceptions for differences), use:
+```scala
+implicit val legacyRawReads = HttpReads.throwOnFailure(HttpReads.readEither)
+```
+* `HttpReads[Option[A]]` only returns None for 404, and will try to parse other responses. Previously, 204 was also treated as None, consider representing this with Unit instead.
+* The `HttpReads[A]` where `A` is defined by a `play.api.libs.json.Reads[A]` works in the same way as before, i.e. throws exceptions for non-2xx response codes (`UpstreamErrorResponse`), and json parsing errors (`JsValidationException`). Since the http-verbs API operates within `Future`, this is probably the simplest response type, since Future offers recovery, and if not handled, will propagate to the caller. However the HttpReads can be combined with other HttpReads to return the errors in different ways. E.g.
+  * `HttpReads[Either[UpstreamErrorResponse, JsResult[A]]]`
+  * `HttpReads[Try[JsResult[A]]]`,
+These error encoded types are available for any response type not just json
+
+#### HttpResponse
+
+The trait for HttpResponse will be replaced with a case class. You should only create instances with the `HttpResponse.apply` function, and not extend it.
+If your clients previously relied on an instance of `WSHttpResponse` being returned, they will have to change to use the `HttpResponse` abstraction.
+
+#### Exceptions
+
+The new `HttpReads` instances only return `UpstreamErrorResponse` for failures returned from upstream services. They will no longer return `HttpException` which will be reserved for problems in making the request (e.g. `GatewayTimeoutException` for timeout exceptions and `BadGatewayException` for connect exceptions), and originate in the service itself.
+The trait `UpstreamErrorResponse` will be replaced with a case class, and the subclasses `Upstream4xxResponse` and `Upstream5xxResponse` have been deprecated in preparation. If you need to pattern match on these types, use `UpstreamErrorResponse.Upstream4xxResponse` and `UpstreamErrorResponse.Upstream5xxResponse` instead.
+
 
 ## Adding to your build
 
@@ -35,6 +67,5 @@ libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "x.x.x"
 All examples are available here:[hmrc/http-verbs-example](https://github.com/hmrc/http-verbs-example)
 
 ## License ##
- 
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
 
+This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

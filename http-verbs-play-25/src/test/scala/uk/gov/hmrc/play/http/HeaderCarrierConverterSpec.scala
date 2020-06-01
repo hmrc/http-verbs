@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.play.http
 
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.mvc.{Action, Controller, Cookie, Session}
 import play.api.test.Helpers._
 import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
@@ -26,7 +27,7 @@ import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import scala.concurrent.duration._
 
-class HeaderCarrierConverterSpec extends WordSpecLike with Matchers {
+class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
 
   "Extracting the request timestamp from the session and headers" should {
     "find it in the header if present and a valid Long" in {

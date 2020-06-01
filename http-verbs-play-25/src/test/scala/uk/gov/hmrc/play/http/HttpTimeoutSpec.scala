@@ -31,6 +31,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.TestHttpCore
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class HttpTimeoutSpec extends AnyWordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
@@ -69,20 +71,15 @@ class HttpTimeoutSpec extends AnyWordSpecLike with Matchers with ScalaFutures wi
         val start = System.currentTimeMillis()
         intercept[TimeoutException] {
           //make request to web server
-          import uk.gov.hmrc.play.test.Concurrent.await
-          await(http.doPost(s"$publicUri/test", "{name:'ping'}", Seq()))
+          Await.result(http.doPost(s"$publicUri/test", "{name:'ping'}", Seq()), 5.seconds)
         }
         val diff = (System.currentTimeMillis() - start).toInt
         // there is test execution delay around 700ms
         diff should be >= 1000
         diff should be < 2500
-
       } finally {
         ws.stop()
       }
-
     }
-
   }
-
 }

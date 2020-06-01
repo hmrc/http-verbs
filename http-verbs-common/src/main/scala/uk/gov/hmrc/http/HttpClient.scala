@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc
+package uk.gov.hmrc.http
 
-import uk.gov.hmrc.http.logging.ConnectionTracing
-
-package object http {
-  @deprecated("Re-named to ConnectionTracing", "23/04/2014")
-  type ConnectionLogging = ConnectionTracing
-}
+trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch

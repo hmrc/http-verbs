@@ -29,6 +29,8 @@ import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import uk.gov.hmrc.http.HttpReads.Implicits._
+
 class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour {
   import ExecutionContext.Implicits.global
 
@@ -49,30 +51,30 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
   "HttpPatch" should {
     val testObject = TestRequestClass("a", 1)
     "be able to return plain responses" in {
-      val response  = new DummyHttpResponse(testBody, 200)
+      val response  = HttpResponse(200, testBody)
       val testPatch = new StubbedHttpPatch(Future.successful(response), Future.successful(response))
-      testPatch.PATCH(url, testObject, Seq("header" -> "foo")).futureValue shouldBe response
+      testPatch.PATCH[TestRequestClass, HttpResponse](url, testObject, Seq("header" -> "foo")).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
-      val response= Future.successful(new DummyHttpResponse("""{"foo":"t","bar":10}""", 200))
+      val response= Future.successful(HttpResponse(200, """{"foo":"t","bar":10}"""))
       val testPatch = new StubbedHttpPatch(response, response)
       testPatch.PATCH[TestRequestClass, TestClass](url, testObject, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(
       "PATCH",
-      (url, responseF) => new StubbedHttpPatch(responseF, responseF).PATCH(url, testObject, Seq("header" -> "foo")))
+      (url, responseF) => new StubbedHttpPatch(responseF, responseF).PATCH[TestRequestClass, HttpResponse](url, testObject, Seq("header" -> "foo")))
     behave like aTracingHttpCall("PATCH", "PATCH", new StubbedHttpPatch(defaultHttpResponse, defaultHttpResponse)) {
-      _.PATCH(url, testObject, Seq("header" -> "foo"))
+      _.PATCH[TestRequestClass, HttpResponse](url, testObject, Seq("header" -> "foo"))
     }
 
     "Invoke any hooks provided" in {
-      val dummyResponse       = new DummyHttpResponse(testBody, 200)
+      val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPatch           = new StubbedHttpPatch(dummyResponseFuture, dummyResponseFuture)
       val testJson            = Json.stringify(trcreads.writes(testObject))
 
-      testPatch.PATCH(url, testObject, Seq("header" -> "foo")).futureValue
+      testPatch.PATCH[TestRequestClass, HttpResponse](url, testObject, Seq("header" -> "foo")).futureValue
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])

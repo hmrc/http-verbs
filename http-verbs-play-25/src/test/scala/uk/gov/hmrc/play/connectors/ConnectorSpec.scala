@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.play.connectors
 
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
-class ConnectorSpec extends WordSpecLike with Matchers {
+class ConnectorSpec extends AnyWordSpecLike with Matchers {
   class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc: ((=> Any) => Any)) {
     def setup(f:                                                                      => Any) = setupFunc(f)
   }
@@ -31,7 +32,6 @@ class ConnectorSpec extends WordSpecLike with Matchers {
   def withoutFakeApp(f: => Any)        = f
 
   val permutations = Seq(
-    new TestConfig("Deprecated Connector", new Connector {}, withFakeApp),
     new TestConfig("PlayWS Request Builder", new PlayWSRequestBuilder {}, withFakeApp),
     new TestConfig(
       "WSClient Request Builder",

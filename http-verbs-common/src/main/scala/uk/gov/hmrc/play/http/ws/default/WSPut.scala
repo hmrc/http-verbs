@@ -32,7 +32,7 @@ trait WSPut extends CorePut with PutHttpTransport with WSRequestBuilder with WSE
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(Json.toJson(body)), "PUT")
-      .map(new WSHttpResponse(_))
+      .map(WSHttpResponse.apply)
 
   override def doPutString(
     url: String,
@@ -40,5 +40,5 @@ trait WSPut extends CorePut with PutHttpTransport with WSRequestBuilder with WSE
     headers: Seq[(String, String)])(
       implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(body), "PUT")
-      .map(new WSHttpResponse(_))
+      .map(WSHttpResponse.apply)
 }

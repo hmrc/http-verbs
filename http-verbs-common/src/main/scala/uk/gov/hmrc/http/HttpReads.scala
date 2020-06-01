@@ -16,56 +16,47 @@
 
 package uk.gov.hmrc.http
 
-import play.api.libs.json
-import play.api.libs.json.{JsNull, JsValue}
+import com.github.ghik.silencer.silent
 
-object HttpReads extends OptionHttpReads with JsonHttpReads {
+object HttpReads extends HttpReadsLegacyInstances {
+  def apply[A : HttpReads] =
+    implicitly[HttpReads[A]]
+
+  def pure[A](a: A) =
+    new HttpReads[A] {
+      def read(method: String, url: String, response: HttpResponse): A =
+        a
+    }
+
+  // i.e. HttpReads[A] = Reader[(Method, Url, HttpResponse), A]
+  def ask: HttpReads[(String, String, HttpResponse)] =
+    new HttpReads[(String, String, HttpResponse)] {
+      def read(method: String, url: String, response: HttpResponse): (String, String, HttpResponse) =
+        (method, url, response)
+    }
+
+
   // readRaw is brought in like this rather than in a trait as this gives it
   // compilation priority during implicit resolution. This means, unless
   // specified otherwise a verb call will return a plain HttpResponse
-  implicit val readRaw: HttpReads[HttpResponse] = RawReads.readRaw
+  @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
+  @silent("deprecated")
+  implicit val readRaw: HttpReads[HttpResponse] = HttpReadsLegacyRawReads.readRaw
+
+  object Implicits extends HttpReadsInstances
 }
 
-trait HttpReads[O] {
-  def read(method: String, url: String, response: HttpResponse): O
-}
+trait HttpReads[A] {
+  outer =>
 
-trait RawReads extends HttpErrorFunctions {
-  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
-  }
-}
+  def read(method: String, url: String, response: HttpResponse): A
 
-object RawReads extends RawReads
+  def map[B](fn: A => B): HttpReads[B] =
+    flatMap(a => HttpReads.pure(fn(a)))
 
-trait OptionHttpReads extends HttpErrorFunctions {
-  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
-    def read(method: String, url: String, response: HttpResponse) = response.status match {
-      case 204 | 404 => None
-      case _         => Some(rds.read(method, url, response))
+  def flatMap[B](fn: A => HttpReads[B]): HttpReads[B] =
+    new HttpReads[B] {
+      def read(method: String, url: String, response: HttpResponse): B =
+        fn(outer.read(method, url, response)).read(method, url, response)
     }
-  }
-}
-
-trait JsonHttpReads extends HttpErrorFunctions {
-  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
-    def read(method: String, url: String, response: HttpResponse) =
-      readJson(method, url, handleResponse(method, url)(response).json)
-  }
-
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
-    def read(method: String, url: String, response: HttpResponse) = response.status match {
-      case 204 | 404 => Seq.empty
-      case _ =>
-        readJson[Seq[O]](method, url, (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
-    }
-  }
-
-  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) =
-    jsValue
-      .validate[A]
-      .fold(
-        errs => throw new JsValidationException(method, url, mf.runtimeClass, errs.toString()),
-        valid => valid
-      )
 }

@@ -18,14 +18,16 @@ package uk.gov.hmrc.play.http.ws
 
 import com.github.tomakehurst.wiremock.client.VerificationException
 import com.github.tomakehurst.wiremock.client.WireMock._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpecLike}
 import play.api.Play
 import play.api.libs.ws.WSProxyServer
 import play.api.test.FakeApplication
 import uk.gov.hmrc.http.HeaderCarrier
 
-class WsProxySpec extends WordSpecLike with Matchers with MockitoSugar with OptionValues with BeforeAndAfterAll {
+class WsProxySpec extends AnyWordSpecLike with Matchers with MockitoSugar with OptionValues with BeforeAndAfterAll {
   implicit val hc = HeaderCarrier()
 
   lazy val fakeApplication = FakeApplication()

@@ -29,14 +29,11 @@ trait HttpVerb extends Request {
 
   protected def configuration: Option[Config]
 
-  @deprecated("ProcessingFunction is obsolete, use the relevant HttpReads[A] instead", "18/03/2015")
-  type ProcessingFunction = (Future[HttpResponse], String) => Future[HttpResponse]
-
   def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
     implicit ec: ExecutionContext): Future[HttpResponse] =
-    f.recover {
-      case e: TimeoutException => throw new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e))
-      case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
+    f.recoverWith {
+      case e: TimeoutException => Future.failed(new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e)))
+      case e: ConnectException => Future.failed(new BadGatewayException(badGatewayMessage(httpMethod, url, e)))
     }
 
   def badGatewayMessage(verbName: String, url: String, e: Exception): String =

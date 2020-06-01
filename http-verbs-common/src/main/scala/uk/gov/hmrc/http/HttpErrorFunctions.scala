@@ -16,11 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import java.net.ConnectException
-import java.util.concurrent.TimeoutException
-
-import scala.concurrent.{ExecutionContext, Future}
-
 trait HttpErrorFunctions {
   def notFoundMessage(verbName: String, url: String, responseBody: String): String =
     s"$verbName of '$url' returned 404 (Not Found). Response body: '$responseBody'"
@@ -49,6 +44,7 @@ trait HttpErrorFunctions {
 
   def is5xx(status: Int) = status >= 500 && status < 600
 
+  @deprecated("Use handleReponseEither instead.", "11.0.0")
   def handleResponse(httpMethod: String, url: String)(response: HttpResponse): HttpResponse =
     response.status match {
       case status if is2xx(status) => response
@@ -66,10 +62,21 @@ trait HttpErrorFunctions {
         throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
     }
 
-  def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
-    implicit ec: ExecutionContext): Future[HttpResponse] =
-    f.recover {
-      case e: TimeoutException => throw new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e))
-      case e: ConnectException => throw new BadGatewayException(badGatewayMessage(httpMethod, url, e))
+  // Note, no special handling of BadRequest or NotFound
+  // they will be returned as `Left(Upstream4xxResponse(status = 400))` and `Left(Upstream4xxResponse(status = 404))` respectively
+  def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
+    response.status match {
+      case status if is4xx(status) || is5xx(status) =>
+        Left(UpstreamErrorResponse(
+          message    = upstreamResponseMessage(httpMethod, url, status, response.body),
+          statusCode = status,
+          reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
+          headers    = response.headers
+        ))
+      // Note all cases not handled above (e.g. 1xx, 2xx and 3xx) will be returned as is
+      // default followRedirect should mean we don't see 3xx...
+      case status  => Right(response)
     }
 }
+
+object HttpErrorFunctions extends HttpErrorFunctions
