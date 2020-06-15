@@ -38,7 +38,10 @@ lazy val library = (project in file("."))
   .aggregate(
     httpVerbsPlay25,
     httpVerbsPlay26,
-    httpVerbsPlay27
+    httpVerbsPlay27,
+    httpVerbsTestPlay25,
+    httpVerbsTestPlay26,
+    httpVerbsTestPlay27
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
@@ -81,4 +84,51 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
     Compile / scalaSource := (httpVerbsPlay26 / Compile / scalaSource).value,
     Test    / scalaSource := (httpVerbsPlay26 / Test    / scalaSource).value,
     Test    / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+
+// TODO: Tuesday - What's going on with the naming here...?
+lazy val httpVerbsTestCommon = Project("http-verbs-test-play-common", file("http-verbs-test-play-common"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
+    Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
+    Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
+    crossScalaVersions := Seq(scala2_11, scala2_12),
+    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.testCommon,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+
+lazy val httpVerbsTestPlay25 = Project("http-verbs-test-play-25", file("http-verbs-test-play-25"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    Test    / scalaSource := (httpVerbsTestCommon / Test    / scalaSource).value,
+    crossScalaVersions := Seq(scala2_11),
+    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay25 ++ AppDependencies.testCommon ++ AppDependencies.testPlay25,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+
+lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-verbs-test-play-26"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    Test    / scalaSource := (httpVerbsTestCommon / Test    / scalaSource).value,
+    crossScalaVersions := Seq(scala2_11, scala2_12),
+    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay26 ++ AppDependencies.testCommon ++ AppDependencies.testPlay26,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+
+lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-verbs-test-play-27"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    Test    / scalaSource := (httpVerbsTestCommon / Test    / scalaSource).value,
+    crossScalaVersions := Seq(scala2_11, scala2_12),
+    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay27 ++ AppDependencies.testCommon ++ AppDependencies.testPlay27,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
