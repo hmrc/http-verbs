@@ -33,7 +33,6 @@
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
-import com.fasterxml.jackson.core.JsonParseException
 import com.typesafe.config.Config
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => is}
@@ -42,7 +41,6 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.JsNull
 import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.{ExecutionContext, Future}
