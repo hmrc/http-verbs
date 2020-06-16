@@ -100,8 +100,7 @@ lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verb
   .settings(
     commonSettings,
     libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon,
-    crossScalaVersions := Seq(scala2_11, scala2_12),
-    Test / fork := true // akka is not unloaded properly, which can affect other tests
+    crossScalaVersions := Seq(scala2_11, scala2_12)
   )
 
 lazy val httpVerbsTestPlay25 = Project("http-verbs-test-play-25", file("http-verbs-test-play-25"))
@@ -110,8 +109,7 @@ lazy val httpVerbsTestPlay25 = Project("http-verbs-test-play-25", file("http-ver
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
     crossScalaVersions := Seq(scala2_11),
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay25,
-    Test / fork := true // akka is not unloaded properly, which can affect other tests
+    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay25
   )
   .dependsOn(httpVerbsPlay25)
 
@@ -121,8 +119,7 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay26,
-    Test / fork := true // akka is not unloaded properly, which can affect other tests
+    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay26
   )
   .dependsOn(httpVerbsPlay26)
 
@@ -132,7 +129,6 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay27,
-    Test / fork := true // akka is not unloaded properly, which can affect other tests
+    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay27
   )
   .dependsOn(httpVerbsPlay27)
