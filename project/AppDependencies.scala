@@ -6,7 +6,8 @@ object AppDependencies {
   val play26Version = "2.6.20"
   val play27Version = "2.7.4"
 
-  val httpVerbsCoreCompileCommon = Seq(
+  // Dependencies for http-verbs-common and http-verbs-play-xxx modules
+  val coreCompileCommon = Seq(
     "com.typesafe" % "config"    % "1.3.3",
     "org.slf4j"    % "slf4j-api" % "1.7.25",
     // empty http-core added to force eviction
@@ -17,7 +18,7 @@ object AppDependencies {
     "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.10.3"
   )
 
-  val httpVerbsCoreCompilePlay25 = Seq(
+  val coreCompilePlay25 = Seq(
     "com.typesafe.play" %% "play-json" % play25Version,
     "com.typesafe.play" %% "play-ws"   % play25Version,
     // force dependencies due to security flaws found in xercesImpl 2.11.0
@@ -26,17 +27,17 @@ object AppDependencies {
     "xerces" % "xercesImpl" % "2.12.0"
   )
 
-  val httpVerbsCoreCompilePlay26 = Seq(
+  val coreCompilePlay26 = Seq(
     "com.typesafe.play" %% "play-json" % "2.6.9",
     "com.typesafe.play" %% "play-ahc-ws" % play26Version
   )
 
-  val httpVerbsCoreCompilePlay27 = Seq(
+  val coreCompilePlay27 = Seq(
     "com.typesafe.play" %% "play-json" % play27Version,
     "com.typesafe.play" %% "play-ahc-ws" % play27Version
   )
 
-  val httpVerbsCoreTestCommon = Seq(
+  val coreTestCommon = Seq(
     "commons-codec"          % "commons-codec"   % "1.12"    % Test,
     "org.scalatest"          %% "scalatest"      % "3.1.1"   % Test,
     "org.scalatestplus"      %% "scalatestplus-mockito" % "1.0.0-M2" % Test,
@@ -50,26 +51,26 @@ object AppDependencies {
     "com.vladsch.flexmark"   % "flexmark-all"    % "0.35.10" % Test
   )
 
-  val httpVerbsCoreTestPlay25 = Seq(
+  val coreTestPlay25 = Seq(
     "com.typesafe.play" %% "play-test"   % play25Version % Test,
     "com.typesafe.play" %% "play-specs2" % play25Version % Test
   )
 
-  val httpVerbsCoreTestPlay26 = Seq(
+  val coreTestPlay26 = Seq(
     "com.typesafe.play" %% "play-test"   % play26Version % Test
   )
 
-  val httpVerbsCoreTestPlay27 = Seq(
+  val coreTestPlay27 = Seq(
     "com.typesafe.play" %% "play-test"   % play27Version % Test
   )
 
-  val httpVerbsTestCompileCommon = Seq(
+  // Dependencies for http-verbs-test modules
+  val testCompileCommon = Seq(
     "org.scalatest"          %% "scalatest"      % "3.1.1",
-    "org.pegdown"            %  "pegdown"        % "1.6.0",
     "com.vladsch.flexmark"   % "flexmark-all"    % "0.35.10"
   )
 
-  val httpVerbsTestCompilePlay25 = Seq(
+  val testCompilePlay25 = Seq(
     "com.typesafe.play"              %% "play-ws"                % play25Version,
     "com.typesafe.play"              %% "play-json"              % play25Version,
     // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
@@ -84,12 +85,12 @@ object AppDependencies {
     "xerces"                        % "xercesImpl" % "2.12.0"
   )
 
-  val httpVerbsTestCompilePlay26 = Seq(
+  val testCompilePlay26 = Seq(
     "com.typesafe.play"              %% "play-ws"                % play26Version,
     "com.typesafe.play"              %% "play-json"              % "2.6.13"
   )
 
-  val httpVerbsTestCompilePlay27 = Seq(
+  val testCompilePlay27 = Seq(
     "com.typesafe.play"              %% "play-ws"                % play27Version,
     "com.typesafe.play"              %% "play-json"              % play27Version
   )
