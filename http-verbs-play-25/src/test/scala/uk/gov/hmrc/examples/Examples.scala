@@ -188,21 +188,17 @@ class Examples extends AnyWordSpecLike
       }.futureValue
     }
 
-    "throw an Upstream4xxResponse for 4xx errors" in {
+    "throw an Upstream4xxResponse for 4xx errors and Upstream5xxResponse for 5xx errors" in {
+      implicit val hc = HeaderCarrier()
 
       stubFor(get(urlEqualTo("/401.json")).willReturn(aResponse().withStatus(401)))
-
-      client.GET[Option[BankHolidays]]("http://localhost:20001/401.json").recover {
-        case e: Upstream4xxResponse => // handle here a 4xx errors
-      }.futureValue
-    }
-
-    "throw an Upstream5xxResponse for 4xx errors" in {
-
       stubFor(get(urlEqualTo("/500.json")).willReturn(aResponse().withStatus(500)))
 
-      client.GET[Option[BankHolidays]]("http://localhost:20001/500.json").recover {
-        case e: Upstream5xxResponse => // handle here a 5xx errors
+      client.GET[Option[BankHolidays]]("http://localhost:20001/401.json").recover {
+        case e: UpstreamErrorResponse => e match {
+          case Upstream4xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 4xx errors
+          case Upstream5xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 5xx errors
+        }
       }.futureValue
     }
   }
