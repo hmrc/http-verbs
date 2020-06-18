@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<events>
+    <event>
+        <title>New Year’s Day</title>
+        <date>2017-01-02</date>
+    </event>
+    <event>
+        <title>Good Friday</title>
+        <date>2017-04-14</date>
+    </event>
+    <event>
+        <title>Easter Monday</title>
+        <date>2017-04-17</date>
+    </event>
+    <event>
+        <title>Early May bank holiday</title>
+        <date>2017-05-01</date>
+    </event>
+    <event>
+        <title>Spring bank holiday</title>
+        <date>2017-05-29</date>
+    </event>
+    <event>
+        <title>Summer bank holiday</title>
+        <date>2017-08-28</date>
+    </event>
+    <event>
+        <title>Christmas Day</title>
+        <date>2017-12-25</date>
+    </event>
+    <event>
+        <title>Boxing Day</title>
+        <date>2017-12-26</date>
+    </event>
+</events>

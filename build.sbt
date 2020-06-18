@@ -54,10 +54,10 @@ lazy val httpVerbsPlay25 = Project("http-verbs-play-25", file("http-verbs-play-2
     Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
     Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
     crossScalaVersions := Seq(scala2_11),
-    libraryDependencies ++= AppDependencies.httpVerbsCoreCompileCommon ++
-      AppDependencies.httpVerbsCoreCompilePlay25 ++
-      AppDependencies.httpVerbsCoreTestCommon ++
-      AppDependencies.httpVerbsCoreTestPlay25,
+    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompilePlay25 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay25,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
 
@@ -66,10 +66,10 @@ lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-2
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.httpVerbsCoreCompileCommon ++
-      AppDependencies.httpVerbsCoreCompilePlay26 ++
-      AppDependencies.httpVerbsCoreTestCommon ++
-      AppDependencies.httpVerbsCoreTestPlay26,
+    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompilePlay26 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay26,
     Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
     Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
     Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
@@ -82,10 +82,10 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.httpVerbsCoreCompileCommon ++
-      AppDependencies.httpVerbsCoreCompilePlay27 ++
-      AppDependencies.httpVerbsCoreTestCommon ++
-      AppDependencies.httpVerbsCoreTestPlay27,
+    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompilePlay27 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay27,
     Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
     Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
     Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
@@ -99,7 +99,7 @@ lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verb
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon,
+    libraryDependencies ++= AppDependencies.testCompileCommon,
     crossScalaVersions := Seq(scala2_11, scala2_12)
   )
 
@@ -109,7 +109,7 @@ lazy val httpVerbsTestPlay25 = Project("http-verbs-test-play-25", file("http-ver
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
     crossScalaVersions := Seq(scala2_11),
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay25
+    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay25
   )
   .dependsOn(httpVerbsPlay25)
 
@@ -119,7 +119,7 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay26
+    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay26
   )
   .dependsOn(httpVerbsPlay26)
 
@@ -129,6 +129,6 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.httpVerbsTestCompileCommon ++ AppDependencies.httpVerbsTestCompilePlay27
+    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay27
   )
   .dependsOn(httpVerbsPlay27)

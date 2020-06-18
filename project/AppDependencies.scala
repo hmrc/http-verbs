@@ -48,7 +48,7 @@ object AppDependencies {
     "ch.qos.logback"         % "logback-core"    % "1.2.3"   % Test,
     "org.mockito"            % "mockito-all"     % "1.10.19" % Test,
     "org.webbitserver"       % "webbit"          % "0.4.15"  % Test,
-    "com.vladsch.flexmark"   % "flexmark-all"    % "0.35.10" % Test
+    "com.vladsch.flexmark"   % "flexmark-all"    % "0.35.10" % Test,
   )
 
   val coreTestPlay25 = Seq(
