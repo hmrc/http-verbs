@@ -64,7 +64,11 @@ libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "x.x.x"
 
 ## Usage
 
-All examples are available here:[hmrc/http-verbs-example](https://github.com/hmrc/http-verbs-example)
+All examples are hosted within the project.
+
+Play 2.5 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-25/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
+
+Play 2.6 and 2.7 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-26/src/test/scala/uk/gov/hmrc/examples/Examples.scala) 
 
 ## License ##
 

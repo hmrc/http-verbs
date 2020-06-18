@@ -56,7 +56,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
-class HttpVerbsExamples extends AnyWordSpecLike
+class Examples extends AnyWordSpecLike
   with ScalaFutures
   with IntegrationPatience
   with WiremockTestServer
