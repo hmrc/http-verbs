@@ -78,7 +78,7 @@ class HeadersSpec
 
   "a post request" - {
 
-    "with an arbtirary body" - {
+    "with an arbitrary body" - {
 
       "must contain headers from the header carrier" in {
 
