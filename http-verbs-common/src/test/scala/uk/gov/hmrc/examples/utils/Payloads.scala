@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.examples.utils
 
-import org.apache.commons.io.IOUtils
 import play.api.libs.json.{Json, Reads}
 import java.time.LocalDate
+import scala.io.Source
 
 object XmlPayloads {
-  val bankHolidays = IOUtils.toString(getClass.getClassLoader.getResourceAsStream("bankHolidays.xml"), "UTF-8")
+  val bankHolidays: String = Source.fromFile(getClass.getResource("/bankHolidays.xml").toURI, "UTF-8").getLines.mkString
 }
 
 object JsonPayloads {
-  val bankHolidays = IOUtils.toString(getClass.getClassLoader.getResourceAsStream("bankHolidays.json"), "UTF-8")
-  val userId = IOUtils.toString(getClass.getClassLoader.getResourceAsStream("userId.json"), "UTF-8")
+  val bankHolidays: String = Source.fromFile(getClass.getResource("/bankHolidays.json").toURI, "UTF-8").getLines.mkString
+  val userId: String = Source.fromFile(getClass.getResource("/userId.json").toURI, "UTF-8").getLines.mkString
 }
 
 case class BankHolidays(events: Seq[BankHoliday])
