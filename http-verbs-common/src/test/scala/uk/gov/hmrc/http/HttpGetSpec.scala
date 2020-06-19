@@ -44,7 +44,6 @@ import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 class HttpGetSpec
@@ -102,10 +101,30 @@ class HttpGetSpec
       val testGet = new StubbedHttpGet(Future.successful(response))
       testGet.GET[HttpResponse](url, Seq("header" -> "foo")).futureValue shouldBe response
     }
+
     "be able to return objects deserialised from JSON" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
       testGet.GET[TestClass](url, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
     }
+
+    "be able to return Some[T] when deserialising as an option of object from JSON" in {
+      val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
+      testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue should be(Some(TestClass("t", 10)))
+    }
+
+    // By adding an Option to your case class, the 404 is translated into None
+    "return None when 404 returned for GET as an option of object" in {
+      val testGet = new StubbedHttpGet(Future.successful(HttpResponse(404, "This is an expected Not Found")))
+      testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue should be(None)
+    }
+
+    "throw expected exception when JSON deserialisation fails for option of an object" in {
+      val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, "Not JSON")))
+      an[Exception] shouldBe thrownBy {
+        testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue
+      }
+    }
+
     behave like anErrorMappingHttpCall(
       "GET",
       (url, responseF) => new StubbedHttpGet(responseF).GET[HttpResponse](url, Seq("header" -> "foo")))

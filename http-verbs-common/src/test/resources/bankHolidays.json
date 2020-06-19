@@ -1,0 +1,36 @@
+{
+  "events": [
+    {
+      "title": "New Year’s Day",
+      "date": "2017-01-02"
+    },
+    {
+      "title": "Good Friday",
+      "date": "2017-04-14"
+    },
+    {
+      "title": "Easter Monday",
+      "date": "2017-04-17"
+    },
+    {
+      "title": "Early May bank holiday",
+      "date": "2017-05-01"
+    },
+    {
+      "title": "Spring bank holiday",
+      "date": "2017-05-29"
+    },
+    {
+      "title": "Summer bank holiday",
+      "date": "2017-08-28"
+    },
+    {
+      "title": "Christmas Day",
+      "date": "2017-12-25"
+    },
+    {
+      "title": "Boxing Day",
+      "date": "2017-12-26"
+    }
+  ]
+}

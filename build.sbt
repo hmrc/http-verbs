@@ -38,7 +38,10 @@ lazy val library = (project in file("."))
   .aggregate(
     httpVerbsPlay25,
     httpVerbsPlay26,
-    httpVerbsPlay27
+    httpVerbsPlay27,
+    httpVerbsTestPlay25,
+    httpVerbsTestPlay26,
+    httpVerbsTestPlay27
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
@@ -51,7 +54,10 @@ lazy val httpVerbsPlay25 = Project("http-verbs-play-25", file("http-verbs-play-2
     Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
     Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
     crossScalaVersions := Seq(scala2_11),
-    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay25 ++ AppDependencies.testCommon ++ AppDependencies.testPlay25,
+    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompilePlay25 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay25,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
 
@@ -60,7 +66,10 @@ lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-2
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay26 ++ AppDependencies.testCommon ++ AppDependencies.testPlay26,
+    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompilePlay26 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay26,
     Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
     Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
     Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
@@ -73,7 +82,10 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
-    libraryDependencies ++= AppDependencies.compileCommon ++ AppDependencies.compilePlay27 ++ AppDependencies.testCommon ++ AppDependencies.testPlay27,
+    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompilePlay27 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay27,
     Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
     Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
     Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
@@ -82,3 +94,41 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
     Test    / scalaSource := (httpVerbsPlay26 / Test    / scalaSource).value,
     Test    / fork := true // akka is not unloaded properly, which can affect other tests
   )
+
+lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verbs-test-common"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= AppDependencies.testCompileCommon,
+    crossScalaVersions := Seq(scala2_11, scala2_12)
+  )
+
+lazy val httpVerbsTestPlay25 = Project("http-verbs-test-play-25", file("http-verbs-test-play-25"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    crossScalaVersions := Seq(scala2_11),
+    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay25
+  )
+  .dependsOn(httpVerbsPlay25)
+
+lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-verbs-test-play-26"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    crossScalaVersions := Seq(scala2_11, scala2_12),
+    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay26
+  )
+  .dependsOn(httpVerbsPlay26)
+
+lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-verbs-test-play-27"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    crossScalaVersions := Seq(scala2_11, scala2_12),
+    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay27
+  )
+  .dependsOn(httpVerbsPlay27)

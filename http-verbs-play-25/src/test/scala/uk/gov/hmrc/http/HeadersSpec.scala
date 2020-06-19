@@ -78,7 +78,7 @@ class HeadersSpec
 
   "a post request" - {
 
-    "with an arbtirary body" - {
+    "with an arbitrary body" - {
 
       "must contain headers from the header carrier" in {
 
@@ -91,6 +91,25 @@ class HeadersSpec
         server.verify(
           postRequestedFor(urlEqualTo("/arbitrary"))
             .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+            .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+            .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+            .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+            .withHeader("extra-header", equalTo("my-extra-header")))
+      }
+
+      "should allow a user to set an authorization header in the POST and override the Authorization header in the headerCarrier" in {
+        server.stubFor(
+          post(urlEqualTo("/arbitrary"))
+            .willReturn(aResponse().withStatus(200)))
+
+        client.POST[JsValue, HttpResponse](
+          url = s"http://localhost:${server.port()}/arbitrary",
+          body = Json.obj(),
+          headers = Seq(HeaderNames.authorisation -> "Basic dXNlcjoxMjM=")).futureValue
+
+        server.verify(
+          postRequestedFor(urlEqualTo("/arbitrary"))
+            .withHeader(HeaderNames.authorisation, equalTo("Basic dXNlcjoxMjM="))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
             .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
             .withHeader(HeaderNames.xRequestId, equalTo("request-id"))

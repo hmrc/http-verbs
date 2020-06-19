@@ -60,6 +60,14 @@ class HttpReadsInstancesSpec
         reads.read(exampleVerb, exampleUrl, exampleResponse(s)) shouldBe Some("hi")
       }
     }
+
+    "throw an error if nested reads fails deserialisation" in {
+      forAll(Gen.posNum[Int].filter(_ != 404)) { s =>
+        an[Exception] should be thrownBy {
+          HttpReads[Option[Example]].read(exampleVerb, exampleUrl, exampleResponse(s))
+        }
+      }
+    }
   }
 
   "HttpReads[Unit]" should {

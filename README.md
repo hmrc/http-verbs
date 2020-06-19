@@ -64,7 +64,20 @@ libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "x.x.x"
 
 ## Usage
 
-All examples are available here:[hmrc/http-verbs-example](https://github.com/hmrc/http-verbs-example)
+Play 2.5 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-25/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
+
+Play 2.6 and 2.7 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-26/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
+
+## Test Helpers
+ 
+The ResponseMatchers class provides some useful logic for testing http-related code.
+
+In your SBT build add the following in your test dependencies:
+
+```scala
+libraryDependencies += "uk.gov.hmrc" %% "http-verbs-test-play-xx" % "x.x.x" % Test
+```
+
 
 ## License ##
 

@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http
+package uk.gov.hmrc.examples.utils
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.wordspec.AnyWordSpecLike
 
-object Examples {
 
-  trait VerbExamples {
-    val http: HttpGet with HttpPost with HttpPut with HttpDelete with HttpPatch
+trait WiremockTestServer extends AnyWordSpecLike with BeforeAndAfterEach {
 
-    implicit val hc = HeaderCarrier()
+  val wireMockServer = new WireMockServer(20001)
 
-//    http.GET("http://gov.uk/hmrc")
-//    http.DELETE("http://gov.uk/hmrc")
-//    http.POST("http://gov.uk/hmrc", body = "hi there")
-//    http.PUT("http://gov.uk/hmrc", body = "hi there")
-//    http.PATCH("http://gov.uk/hmrc", body = "hi there")
-//
-//    val r1 = http.GET[Option[String]]("http://gov.uk/hmrc") // Returns an Option[String]
+  override protected def beforeEach(): Unit = {
+    wireMockServer.start()
+    WireMock.configureFor("localhost", 20001)
+  }
+
+  override protected def afterEach(): Unit = {
+    wireMockServer.stop()
   }
 }
