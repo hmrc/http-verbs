@@ -36,7 +36,7 @@ import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.typesafe.config.Config
 import org.apache.commons.codec.binary.Base64
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -158,7 +158,7 @@ class Examples extends AnyWordSpecLike
         ))
 
       val bankHolidays: BankHolidays = client.GET[BankHolidays]("http://localhost:20001/bank-holidays.json").futureValue
-      bankHolidays.events.head shouldBe BankHoliday("New Year’s Day", new LocalDate(2017, 1, 2))
+      bankHolidays.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
     "read some json and return a raw http response" in {
@@ -259,7 +259,7 @@ class Examples extends AnyWordSpecLike
       val bankHolidays = client.GET[HttpResponse]("http://localhost:20001/bank-holidays.xml")
         .map(responseHandler).futureValue
 
-      bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", new LocalDate(2017, 1, 2))
+      bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
     "Fail when the response payload cannot be deserialised" in {
@@ -296,7 +296,7 @@ class Examples extends AnyWordSpecLike
         ))
 
       val bankHolidays = client.GET[Option[BankHolidays]]("http://localhost:20001/bank-holidays.json").futureValue
-      bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", new LocalDate(2017, 1, 2))
+      bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
     "Fail when the response payload cannot be deserialised" in {

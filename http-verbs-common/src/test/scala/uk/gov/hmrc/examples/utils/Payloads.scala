@@ -17,9 +17,8 @@
 package uk.gov.hmrc.examples.utils
 
 import org.apache.commons.io.IOUtils
-import org.joda.time.LocalDate
 import play.api.libs.json.{Json, Reads}
-import uk.gov.hmrc.http.controllers.RestFormats
+import java.time.LocalDate
 
 object XmlPayloads {
   val bankHolidays = IOUtils.toString(getClass.getClassLoader.getResourceAsStream("bankHolidays.xml"), "UTF-8")
@@ -34,7 +33,6 @@ case class BankHolidays(events: Seq[BankHoliday])
 case class BankHoliday(title: String, date: LocalDate)
 
 object BankHolidays {
-  implicit val ldReads: Reads[LocalDate] = RestFormats.localDateRead
   implicit val bhr: Reads[BankHoliday] = Json.reads[BankHoliday]
   val reads: Reads[BankHolidays] = Json.reads[BankHolidays]
 }
