@@ -49,6 +49,7 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.http.ws.WSHttp
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -165,7 +166,7 @@ class Examples extends AnyWordSpecLike
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays)))
 
-      val response: HttpResponse = client.GET("http://localhost:20001/bank-holidays.json").futureValue
+      val response: HttpResponse = client.GET[HttpResponse]("http://localhost:20001/bank-holidays.json").futureValue
       response.status shouldBe 200
       response.body shouldBe JsonPayloads.bankHolidays
     }
@@ -179,24 +180,25 @@ class Examples extends AnyWordSpecLike
       bankHolidays shouldBe None
     }
 
-    "throw an BadRequestException for 400 errors" in {
-
-      stubFor(get(urlEqualTo("/400.json")).willReturn(aResponse().withStatus(400)))
-
-      client.GET[Option[BankHolidays]]("http://localhost:20001/400.json").recover {
-        case e: BadRequestException => // handle here a bad request
-      }.futureValue
-    }
-
-    "throw an Upstream4xxResponse for 4xx errors and Upstream5xxResponse for 5xx errors" in {
+    "throw an Upstream4xxResponse for 4xx errors" in {
       implicit val hc = HeaderCarrier()
 
       stubFor(get(urlEqualTo("/401.json")).willReturn(aResponse().withStatus(401)))
-      stubFor(get(urlEqualTo("/500.json")).willReturn(aResponse().withStatus(500)))
 
       client.GET[Option[BankHolidays]]("http://localhost:20001/401.json").recover {
         case e: UpstreamErrorResponse => e match {
           case Upstream4xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 4xx errors
+        }
+      }.futureValue
+    }
+
+    "throw an Upstream5xxResponse for 5xx errors" in {
+      implicit val hc = HeaderCarrier()
+
+      stubFor(get(urlEqualTo("/500.json")).willReturn(aResponse().withStatus(500)))
+
+      client.GET[Option[BankHolidays]]("http://localhost:20001/500.json").recover {
+        case e: UpstreamErrorResponse => e match {
           case Upstream5xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 5xx errors
         }
       }.futureValue
@@ -229,17 +231,6 @@ class Examples extends AnyWordSpecLike
       // Use a case class when the API returns a json body
       val userId: UserIdentifier = client.POST[User, UserIdentifier]("http://localhost:20001/create-user", user).futureValue
       userId.id shouldBe "123"
-    }
-
-    "be able to handle both 204 and 200 in the same configuration" in {
-
-      stubFor(post(urlEqualTo("/create-user"))
-        .willReturn(aResponse().withStatus(204)))
-      val user = User("me@mail.com", "John Smith")
-
-      // Use Option[T], where T is your case class, if the API might return both 200 and 204
-      val userId: Option[UserIdentifier] = client.POST[User, Option[UserIdentifier]]("http://localhost:20001/create-user", user).futureValue
-      userId shouldBe None
     }
   }
 

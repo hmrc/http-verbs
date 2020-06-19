@@ -49,6 +49,7 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.http.ws.WSHttp
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -148,8 +149,9 @@ class Examples extends AnyWordSpecLike
 
   "A GET" should {
 
+    implicit val hc = HeaderCarrier()
+
     "read some json and return a case class" in {
-      implicit val hc = HeaderCarrier()
 
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays)
@@ -160,18 +162,16 @@ class Examples extends AnyWordSpecLike
     }
 
     "read some json and return a raw http response" in {
-      implicit val hc = HeaderCarrier()
 
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays)))
 
-      val response: HttpResponse = client.GET("http://localhost:20001/bank-holidays.json").futureValue
+      val response: HttpResponse = client.GET[HttpResponse]("http://localhost:20001/bank-holidays.json").futureValue
       response.status shouldBe 200
       response.body shouldBe JsonPayloads.bankHolidays
     }
 
     "be able to handle a 404 without throwing an exception" in {
-      implicit val hc = HeaderCarrier()
 
       stubFor(get(urlEqualTo("/404.json")).willReturn(aResponse().withStatus(404)       ))
 
@@ -180,25 +180,25 @@ class Examples extends AnyWordSpecLike
       bankHolidays shouldBe None
     }
 
-    "throw an BadRequestException for 400 errors" in {
-      implicit val hc = HeaderCarrier()
-
-      stubFor(get(urlEqualTo("/400.json")).willReturn(aResponse().withStatus(400)))
-
-      client.GET[Option[BankHolidays]]("http://localhost:20001/400.json").recover {
-        case e: BadRequestException => // handle here a bad request
-      }.futureValue
-    }
-
-    "throw an Upstream4xxResponse for 4xx errors and Upstream5xxResponse for 5xx errors" in {
+    "throw an Upstream4xxResponse for 4xx errors" in {
       implicit val hc = HeaderCarrier()
 
       stubFor(get(urlEqualTo("/401.json")).willReturn(aResponse().withStatus(401)))
-      stubFor(get(urlEqualTo("/500.json")).willReturn(aResponse().withStatus(500)))
 
       client.GET[Option[BankHolidays]]("http://localhost:20001/401.json").recover {
         case e: UpstreamErrorResponse => e match {
           case Upstream4xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 4xx errors
+        }
+      }.futureValue
+    }
+
+    "throw an Upstream5xxResponse for 5xx errors" in {
+      implicit val hc = HeaderCarrier()
+
+      stubFor(get(urlEqualTo("/500.json")).willReturn(aResponse().withStatus(500)))
+
+      client.GET[Option[BankHolidays]]("http://localhost:20001/500.json").recover {
+        case e: UpstreamErrorResponse => e match {
           case Upstream5xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 5xx errors
         }
       }.futureValue
@@ -207,8 +207,9 @@ class Examples extends AnyWordSpecLike
 
   "A POST" should {
 
+    implicit val hc = HeaderCarrier()
+
     "write a case class to json body and return a response" in {
-      implicit val hc = HeaderCarrier()
 
       stubFor(post(urlEqualTo("/create-user"))
         .willReturn(aResponse().withStatus(204)))
@@ -221,7 +222,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "read the response body of the POST into a case class" in {
-      implicit val hc = HeaderCarrier()
 
       stubFor(post(urlEqualTo("/create-user"))
         .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.userId)))
@@ -232,21 +232,11 @@ class Examples extends AnyWordSpecLike
       val userId: UserIdentifier = client.POST[User, UserIdentifier]("http://localhost:20001/create-user", user).futureValue
       userId.id shouldBe "123"
     }
-
-    "be able to handle both 204 and 200 in the same configuration" in {
-      implicit val hc = HeaderCarrier()
-
-      stubFor(post(urlEqualTo("/create-user"))
-        .willReturn(aResponse().withStatus(204)))
-      val user = User("me@mail.com", "John Smith")
-
-      // Use Option[T], where T is your case class, if the API might return both 200 and 204
-      val userId: Option[UserIdentifier] = client.POST[User, Option[UserIdentifier]]("http://localhost:20001/create-user", user).futureValue
-      userId shouldBe None
-    }
   }
 
   "HttpResponse" should {
+
+    implicit val hc = HeaderCarrier()
 
     def fromXml(xml: String): BankHolidays =
       BankHolidays((XML.loadString(xml) \ "event") map { event => {
@@ -263,8 +253,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "Return some data when getting a 200 back" in {
-      implicit val hc = HeaderCarrier()
-
       stubFor(get(urlEqualTo("/bank-holidays.xml"))
         .willReturn(aResponse().withStatus(200).withBody(XmlPayloads.bankHolidays)))
 
@@ -275,8 +263,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "Fail when the response payload cannot be deserialised" in {
-      implicit val hc = HeaderCarrier()
-
       stubFor(get(urlEqualTo("/bank-holidays.xml"))
         .willReturn(aResponse().withStatus(200).withBody("Not XML")))
 
@@ -288,6 +274,8 @@ class Examples extends AnyWordSpecLike
   }
 
   "HttpReads" should {
+
+    implicit val hc = HeaderCarrier()
 
     implicit val responseHandler = new HttpReads[Option[BankHolidays]] {
       override def read(method: String, url: String, response: HttpResponse): Option[BankHolidays] = {
@@ -303,8 +291,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "Return some data when getting a 200 back" in {
-      implicit val hc = HeaderCarrier()
-
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays)
         ))
@@ -314,8 +300,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "Fail when the response payload cannot be deserialised" in {
-      implicit val hc = HeaderCarrier()
-
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(200).withBody("Not JSON")
         ))
@@ -328,8 +312,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "Return None when getting a 404 back" in {
-      implicit val hc = HeaderCarrier()
-
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(404)
         ))
@@ -339,8 +321,6 @@ class Examples extends AnyWordSpecLike
     }
 
     "Fail if we get back any other status code" in {
-      implicit val hc = HeaderCarrier()
-
       stubFor(get(urlEqualTo("/bank-holidays.json"))
         .willReturn(aResponse().withStatus(418)
         ))
