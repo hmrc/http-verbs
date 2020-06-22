@@ -21,7 +21,13 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHook {
-  def apply(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(
+  def apply(url: String, verb: String, body: Option[HookData], responseF: Future[HttpResponse])(
     implicit hc: HeaderCarrier,
     ec: ExecutionContext)
+}
+
+sealed trait HookData
+object HookData {
+  case class FromString(s: String) extends HookData
+  case class FromMap(m: Map[String, Seq[String]]) extends HookData
 }

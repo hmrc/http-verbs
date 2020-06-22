@@ -25,7 +25,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.http.hooks.HttpHook
+import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -80,9 +80,9 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
       verify(testPatch.testHook1)
-        .apply(is(url), is("PATCH"), is(Some(testJson)), respArgCaptor1.capture())(any(), any())
+        .apply(is(url), is("PATCH"), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
       verify(testPatch.testHook2)
-        .apply(is(url), is("PATCH"), is(Some(testJson)), respArgCaptor2.capture())(any(), any())
+        .apply(is(url), is("PATCH"), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)

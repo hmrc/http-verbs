@@ -18,7 +18,7 @@ package uk.gov.hmrc.http
 
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.HttpVerbs.{PUT => PUT_VERB}
-import uk.gov.hmrc.http.hooks.HttpHooks
+import uk.gov.hmrc.http.hooks.{HookData, HttpHooks}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,7 +35,7 @@ trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with Connectio
       ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
       val httpResponse = retry(PUT_VERB, url)(doPut(url, body, headers))
-      executeHooks(url, PUT_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
+      executeHooks(url, PUT_VERB, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
     }
 
@@ -48,7 +48,7 @@ trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with Connectio
       ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
       val httpResponse = retry(PUT_VERB, url)(doPutString(url, body, headers))
-      executeHooks(url, PUT_VERB, Option(body), httpResponse)
+      executeHooks(url, PUT_VERB, Option(HookData.FromString(body)), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))
     }
 }
