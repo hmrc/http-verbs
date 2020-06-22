@@ -23,14 +23,28 @@ import scala.concurrent.{ExecutionContext, Future}
 trait HttpHooks {
   val hooks: Seq[HttpHook]
 
-  val NoneRequired = Seq(new HttpHook {
-    def apply(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext) = {}
-  })
+  val NoneRequired = Seq(
+    new HttpHook {
+      def apply(
+        url      : String,
+        verb     : String,
+        body     : Option[HookData],
+        responseF: Future[HttpResponse]
+      )(implicit
+       hc: HeaderCarrier,
+       ec: ExecutionContext
+     ) = {}
+    }
+  )
 
-  protected def executeHooks(url: String, verb: String, body: Option[_], responseF: Future[HttpResponse])(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext): Unit =
-    hooks.foreach(hook => hook(url, verb, body, responseF))
+  protected def executeHooks(
+    url      : String,
+    verb     : String,
+    body     : Option[HookData],
+    responseF: Future[HttpResponse]
+  )(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Unit =
+    hooks.foreach(_.apply(url, verb, body, responseF))
 }

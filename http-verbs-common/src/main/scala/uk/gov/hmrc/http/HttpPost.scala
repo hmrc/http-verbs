@@ -18,7 +18,7 @@ package uk.gov.hmrc.http
 
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.HttpVerbs.{POST => POST_VERB}
-import uk.gov.hmrc.http.hooks.HttpHooks
+import uk.gov.hmrc.http.hooks.{HookData, HttpHooks}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,7 +41,7 @@ trait HttpPost
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
       val httpResponse = retry(POST_VERB, url)(doPost(url, body, headers))
-      executeHooks(url, POST_VERB, Option(Json.stringify(wts.writes(body))), httpResponse)
+      executeHooks(url, POST_VERB, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 
@@ -54,7 +54,7 @@ trait HttpPost
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
       val httpResponse = retry(POST_VERB, url)(doPostString(url, body, headers))
-      executeHooks(url, POST_VERB, Option(body), httpResponse)
+      executeHooks(url, POST_VERB, Option(HookData.FromString(body)), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 
@@ -67,7 +67,7 @@ trait HttpPost
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
       val httpResponse = retry(POST_VERB, url)(doFormPost(url, body, headers))
-      executeHooks(url, POST_VERB, Option(body), httpResponse)
+      executeHooks(url, POST_VERB, Option(HookData.FromMap(body)), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 
