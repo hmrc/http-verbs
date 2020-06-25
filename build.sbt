@@ -36,6 +36,7 @@ lazy val library = (project in file("."))
     crossScalaVersions := Seq.empty
   )
   .aggregate(
+    httpVerbs,
     httpVerbsPlay25,
     httpVerbsPlay26,
     httpVerbsPlay27,
@@ -44,6 +45,14 @@ lazy val library = (project in file("."))
     httpVerbsTestPlay27
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
+
+// empty artefact, exists to ensure eviction of previous http-verbs jar which has now moved into http-verbs-play-xx
+lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    crossScalaVersions := Seq(scala2_11, scala2_12)
+  )
 
 lazy val httpVerbsPlay25 = Project("http-verbs-play-25", file("http-verbs-play-25"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
@@ -60,6 +69,7 @@ lazy val httpVerbsPlay25 = Project("http-verbs-play-25", file("http-verbs-play-2
       AppDependencies.coreTestPlay25,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
+  .dependsOn(httpVerbs)
 
 lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-26"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
@@ -76,6 +86,7 @@ lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-2
     Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
+  .dependsOn(httpVerbs)
 
 lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-27"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
@@ -94,6 +105,7 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
     Test    / scalaSource := (httpVerbsPlay26 / Test    / scalaSource).value,
     Test    / fork := true // akka is not unloaded properly, which can affect other tests
   )
+  .dependsOn(httpVerbs)
 
 lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verbs-test-common"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
