@@ -124,7 +124,7 @@ trait HeaderCarrierConverter {
   }
 
   private def whitelistedHeaders: Seq[String] =
-    configuration.getOptional[Seq[String]]("httpHeadersWhitelist").getOrElse(Seq())
+    configuration.get[Seq[String]]("httpHeadersWhitelist")
 
   protected def configuration: Configuration
 
