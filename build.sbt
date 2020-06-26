@@ -54,14 +54,25 @@ lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
     crossScalaVersions := Seq(scala2_11, scala2_12)
   )
 
+def sharedSources = Seq(
+  Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
+  Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
+  Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
+  Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
+)
+
+def copySources(module: Project) = Seq(
+  Compile / scalaSource := (module / Compile / scalaSource).value,
+  Compile / resources   := (module / Compile / resources  ).value,
+  Test    / scalaSource := (module / Test    / scalaSource).value,
+  Test    / resources   := (module / Test    / resources  ).value
+)
+
 lazy val httpVerbsPlay25 = Project("http-verbs-play-25", file("http-verbs-play-25"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
-    Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
-    Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
-    Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
+    sharedSources,
     crossScalaVersions := Seq(scala2_11),
     libraryDependencies ++= AppDependencies.coreCompileCommon ++
       AppDependencies.coreCompilePlay25 ++
@@ -75,15 +86,12 @@ lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-2
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
+    sharedSources,
     crossScalaVersions := Seq(scala2_11, scala2_12),
     libraryDependencies ++= AppDependencies.coreCompileCommon ++
       AppDependencies.coreCompilePlay26 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay26,
-    Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
-    Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
-    Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .dependsOn(httpVerbs)
@@ -93,16 +101,12 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
   .settings(
     commonSettings,
     crossScalaVersions := Seq(scala2_11, scala2_12),
+    sharedSources,
+    copySources(httpVerbsPlay26),
     libraryDependencies ++= AppDependencies.coreCompileCommon ++
       AppDependencies.coreCompilePlay27 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay27,
-    Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
-    Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
-    Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
-    Compile / scalaSource := (httpVerbsPlay26 / Compile / scalaSource).value,
-    Test    / scalaSource := (httpVerbsPlay26 / Test    / scalaSource).value,
     Test    / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .dependsOn(httpVerbs)
