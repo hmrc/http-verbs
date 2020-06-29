@@ -30,7 +30,7 @@ The default implicits for `HttpReads` have been deprecated. There are new implic
 import uk.gov.hmrc.http.HttpReads.Implicits._
 ```
 The behaviour of the predefined implicits are not quite the same as the deprecated ones, and you are encouraged to define your own HttpReads if none are apropriate. The differences are:
-* You will have to explicitly state the type of the reponse - it will not resolve to `HttpResponse` if none is specified. (i.e. `GET(url)` will now be `GET[HttpResponse](url)`). It is deemed better to be explicit since the type will dictate how errors are handled.
+* You will have to explicitly state the type of the response - it will not resolve to `HttpResponse` if none is specified. (i.e. `GET(url)` will now be `GET[HttpResponse](url)`). It is deemed better to be explicit since the type will dictate how errors are handled.
 * The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. To get the behaviour similar to previous (see Exceptions for differences), use:
 ```scala
 implicit val legacyRawReads = HttpReads.throwOnFailure(HttpReads.readEither)
@@ -59,8 +59,9 @@ In your SBT build add:
 ```scala
 resolvers += Resolver.bintrayRepo("hmrc", "releases")
 
-libraryDependencies += "uk.gov.hmrc" %% "http-verbs" % "x.x.x"
+libraryDependencies += "uk.gov.hmrc" %% "http-verbs-play-xx" % "x.x.x"
 ```
+Where `play-xx` is `play-25`, `play-26` or `play-27` depending on your version of Play.
 
 ## Usage
 
@@ -69,7 +70,7 @@ Play 2.5 examples can be found [here](https://github.com/hmrc/http-verbs/blob/ma
 Play 2.6 and 2.7 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-26/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
 
 ## Test Helpers
- 
+
 The ResponseMatchers class provides some useful logic for testing http-related code.
 
 In your SBT build add the following in your test dependencies:
