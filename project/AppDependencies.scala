@@ -12,7 +12,7 @@ object AppDependencies {
     "org.slf4j"    % "slf4j-api" % "1.7.25",
     // empty http-core added to force eviction
     // as classes from this lib have been inlined in http-verbs
-    "uk.gov.hmrc" %% "http-core"          % "2.2.0",
+    "uk.gov.hmrc" %% "http-core"          % "2.4.0",
     // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
     "com.fasterxml.jackson.core"     % "jackson-core"            % "2.10.3",
     "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.10.3"

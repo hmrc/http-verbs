@@ -38,7 +38,7 @@ trait HeaderCarrierConverter {
     headers: Headers,
     session: Option[Session]       = None,
     request: Option[RequestHeader] = None): HeaderCarrier =
-    session.fold(fromHeaders(headers, request)) {
+    session.fold(fromHeaders(headers, request)) { session =>
       // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
       // cookie can be set for backwards compatibility
       val cookiesInHeader =
@@ -46,7 +46,7 @@ trait HeaderCarrierConverter {
       val cookiesInSession =
         request.map(_.cookies).map(_.toList).getOrElse(List.empty)
       val cookies = Cookies(cookiesInSession ++ cookiesInHeader)
-      fromSession(headers, cookies, request, _)
+      fromSession(headers, cookies, request, session)
     }
 
   private def buildRequestChain(currentChain: Option[String]): RequestChain =

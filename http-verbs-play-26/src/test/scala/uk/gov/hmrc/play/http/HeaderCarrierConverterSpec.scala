@@ -15,6 +15,7 @@
  */
 
 package uk.gov.hmrc.play.http
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -22,7 +23,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Configuration, Play}
 import play.api.mvc._
 import play.api.test.Helpers._
-import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.test.{FakeHeaders, FakeRequest, FakeRequestFactory}
+import play.api.mvc.request.RequestFactory
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging._
 import uk.gov.hmrc.play.HeaderCarrierConverter
@@ -232,6 +234,13 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .deviceID shouldBe Some("deviceIdTest")
     }
 
+    "find the deviceID from the headers if the cookie and session are not available" in {
+      // create a request with no extra session or attributes
+      val req = new FakeRequestFactory(RequestFactory.plain).apply()
+      HeaderCarrierConverter
+        .fromHeadersAndSessionAndRequest(headers(HeaderNames.deviceID -> "deviceIdTest"), None, Some(req))
+        .deviceID shouldBe Some("deviceIdTest")
+    }
   }
 
   lazy val fakeApplication =
