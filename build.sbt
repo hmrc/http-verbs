@@ -14,7 +14,7 @@ val silencerVersion = "1.4.4"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
-  majorVersion := 11,
+  majorVersion := 12,
   makePublicallyAvailableOnBintray := true,
   resolvers := Seq(
     Resolver.bintrayRepo("hmrc", "releases"),
