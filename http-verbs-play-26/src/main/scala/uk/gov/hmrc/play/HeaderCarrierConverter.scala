@@ -72,8 +72,6 @@ trait HeaderCarrierConverter {
   private def fromHeaders(headers: Headers, requestHeader: Option[RequestHeader]): HeaderCarrier =
     HeaderCarrier(
       authorization    = headers.get(HeaderNames.authorisation).map(Authorization),
-      userId           = None,
-      token            = headers.get(HeaderNames.token).map(Token),
       forwarded        = forwardedFor(headers),
       sessionId        = headers.get(HeaderNames.xSessionId).map(SessionId),
       requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
@@ -96,8 +94,6 @@ trait HeaderCarrierConverter {
     s: Session): HeaderCarrier =
     HeaderCarrier(
       authorization    = s.get(SessionKeys.authToken).map(Authorization),
-      userId           = s.get(SessionKeys.userId).map(UserId),
-      token            = s.get(SessionKeys.token).map(Token),
       forwarded        = forwardedFor(headers),
       sessionId        = getSessionId(s, headers).map(SessionId),
       requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
