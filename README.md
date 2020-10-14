@@ -23,6 +23,9 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 ### Version 12.0.0
 
+#### SessionKeys
+The fields `authProvider` ('ap'), `userId` and `token` are no longer available in the session and these names have been removed from SessionKeys object.
+
 #### HeaderCarrier
 The fields `token` and `userId` are no longer available in the session and so have been removed from HeaderCarrier
 
