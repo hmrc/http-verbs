@@ -63,8 +63,6 @@ object HeaderCarrierConverter {
   private def fromHeaders(headers: Headers, requestHeader: Option[RequestHeader]): HeaderCarrier =
     HeaderCarrier(
       headers.get(HeaderNames.authorisation).map(Authorization),
-      None,
-      headers.get(HeaderNames.token).map(Token),
       forwardedFor(headers),
       headers.get(HeaderNames.xSessionId).map(SessionId),
       headers.get(HeaderNames.xRequestId).map(RequestId),
@@ -83,8 +81,6 @@ object HeaderCarrierConverter {
   private def fromSession(headers: Headers, cookies: Cookies, requestHeader: Option[RequestHeader], s: Session): HeaderCarrier =
     HeaderCarrier(
       s.get(SessionKeys.authToken).map(Authorization),
-      s.get(SessionKeys.userId).map(UserId),
-      s.get(SessionKeys.token).map(Token),
       forwardedFor(headers),
       getSessionId(s, headers).map(SessionId),
       headers.get(HeaderNames.xRequestId).map(RequestId),

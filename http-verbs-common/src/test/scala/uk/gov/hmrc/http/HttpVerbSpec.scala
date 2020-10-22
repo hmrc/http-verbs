@@ -38,7 +38,6 @@ class HttpVerbSpec extends AnyWordSpecLike with Matchers with MockitoSugar with 
         authorization = Some(Authorization("auth")),
         sessionId     = Some(SessionId("session")),
         requestId     = Some(RequestId("request")),
-        token         = Some(Token("token")),
         forwarded     = Some(ForwardedFor("forwarded"))
       )
 

@@ -34,14 +34,12 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
       s"add expected headers to the request" in {
         val testAuthorisation = Authorization("someauth")
         val forwarded         = ForwardedFor("forwarded")
-        val token             = Token("token")
         val sessionId         = SessionId("session")
         val requestId         = RequestId("requestId")
         val deviceID          = "deviceIdTest"
 
         val carrier: HeaderCarrier = HeaderCarrier(
           authorization = Some(testAuthorisation),
-          token         = Some(token),
           forwarded     = Some(forwarded),
           sessionId     = Some(sessionId),
           requestId     = Some(requestId),
@@ -52,7 +50,6 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
         val request = builder.buildRequest("http://auth.base")(carrier)
         request.headers.get(HeaderNames.authorisation).flatMap(_.headOption) shouldBe Some(testAuthorisation.value)
         request.headers.get(HeaderNames.xForwardedFor).flatMap(_.headOption) shouldBe Some(forwarded.value)
-        request.headers.get(HeaderNames.token).flatMap(_.headOption)         shouldBe Some(token.value)
         request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption)    shouldBe Some(sessionId.value)
         request.headers.get(HeaderNames.xRequestId).flatMap(_.headOption)    shouldBe Some(requestId.value)
         request.headers.get(HeaderNames.deviceID).flatMap(_.headOption)      shouldBe Some(deviceID)

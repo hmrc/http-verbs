@@ -34,7 +34,6 @@ object HeaderNames {
   val xRequestChain         = "X-Request-Chain"
   val trueClientIp          = "True-Client-IP"
   val trueClientPort        = "True-Client-Port"
-  val token                 = "token"
   val surrogate             = "Surrogate"
   val otacAuthorization     = "Otac-Authorization"
   val googleAnalyticTokenId = "ga-token"
@@ -51,7 +50,6 @@ object HeaderNames {
     xRequestChain,
     trueClientIp,
     trueClientPort,
-    token,
     surrogate,
     otacAuthorization,
     googleAnalyticTokenId,
@@ -67,21 +65,16 @@ object CookieNames {
 
 object SessionKeys {
   val sessionId = "sessionId"
-  val userId    = "userId"
-  @deprecated("To be removed. Use internal services lookup instead", "2016-06-24")
+  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
   val name = "name"
-  @deprecated("To be removed. Use internal services lookup instead", "2016-06-24")
+  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
   val email = "email"
-  @deprecated("To be removed. Use internal services lookup instead", "2016-06-24")
+  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
   val agentName = "agentName"
-  @deprecated("Use internal services lookup instead", "2016-06-24")
-  val token     = "token"
   val authToken = "authToken"
   val otacToken = "otacToken"
-  @deprecated("Use internal services lookup instead", "2016-06-24")
+  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
   val affinityGroup = "affinityGroup"
-  @deprecated("Use internal services lookup instead", "2016-06-24")
-  val authProvider         = "ap"
   val lastRequestTimestamp = "ts"
   val redirect             = "login_redirect"
   val npsVersion           = "nps-version"

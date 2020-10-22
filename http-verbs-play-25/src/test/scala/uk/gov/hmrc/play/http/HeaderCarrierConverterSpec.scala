@@ -106,18 +106,6 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
       hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
     }
 
-    "find the userId from the session" in {
-      HeaderCarrierConverter
-        .fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.userId -> "beeblebrox"))))
-        .userId shouldBe Some(UserId("beeblebrox"))
-    }
-
-    "find the token from the session" in {
-      HeaderCarrierConverter
-        .fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.token -> "THE_ONE_RING"))))
-        .token shouldBe Some(Token("THE_ONE_RING"))
-    }
-
     "find the authorization from the session" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.authToken -> "let me in!"))))
