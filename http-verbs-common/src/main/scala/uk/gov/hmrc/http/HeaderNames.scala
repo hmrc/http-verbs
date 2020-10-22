@@ -34,7 +34,6 @@ object HeaderNames {
   val xRequestChain         = "X-Request-Chain"
   val trueClientIp          = "True-Client-IP"
   val trueClientPort        = "True-Client-Port"
-  val token                 = "token"
   val surrogate             = "Surrogate"
   val otacAuthorization     = "Otac-Authorization"
   val googleAnalyticTokenId = "ga-token"
@@ -51,7 +50,6 @@ object HeaderNames {
     xRequestChain,
     trueClientIp,
     trueClientPort,
-    token,
     surrogate,
     otacAuthorization,
     googleAnalyticTokenId,

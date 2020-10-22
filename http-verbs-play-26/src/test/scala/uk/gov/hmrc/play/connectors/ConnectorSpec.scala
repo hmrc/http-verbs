@@ -34,7 +34,6 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
       s"add expected headers to the request" in {
         val testAuthorisation = Authorization("someauth")
         val forwarded         = ForwardedFor("forwarded")
-        val token             = Token("token")
         val sessionId         = SessionId("session")
         val requestId         = RequestId("requestId")
         val deviceID          = "deviceIdTest"

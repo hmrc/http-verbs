@@ -18,10 +18,6 @@ package uk.gov.hmrc.http
 
 import uk.gov.hmrc.http.logging._
 
-case class UserId(value: String) extends AnyVal
-
-case class Token(value: String) extends AnyVal
-
 case class HeaderCarrier(
   authorization: Option[Authorization]       = None,
   forwarded: Option[ForwardedFor]            = None,
