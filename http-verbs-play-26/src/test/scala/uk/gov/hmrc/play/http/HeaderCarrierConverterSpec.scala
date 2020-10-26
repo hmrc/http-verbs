@@ -145,9 +145,9 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
     }
 
-    "add all whitelisted remaining headers, ignoring explicit ones" in {
+    "add all allowlisted remaining headers, ignoring explicit ones" in {
       val headerCarrierConverter = new HeaderCarrierConverter {
-        protected def configuration: Configuration = Configuration("httpHeadersWhitelist" -> Seq("quix"))
+        protected def configuration: Configuration = Configuration("bootstrap.http.headersAllowlist" -> Seq("quix"))
       }
 
       headerCarrierConverter
@@ -157,9 +157,9 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .otherHeaders shouldBe Seq("quix" -> "foo")
     }
 
-    "whitelisted headers check should be case insensitive" in {
+    "allowlisted headers check should be case insensitive" in {
       val headerCarrierConverter = new HeaderCarrierConverter {
-        protected def configuration: Configuration = Configuration("httpHeadersWhitelist" -> Seq("x-client-id"))
+        protected def configuration: Configuration = Configuration("bootstrap.http.headersAllowlist" -> Seq("x-client-id"))
       }
 
       headerCarrierConverter
@@ -178,7 +178,7 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .otherHeaders shouldBe Seq("path" -> "/the/request/path")
     }
 
-    "work if httpHeadersWhitelist not provided in config" in {
+    "work if httpHeadersAllowlist not provided in config" in {
       val headerCarrierConverter = new HeaderCarrierConverter {
         protected def configuration: Configuration = Configuration.empty
       }

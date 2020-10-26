@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play
 
 import com.github.ghik.silencer.silent
-import play.api.Play
+import play.api.{Logger, Play}
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging._
@@ -25,6 +25,8 @@ import uk.gov.hmrc.http.logging._
 import scala.util.Try
 
 object HeaderCarrierConverter {
+
+  private val logger = Logger(getClass)
 
   def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) =
     fromHeadersAndSessionAndRequest(headers, session, None)
@@ -37,8 +39,13 @@ object HeaderCarrierConverter {
   }
 
   @silent("deprecated")
-  def whitelistedHeaders: Seq[String] =
-    Play.maybeApplication.flatMap(_.configuration.getStringSeq("httpHeadersWhitelist")).getOrElse(Seq())
+  private def allowlistedHeaders: Seq[String] =
+      Play.maybeApplication.map(_.configuration)
+        .flatMap { configuration =>
+          if (configuration.keys.contains("httpHeadersWhitelist"))
+            logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
+          configuration.getStringSeq("bootstrap.http.headersAllowlist")
+        }.getOrElse(Seq.empty)
 
   def buildRequestChain(currentChain: Option[String]): RequestChain =
     currentChain match {
@@ -100,7 +107,7 @@ object HeaderCarrierConverter {
     val remaining =
       headers.keys
         .filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_))
-        .filter(h => whitelistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
+        .filter(h => allowlistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
     remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq ++
       //adding path so that play-auditing can access the request path without a dependency on play
       requestHeader.map(rh => Path -> rh.path)

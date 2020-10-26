@@ -20,7 +20,7 @@ object HeaderNames {
 
   /*
    * this isn't ideal, but downstream apps still want to refer to typed header values
-   * and guarantee their explicit whitelisting whilst "remaining headers" should avoid
+   * and guarantee their explicit allowlisting whilst "remaining headers" should avoid
    * duplicating these and creating unnecessary data on the wire.
    * We could just model as a list but then accessing known header names would
    * have to be done by magic number and would be susceptible to changes in ordering

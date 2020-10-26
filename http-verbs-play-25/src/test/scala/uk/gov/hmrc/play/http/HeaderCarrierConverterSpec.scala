@@ -140,8 +140,8 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         .akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
     }
 
-    "add all whitelisted remaining headers, ignoring explicit ones" in running(
-      FakeApplication(additionalConfiguration = Map("httpHeadersWhitelist" -> Seq("quix")))) {
+    "add all allowlisted remaining headers, ignoring explicit ones" in running(
+      FakeApplication(additionalConfiguration = Map("bootstrap.http.headersAllowlist" -> Seq("quix")))) {
       HeaderCarrierConverter
         .fromHeadersAndSession(
           headers(HeaderNames.xRequestId -> "18476239874162", "User-Agent" -> "quix", "quix" -> "foo"),
@@ -149,8 +149,8 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         .otherHeaders shouldBe Seq("quix" -> "foo")
     }
 
-    "whitelisted headers check should be case insensitive" in running(
-      FakeApplication(additionalConfiguration = Map("httpHeadersWhitelist" -> Seq("x-client-id")))) {
+    "allowlisted headers check should be case insensitive" in running(
+      FakeApplication(additionalConfiguration = Map("bootstrap.http.headersAllowlist" -> Seq("x-client-id")))) {
       HeaderCarrierConverter
         .fromHeadersAndSession(
           headers(HeaderNames.xRequestId -> "18476239874162", "User-Agent" -> "quix", "X-Client-ID" -> "foo"),
