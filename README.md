@@ -29,6 +29,9 @@ The fields `authProvider` ('ap'), `userId` and `token` are no longer available i
 #### HeaderCarrier
 The fields `token` and `userId` are no longer available in the session and so have been removed from HeaderCarrier
 
+#### Configuration
+The configuration key `httpHeadersWhitelist` has been replaced with `bootstrap.http.headersAllowlist`. `httpHeadersWhitelist` will no longer take effect.
+
 ### Version 11.0.0
 
 #### HttpReads

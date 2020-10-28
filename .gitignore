@@ -31,6 +31,10 @@ target
 .settings
 .classpath
 .sass-cache
+.bloop/
+.metals/
+.vscode/
+project/metals.sbt
 
 nohup.out
 rebel.xml

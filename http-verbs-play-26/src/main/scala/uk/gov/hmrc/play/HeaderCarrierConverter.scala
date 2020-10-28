@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.play
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import com.typesafe.config.ConfigFactory
-import play.api.Configuration
+import play.api.{Configuration, Logger}
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging._
@@ -30,6 +32,8 @@ object HeaderCarrierConverter extends HeaderCarrierConverter {
 }
 
 trait HeaderCarrierConverter {
+
+  private val logger = Logger(getClass)
 
   def fromHeadersAndSession(headers: Headers, session: Option[Session] = None): HeaderCarrier =
     fromHeadersAndSessionAndRequest(headers, session, None)
@@ -113,14 +117,19 @@ trait HeaderCarrierConverter {
     val remaining =
       headers.keys
         .filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_))
-        .filter(h => whitelistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
+        .filter(h => allowlistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
     remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq ++
       //adding path so that play-auditing can access the request path without a dependency on play
       requestHeader.map(rh => Path -> rh.path)
   }
 
-  private def whitelistedHeaders: Seq[String] =
-    configuration.get[Seq[String]]("httpHeadersWhitelist")
+  private val deprecationLogged = new AtomicBoolean(false)
+
+  private def allowlistedHeaders: Seq[String] = {
+    if (configuration.has("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
+      logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
+    configuration.get[Seq[String]]("bootstrap.http.headersAllowlist")
+  }
 
   protected def configuration: Configuration
 
