@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.play
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import com.typesafe.config.ConfigFactory
 import play.api.{Configuration, Logger}
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
@@ -121,8 +123,10 @@ trait HeaderCarrierConverter {
       requestHeader.map(rh => Path -> rh.path)
   }
 
+  private val deprecationLogged = new AtomicBoolean(false)
+
   private def allowlistedHeaders: Seq[String] = {
-    if (configuration.has("httpHeadersWhitelist"))
+    if (configuration.has("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
       logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
     configuration.get[Seq[String]]("bootstrap.http.headersAllowlist")
   }
