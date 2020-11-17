@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import play.api.Logger
 import play.api.libs.json.Writes
+import play.utils.UriEncoding
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -148,7 +149,7 @@ class UrlBuilder private (baseUrl: String, queryParams: Seq[(String, String)], f
     new URL(s"$path$encodeQueryParamString$encodedFragment")
   }
 
-  private def encodeUri(input: String) =  encodeQuery(input).replaceAllLiterally("+", "%20")
+  private def encodeUri(input: String) =  UriEncoding.encodePathSegment(input, UTF_8)
   private def encodeQuery(input: String) =  URLEncoder.encode(input, UTF_8.toString)
 }
 

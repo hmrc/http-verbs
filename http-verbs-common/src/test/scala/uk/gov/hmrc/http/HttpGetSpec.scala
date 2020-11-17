@@ -215,11 +215,11 @@ class HttpGetSpec
 
     "return encoded url when path needs encoding" in {
       val expected =
-        Some("http://test.net/some%2Fother%2Froute%3Fa%3Dc%23/something?email=testalias%40email.com")
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias%40email.com")
       val testGet = new UrlTestingHttpGet()
       testGet
         .GET[HttpResponse](UrlBuilder("http://test.net")
-          .addPath("some/other/route?a=c#")
+          .addPath("some/other/route?a=b&c=d#")
           .addPath("something")
           .addQueryParam("email" -> "testalias@email.com"), Seq.empty)
       testGet.lastUrl shouldBe expected
