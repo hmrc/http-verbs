@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import java.net.URLEncoder
-
 import uk.gov.hmrc.http.HttpVerbs.{GET => GET_VERB}
 import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.http.logging.ConnectionTracing
@@ -27,30 +25,15 @@ import scala.concurrent.{ExecutionContext, Future}
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
   override def GET[A](
-    url: String,
-    queryParams: Seq[(String, String)],
-    headers: Seq[(String, String)])(
-      implicit rds: HttpReads[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[A] = {
-    if (queryParams.nonEmpty && url.contains("?")) {
-      throw new UrlValidationException(
-        url,
-        s"${this.getClass}.GET(url, queryParams)",
-        "Query parameters should be provided in either url or as a Seq of tuples")
-    }
+    urlBuilder: UrlBuilder,
+    headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
 
-    val urlWithQuery = url + makeQueryString(queryParams)
+    val url = urlBuilder.toUrl.toString
 
-    withTracing(GET_VERB, urlWithQuery) {
-      val httpResponse = retry(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = headers))
+    withTracing(GET_VERB, url) {
+      val httpResponse = retry(GET_VERB, url)(doGet(url, headers = headers))
       executeHooks(url, GET_VERB, None, httpResponse)
-      mapErrors(GET_VERB, urlWithQuery, httpResponse).map(response => rds.read(GET_VERB, urlWithQuery, response))
+      mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
     }
-  }
-
-  private def makeQueryString(queryParams: Seq[(String, String)]) = {
-    val paramPairs = queryParams.map { case (k, v) => s"$k=${URLEncoder.encode(v, "utf-8")}" }
-    if (paramPairs.isEmpty) "" else paramPairs.mkString("?", "&", "")
   }
 }

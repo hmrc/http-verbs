@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import java.net.{URI, URL, URLEncoder}
+import java.nio.charset.StandardCharsets.UTF_8
+
+import play.api.Logger
 import play.api.libs.json.Writes
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -100,30 +104,72 @@ trait HttpTransport
     with PutHttpTransport
     with PostHttpTransport {}
 
+class UrlBuilder private (baseUrl: String, queryParams: Seq[(String, String)], fragment: Option[String]) {
+
+  if(baseUrl.contains("?")){
+    Logger(getClass).warn("Passing params in baseUrl is deprecated now. Please use builder methods on UrlBuilder to add query parameters")
+  }
+
+  if(baseUrl.contains("#")){
+    Logger(getClass).warn("Passing fragments in baseUrl is deprecated now. Please use builder methods on UrlBuilder to add fragment")
+  }
+
+  def addQueryParams(queryParameters: Seq[(String, String)]): UrlBuilder =
+    new UrlBuilder(baseUrl, queryParams = queryParams ++ queryParameters, fragment)
+  def addQueryParam(queryParam: (String, String)): UrlBuilder          = addQueryParams(Seq(queryParam))
+  def withFragment(fragment: String): UrlBuilder                       = new UrlBuilder(baseUrl, queryParams, fragment = Some(fragment))
+
+  private val uri = new URI(baseUrl)
+
+  def toUrl: URL = {
+
+    val allQueryParams = Option(uri.getQuery).getOrElse("&").split("&").map { param =>
+      val keyValue = param.split("=", 2)
+      keyValue(0) -> keyValue(1)
+    }.toSeq ++ queryParams
+
+    val encodeQueryParams = allQueryParams
+      .map {
+        case (k, v) => s"${encodeQuery(k)}=${encodeQuery(v)}"
+      }
+
+    val queryParamPrefix = if(encodeQueryParams.nonEmpty) "?" else ""
+
+    val encodeQueryParamString = encodeQueryParams.mkString(queryParamPrefix, "&", "")
+
+    val encodedFragment = fragment.orElse(Option(uri.getFragment)).map(encodeUri).getOrElse("")
+
+    val path = baseUrl.takeWhile(_ != '?')
+
+    new URL(s"$path$encodeQueryParamString$encodedFragment")
+  }
+
+  private def encodeUri(input: String) =  encodeQuery(input).replaceAllLiterally("+", "%20")
+  private def encodeQuery(input: String) =  URLEncoder.encode(input, UTF_8.toString)
+}
+
+object UrlBuilder {
+  def apply(baseUrl: String) = new UrlBuilder(baseUrl, Seq.empty, None)
+}
+
 trait CoreGet {
   def GET[A](
-    url: String,
-    queryParams: Seq[(String, String)],
-    headers: Seq[(String, String)])(
-      implicit rds: HttpReads[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[A]
+    urlBuilder: UrlBuilder,
+    headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A]
 
-  def GET[A](
-    url: String)(
-      implicit rds: HttpReads[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[A] =
-    GET(url, Seq.empty, Seq.empty)
+  def GET[A](url: String, queryParams: Seq[(String, String)], headers: Seq[(String, String)])(
+    implicit rds: HttpReads[A],
+    hc: HeaderCarrier,
+    ec: ExecutionContext): Future[A] = GET(UrlBuilder(url).addQueryParams(queryParams), headers)
 
-  def GET[A](
-    url: String,
-    queryParams: Seq[(String, String)])(
-      implicit rds: HttpReads[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[A] =
-    GET(url, queryParams, Seq.empty)
+  def GET[A](url: String)(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] =
+    GET(UrlBuilder(url), Seq.empty)
 
+  def GET[A](url: String, queryParams: Seq[(String, String)])(
+    implicit rds: HttpReads[A],
+    hc: HeaderCarrier,
+    ec: ExecutionContext): Future[A] =
+    GET(UrlBuilder(url).addQueryParams(queryParams), Seq.empty)
 }
 
 trait CoreDelete {

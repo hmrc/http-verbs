@@ -62,8 +62,7 @@ trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch wit
     ???
 
   override def GET[A](
-    url: String,
-    queryParams: Seq[(String, String)],
+    url: UrlBuilder,
     headers: Seq[(String, String)])(
       implicit rds: HttpReads[A],
       hc: HeaderCarrier,

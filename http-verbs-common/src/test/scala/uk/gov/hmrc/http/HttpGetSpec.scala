@@ -186,6 +186,33 @@ class HttpGetSpec
       testGet.lastUrl shouldBe expected
     }
 
+    "return a url with encoded param pairs with url builder" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias%40email.com&data=%7B%22message%22%3A%22in+json+format%22%7D")
+      val testGet = new UrlTestingHttpGet()
+      testGet
+        .GET[HttpResponse](UrlBuilder("http://test.net").addQueryParams(Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")), Seq.empty)
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return an encoded url when query param is in baseUrl" in {
+      val expected =
+        Some("http://test.net?email=testalias%40email.com&foo=bar&data=%7B%22message%22%3A%22in+json+format%22%7D")
+      val testGet = new UrlTestingHttpGet()
+      testGet
+        .GET[HttpResponse](UrlBuilder("http://test.net?email=testalias@email.com&foo=bar").addQueryParams(Seq("data" -> "{\"message\":\"in json format\"}")), Seq.empty)
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return encoded url when query params are already encoded" in {
+      val expected =
+        Some("http://test.net?email=testalias%40email.com")
+      val testGet = new UrlTestingHttpGet()
+      testGet
+        .GET[HttpResponse](UrlBuilder("http://test.net?email=testalias%40email.com"), Seq.empty)
+      testGet.lastUrl shouldBe expected
+    }
+
     "return a url with duplicate param pairs" in {
       val expected = Some("http://test.net?one=1&two=2&one=11")
       val testGet = new UrlTestingHttpGet()
@@ -193,14 +220,6 @@ class HttpGetSpec
         .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")))
       testGet.lastUrl shouldBe expected
     }
-
-    "raise an exception if the URL provided already has a query string" in {
-      val testGet = new UrlTestingHttpGet()
-
-      a[UrlValidationException] should be thrownBy testGet
-        .GET[HttpResponse]("http://test.net?should=not=be+here", Seq(("one", "1")))
-    }
-
 
     "be able to return plain responses provided already has Query and Header String" in {
       val response = HttpResponse(200, testBody)
