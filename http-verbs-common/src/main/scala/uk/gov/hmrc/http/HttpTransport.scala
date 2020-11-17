@@ -118,6 +118,10 @@ class UrlBuilder private (baseUrl: String, queryParams: Seq[(String, String)], f
     new UrlBuilder(baseUrl, queryParams = queryParams ++ queryParameters, fragment)
   def addQueryParam(queryParam: (String, String)): UrlBuilder          = addQueryParams(Seq(queryParam))
   def withFragment(fragment: String): UrlBuilder                       = new UrlBuilder(baseUrl, queryParams, fragment = Some(fragment))
+  def addPath(path: String): UrlBuilder = {
+    if(path.isEmpty) this else
+    new UrlBuilder(s"$baseUrl/${encodeUri(path)}", queryParams, fragment)
+  }
 
   private val uri = new URI(baseUrl)
 

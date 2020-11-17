@@ -213,6 +213,18 @@ class HttpGetSpec
       testGet.lastUrl shouldBe expected
     }
 
+    "return encoded url when path needs encoding" in {
+      val expected =
+        Some("http://test.net/some%2Fother%2Froute%3Fa%3Dc%23/something?email=testalias%40email.com")
+      val testGet = new UrlTestingHttpGet()
+      testGet
+        .GET[HttpResponse](UrlBuilder("http://test.net")
+          .addPath("some/other/route?a=c#")
+          .addPath("something")
+          .addQueryParam("email" -> "testalias@email.com"), Seq.empty)
+      testGet.lastUrl shouldBe expected
+    }
+
     "return a url with duplicate param pairs" in {
       val expected = Some("http://test.net?one=1&two=2&one=11")
       val testGet = new UrlTestingHttpGet()
