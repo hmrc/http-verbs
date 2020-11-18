@@ -24,7 +24,7 @@ trait WSPatch  extends default.WSPatch  with WSRequest
 trait WSPut    extends default.WSPut    with WSRequest
 trait WSPost   extends default.WSPost   with WSRequest {
   override def withEmptyBody(request: PlayWSRequest): PlayWSRequest =
-    request.withBody(EmptyBody)
+    request.withBody(EmptyBody).addHttpHeaders((play.api.http.HeaderNames.CONTENT_LENGTH -> "0"))
 }
 
 trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch
