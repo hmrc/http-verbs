@@ -177,7 +177,7 @@ class HttpGetSpec
 
     "return a url with encoded param pairs" in {
       val expected =
-        Some("http://test.net?email=test%2Balias%40email.com&data=%7B%22message%22%3A%22in+json+format%22%7D")
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
       val testGet = new UrlTestingHttpGet()
       testGet
         .GET[HttpResponse](
@@ -188,40 +188,39 @@ class HttpGetSpec
 
     "return a url with encoded param pairs with url builder" in {
       val expected =
-        Some("http://test.net?email=test%2Balias%40email.com&data=%7B%22message%22%3A%22in+json+format%22%7D")
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
       val testGet = new UrlTestingHttpGet()
-      testGet
-        .GET[HttpResponse](UrlBuilder("http://test.net").addQueryParams(Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")), Seq.empty)
+      val queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")
+      testGet.GET[HttpResponse](url"http://test.net?$queryParams")
       testGet.lastUrl shouldBe expected
     }
 
     "return an encoded url when query param is in baseUrl" in {
       val expected =
-        Some("http://test.net?email=testalias%40email.com&foo=bar&data=%7B%22message%22%3A%22in+json+format%22%7D")
+        Some("http://test.net?email=testalias@email.com&foo=bar&data=%7B%22message%22:%22in+json+format%22%7D")
       val testGet = new UrlTestingHttpGet()
+      val queryParams = Seq("data" -> "{\"message\":\"in json format\"}")
       testGet
-        .GET[HttpResponse](UrlBuilder("http://test.net?email=testalias@email.com&foo=bar").addQueryParams(Seq("data" -> "{\"message\":\"in json format\"}")), Seq.empty)
+        .GET[HttpResponse](url"http://test.net?email=testalias@email.com&foo=bar&$queryParams")
       testGet.lastUrl shouldBe expected
     }
 
     "return encoded url when query params are already encoded" in {
       val expected =
-        Some("http://test.net?email=testalias%40email.com")
+        Some("http://test.net?email=test%2Balias@email.com")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET[HttpResponse](UrlBuilder("http://test.net?email=testalias%40email.com"), Seq.empty)
+        .GET[HttpResponse](url"http://test.net?email=test%2Balias@email.com")
       testGet.lastUrl shouldBe expected
     }
 
     "return encoded url when path needs encoding" in {
       val expected =
-        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias%40email.com")
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias@email.com")
       val testGet = new UrlTestingHttpGet()
-      testGet
-        .GET[HttpResponse](UrlBuilder("http://test.net")
-          .addPath("some/other/route?a=b&c=d#")
-          .addPath("something")
-          .addQueryParam("email" -> "testalias@email.com"), Seq.empty)
+      val paths = List("some/other/route?a=b&c=d#", "something")
+      val email = "testalias@email.com"
+      testGet.GET[HttpResponse](url"http://test.net/$paths?email=$email")
       testGet.lastUrl shouldBe expected
     }
 
@@ -232,6 +231,14 @@ class HttpGetSpec
         .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")))
       testGet.lastUrl shouldBe expected
     }
+
+    "raise an exception if the URL provided already has a query string" in {
+      val testGet = new UrlTestingHttpGet()
+
+      a[UrlValidationException] should be thrownBy testGet
+        .GET[HttpResponse]("http://test.net?should=not=be+here", Seq(("one", "1")))
+    }
+
 
     "be able to return plain responses provided already has Query and Header String" in {
       val response = HttpResponse(200, testBody)

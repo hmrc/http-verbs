@@ -15,7 +15,8 @@ object AppDependencies {
     "uk.gov.hmrc" %% "http-core"          % "2.4.0",
     // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
     "com.fasterxml.jackson.core"     % "jackson-core"            % "2.10.3",
-    "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.10.3"
+    "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.10.3",
+    "com.softwaremill.sttp.model" %% "core" % "1.2.0-RC5"
   )
 
   val coreCompilePlay25 = Seq(

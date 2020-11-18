@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.http
 
+import java.net.URL
+
 import uk.gov.hmrc.http.HttpVerbs.{GET => GET_VERB}
 import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.http.logging.ConnectionTracing
@@ -25,15 +27,15 @@ import scala.concurrent.{ExecutionContext, Future}
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
   override def GET[A](
-    urlBuilder: UrlBuilder,
+    url: URL,
     headers: Seq[(String, String)])(implicit rds: HttpReads[A], hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
 
-    val url = urlBuilder.toUrl.toString
+    val stringUrl = url.toString
 
-    withTracing(GET_VERB, url) {
-      val httpResponse = retry(GET_VERB, url)(doGet(url, headers = headers))
-      executeHooks(url, GET_VERB, None, httpResponse)
-      mapErrors(GET_VERB, url, httpResponse).map(response => rds.read(GET_VERB, url, response))
+    withTracing(GET_VERB, stringUrl) {
+      val httpResponse = retry(GET_VERB, stringUrl)(doGet(stringUrl, headers = headers))
+      executeHooks(stringUrl, GET_VERB, None, httpResponse)
+      mapErrors(GET_VERB, stringUrl, httpResponse).map(response => rds.read(GET_VERB, stringUrl, response))
     }
   }
 }

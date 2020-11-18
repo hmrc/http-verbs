@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.play.test
 
+import java.net.URL
+
 import play.api.libs.json.Writes
 import uk.gov.hmrc.http._
 
@@ -62,7 +64,7 @@ trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch wit
     ???
 
   override def GET[A](
-    url: UrlBuilder,
+    url: URL,
     headers: Seq[(String, String)])(
       implicit rds: HttpReads[A],
       hc: HeaderCarrier,
