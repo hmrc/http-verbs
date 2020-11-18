@@ -155,6 +155,26 @@ class HeadersSpec
             .withHeader("extra-header", equalTo("my-extra-header")))
       }
     }
+
+    "with an empty body" - {
+      "must add a content length header if none is present" in {
+        server.stubFor(
+          post(urlEqualTo("/empty"))
+            .willReturn(aResponse().withStatus(200)))
+
+        client.POSTEmpty[HttpResponse](s"http://localhost:${server.port()}/empty").futureValue
+
+        server.verify(
+          postRequestedFor(urlEqualTo("/empty"))
+            .withHeader(HeaderNames.authorisation, equalTo("authorization"))
+            .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
+            .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
+            .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
+            .withHeader("extra-header", equalTo("my-extra-header"))
+            .withHeader(play.api.http.HeaderNames.CONTENT_LENGTH, equalTo("0"))
+        )
+      }
+    }
   }
 
   "a get request" - {
