@@ -20,7 +20,6 @@ import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging._
 import play.api.http.{HeaderNames => PlayHeaderNames}
 
 import scala.util.Try

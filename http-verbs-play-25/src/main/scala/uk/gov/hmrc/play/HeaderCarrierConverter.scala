@@ -20,7 +20,6 @@ import com.github.ghik.silencer.silent
 import play.api.Play
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging._
 
 import scala.util.Try
 

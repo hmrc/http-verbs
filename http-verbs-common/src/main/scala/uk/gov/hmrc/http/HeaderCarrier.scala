@@ -19,7 +19,7 @@ package uk.gov.hmrc.http
 import java.net.URL
 
 import org.slf4j.{Logger, LoggerFactory}
-import uk.gov.hmrc.http.logging._
+import uk.gov.hmrc.http.logging.LoggingDetails
 
 import scala.util.matching.Regex
 

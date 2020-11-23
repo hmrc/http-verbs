@@ -24,6 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import org.slf4j.Logger
 import uk.gov.hmrc.http._
 
+
 import scala.util.{Failure, Success}
 
 class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {
@@ -38,9 +39,7 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     reset(mockPlayLogger)
 
   "logResult" should {
-
     "log 200 as DEBUG" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Success("response")
@@ -51,7 +50,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log 404 error as INFO" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(new NotFoundException("not found"))
@@ -62,7 +60,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log 404 upstream error as INFO" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(UpstreamErrorResponse(message = "404 error", statusCode = 404, reportAs = 404))
@@ -73,7 +70,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log 401 upstream error as WARN" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(UpstreamErrorResponse(message = "401 error", statusCode = 401, reportAs = 401))
@@ -84,7 +80,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log 400 error as WARN" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(UpstreamErrorResponse(message = "400 error", statusCode = 400, reportAs = 400))
@@ -95,7 +90,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log 500 upstream error as WARN" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(UpstreamErrorResponse(message = "500 error", statusCode = 500, reportAs = 500))
@@ -106,7 +100,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log 502 error as WARN" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(new BadGatewayException("502 error"))
@@ -117,7 +110,6 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
     }
 
     "log unrecognised exception as WARN" in {
-
       val ld = new StubLoggingDetails()
 
       val httpResult = Failure(new Exception("unknown error"))
@@ -129,6 +121,8 @@ class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSu
   }
 
   private class StubLoggingDetails extends LoggingDetails {
+    import uk.gov.hmrc.http.{Authorization, ForwardedFor, RequestId, RequestChain, SessionId}
+
     override def sessionId: Option[SessionId] = Some(SessionId("sId"))
 
     override def forwarded: Option[ForwardedFor] = None

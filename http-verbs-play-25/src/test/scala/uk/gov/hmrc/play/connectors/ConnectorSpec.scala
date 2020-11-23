@@ -21,7 +21,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 class ConnectorSpec extends AnyWordSpecLike with Matchers {
   class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc: ((=> Any) => Any)) {
