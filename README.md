@@ -25,6 +25,8 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 #### Headers
 
+The Headers `Authorization`, `ForwardedFor`, `RequestChain`, `RequestId`, `SessionId` have been moved from package `uk.gov.hmrc.http.logging` to `uk.gov.hmrc.http`
+
 ##### External hosts
 
 Explicit headers (those modelled explicitly in the `HeaderCarrier`) are no longer forwarded to external hosts. They will have to be provided explicitly via the *VERB* methods (GET, POST etc.).

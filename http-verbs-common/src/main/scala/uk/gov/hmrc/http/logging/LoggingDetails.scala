@@ -14,86 +14,35 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http
+package uk.gov.hmrc.http.logging
 
 import scala.util.Random
+import uk.gov.hmrc.http.{Authorization, ForwardedFor, HeaderNames, RequestChain, RequestId, SessionId}
 
-package object logging {
+trait LoggingDetails {
 
-  @deprecated("Use uk.gov.hmrc.http.Authorization instead", "2.12.0")
-  type Authorization = uk.gov.hmrc.http.Authorization
+  def sessionId: Option[SessionId]
 
-  @deprecated("Use uk.gov.hmrc.http.SessionId instead", "2.12.0")
-  type SessionId = uk.gov.hmrc.http.SessionId
+  def requestId: Option[RequestId]
 
-  @deprecated("Use uk.gov.hmrc.http.SessionId instead", "2.12.0")
-  object SessionId {
-    def apply(value: String) = uk.gov.hmrc.http.SessionId(value)
-  }
+  def requestChain: RequestChain
 
-  @deprecated("Use uk.gov.hmrc.http.RequestId instead", "2.12.0")
-  type RequestId = uk.gov.hmrc.http.RequestId
+  @deprecated("Authorization header is no longer included in logging", "-")
+  def authorization: Option[Authorization]
 
-  @deprecated("Use uk.gov.hmrc.http.RequestId instead", "2.12.0")
-  object RequestId {
-    def apply(value: String) = uk.gov.hmrc.http.RequestId(value)
-  }
+  def forwarded: Option[ForwardedFor]
 
-  @deprecated("Use uk.gov.hmrc.http.AkamaiReputation instead", "2.12.0")
-  type AkamaiReputation = uk.gov.hmrc.http.AkamaiReputation
+  def age: Long
 
-  @deprecated("Use uk.gov.hmrc.http.AkamaiReputation instead", "2.12.0")
-  object AkamaiReputation {
-    def apply(value: String) = uk.gov.hmrc.http.AkamaiReputation(value)
-  }
+  lazy val data: Map[String, Option[String]] = Map(
+    HeaderNames.xRequestId    -> requestId.map(_.value),
+    HeaderNames.xSessionId    -> sessionId.map(_.value),
+    HeaderNames.xForwardedFor -> forwarded.map(_.value)
+  )
 
-  @deprecated("Use uk.gov.hmrc.http.RequestChain instead", "2.12.0")
-  type RequestChain = uk.gov.hmrc.http.RequestChain
-
-  @deprecated("Use uk.gov.hmrc.http.RequestChain instead", "2.12.0")
-  object RequestChain {
-    def apply(value: String) = uk.gov.hmrc.http.RequestChain(value)
-
-    def init = uk.gov.hmrc.http.RequestChain.init
-  }
-
-  @deprecated("Use uk.gov.hmrc.http.ForwardedFor instead", "2.12.0")
-  type ForwardedFor = uk.gov.hmrc.http.ForwardedFor
-
-  @deprecated("Use uk.gov.hmrc.http.ForwardedFor instead", "2.12.0")
-  object ForwardedFor {
-    def apply(value: String) = uk.gov.hmrc.http.ForwardedFor(value)
-  }
-}
-
-package logging {
-  trait LoggingDetails {
-
-    import uk.gov.hmrc.http._
-
-    def sessionId: Option[uk.gov.hmrc.http.SessionId]
-
-    def requestId: Option[uk.gov.hmrc.http.RequestId]
-
-    def requestChain: uk.gov.hmrc.http.RequestChain
-
-    @deprecated("Authorization header is no longer included in logging", "-")
-    def authorization: Option[uk.gov.hmrc.http.Authorization]
-
-    def forwarded: Option[uk.gov.hmrc.http.ForwardedFor]
-
-    def age: Long
-
-    lazy val data: Map[String, Option[String]] = Map(
-      HeaderNames.xRequestId    -> requestId.map(_.value),
-      HeaderNames.xSessionId    -> sessionId.map(_.value),
-      HeaderNames.xForwardedFor -> forwarded.map(_.value)
-    )
-
-    def mdcData: Map[String, String] =
-      for {
-        d <- data
-        v <- d._2
-      } yield (d._1, v)
-  }
+  def mdcData: Map[String, String] =
+    for {
+      d <- data
+      v <- d._2
+    } yield (d._1, v)
 }
