@@ -88,6 +88,11 @@ case class HeaderCarrier(
         case None => Seq.empty
       }
 
+    val externalAllowlistedHeaders: Seq[String] =
+      config.fold(Seq.empty[String])(
+        _.getStringList("bootstrap.http.headersExternalAllowlist").asScala.toSeq
+      )
+
     val userAgentHeader: Seq[(String, String)] =
       config match {
         case Some(config) if config.hasPathOrNull("appName") =>
@@ -98,13 +103,21 @@ case class HeaderCarrier(
 
     val isInternalHost = internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-    // TODO add allowList to ensure we're not sending all explicit headers to external (e.g. Authorization)
-    if (isInternalHost)
-      explicitHeaders ++
-        extraHeaders ++
-        otherHeaders.filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-        userAgentHeader
-    else
-      explicitHeaders ++ extraHeaders ++ userAgentHeader
+    val hdrs =
+      if (isInternalHost)
+        explicitHeaders ++
+          extraHeaders ++
+          otherHeaders.filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+          userAgentHeader
+      else
+        explicitHeaders.filter { case (k, _) => externalAllowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+          extraHeaders ++
+          userAgentHeader
+
+    val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
+    if (duplicates.nonEmpty)
+      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
+
+    hdrs
   }
 }
