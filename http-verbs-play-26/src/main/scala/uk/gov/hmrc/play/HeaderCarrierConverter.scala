@@ -70,8 +70,8 @@ trait HeaderCarrierConverter {
 
   val Path = "path"
 
-  private def getSessionId(s: Session, headers: Headers) =
-    s.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
+  private def getSessionId(session: Session, headers: Headers) =
+    session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
 
   private def getDeviceId(c: Cookies, headers: Headers) =
     c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))

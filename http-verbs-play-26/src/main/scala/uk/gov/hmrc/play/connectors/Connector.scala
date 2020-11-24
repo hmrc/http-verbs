@@ -20,19 +20,15 @@ import play.api.libs.ws.{WSClient, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.HeaderCarrierConverter
 
+// TODO deprecate connectors package
+
 trait RequestBuilder {
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest
-}
-
-object RequestBuilder {
-  def headers(hc: HeaderCarrier): Seq[(String, String)] =
-    hc.headers.filter {
-      case (name, value) => name != HeaderCarrierConverter.Path
-    }
 }
 
 trait WSClientRequestBuilder extends RequestBuilder {
   def client: WSClient
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
-    client.url(url).withHttpHeaders(RequestBuilder.headers(hc): _*)
+    client.url(url)
+      .withHttpHeaders(hc.headersForUrl(config = None)(url): _*)
 }

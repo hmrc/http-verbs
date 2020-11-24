@@ -57,7 +57,7 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers {
           otherHeaders  = Seq("path" -> "/the/request/path")
         )
 
-        val request = p.builder.buildRequest("authBase")(carrier)
+        val request = p.builder.buildRequest("http://authBase")(carrier)
         request.headers.get(HeaderNames.authorisation).flatMap(_.headOption) shouldBe Some(testAuthorisation.value)
         request.headers.get(HeaderNames.xForwardedFor).flatMap(_.headOption) shouldBe Some(forwarded.value)
         request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption)    shouldBe Some(sessionId.value)

@@ -21,24 +21,21 @@ import play.api.libs.ws.{WS, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.HeaderCarrierConverter
 
+// TODO deprecate connectors package
+
 trait RequestBuilder {
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest
-}
-
-object RequestBuilder {
-  def headers(hc: HeaderCarrier): Seq[(String,String)] = {
-    hc.headers.filter { case (name,value) => name != HeaderCarrierConverter.Path }
-  }
 }
 
 trait PlayWSRequestBuilder extends RequestBuilder {
   @silent("deprecated")
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
     WS.url(url)(play.api.Play.current)
-      .withHeaders(RequestBuilder.headers(hc): _*)
+      .withHeaders(hc.headersForUrl(config = None)(url): _*)
 }
 
-trait WSClientRequestBuilder extends RequestBuilder {
-  this: WSClientProvider =>
-  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest = client.url(url).withHeaders(RequestBuilder.headers(hc): _*)
+trait WSClientRequestBuilder extends RequestBuilder { this: WSClientProvider =>
+  def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
+    client.url(url)
+      .withHeaders(hc.headersForUrl(config = None)(url): _*)
 }
