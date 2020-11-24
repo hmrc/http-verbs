@@ -19,20 +19,21 @@ package uk.gov.hmrc.http
 import uk.gov.hmrc.http.logging._
 
 case class HeaderCarrier(
-  authorization: Option[Authorization]       = None,
-  forwarded: Option[ForwardedFor]            = None,
-  sessionId: Option[SessionId]               = None,
-  requestId: Option[RequestId]               = None,
-  requestChain: RequestChain                 = RequestChain.init,
-  nsStamp: Long                              = System.nanoTime(),
-  extraHeaders: Seq[(String, String)]        = Seq(),
-  trueClientIp: Option[String]               = None,
-  trueClientPort: Option[String]             = None,
-  gaToken: Option[String]                    = None,
-  gaUserId: Option[String]                   = None,
-  deviceID: Option[String]                   = None,
+  authorization   : Option[Authorization]    = None,
+  forwarded       : Option[ForwardedFor]     = None,
+  sessionId       : Option[SessionId]        = None,
+  requestId       : Option[RequestId]        = None,
+  requestChain    : RequestChain             = RequestChain.init,
+  nsStamp         : Long                     = System.nanoTime(),
+  extraHeaders    : Seq[(String, String)]    = Seq(),
+  trueClientIp    : Option[String]           = None,
+  trueClientPort  : Option[String]           = None,
+  gaToken         : Option[String]           = None,
+  gaUserId        : Option[String]           = None,
+  deviceID        : Option[String]           = None,
   akamaiReputation: Option[AkamaiReputation] = None,
-  otherHeaders: Seq[(String, String)]        = Seq())
+  otherHeaders    : Seq[(String, String)]    = Seq()
+)
     extends LoggingDetails
     with HeaderProvider {
 
@@ -56,7 +57,9 @@ case class HeaderCarrier(
       gaUserId.map(HeaderNames.googleAnalyticUserId     -> _),
       deviceID.map(HeaderNames.deviceID                 -> _),
       akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
-    ).flatten ++ extraHeaders ++ otherHeaders
+    ).flatten ++
+      extraHeaders ++
+      otherHeaders
   }
 
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =

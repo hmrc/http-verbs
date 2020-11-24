@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.play
 
+// TODO should be in package uk.gov.hmrc.play.http
+
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.typesafe.config.ConfigFactory
@@ -41,7 +43,8 @@ trait HeaderCarrierConverter {
   def fromHeadersAndSessionAndRequest(
     headers: Headers,
     session: Option[Session]       = None,
-    request: Option[RequestHeader] = None): HeaderCarrier =
+    request: Option[RequestHeader] = None
+  ): HeaderCarrier =
     session.fold(fromHeaders(headers, request)) { session =>
       // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
       // cookie can be set for backwards compatibility
@@ -92,14 +95,15 @@ trait HeaderCarrierConverter {
     )
 
   private def fromSession(
-    headers: Headers,
-    cookies: Cookies,
+    headers      : Headers,
+    cookies      : Cookies,
     requestHeader: Option[RequestHeader],
-    s: Session): HeaderCarrier =
+    session      : Session
+  ): HeaderCarrier =
     HeaderCarrier(
-      authorization    = s.get(SessionKeys.authToken).map(Authorization),
+      authorization    = session.get(SessionKeys.authToken).map(Authorization),
       forwarded        = forwardedFor(headers),
-      sessionId        = getSessionId(s, headers).map(SessionId),
+      sessionId        = getSessionId(session, headers).map(SessionId),
       requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
       requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
       nsStamp          = requestTimestamp(headers),
@@ -120,7 +124,7 @@ trait HeaderCarrierConverter {
         .filter(h => allowlistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
     remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq ++
       //adding path so that play-auditing can access the request path without a dependency on play
-      requestHeader.map(rh => Path -> rh.path)
+      requestHeader.map(rh => Path -> rh.path).toSeq
   }
 
   private val deprecationLogged = new AtomicBoolean(false)
@@ -140,5 +144,4 @@ trait HeaderCarrierConverter {
       case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
       case (Some(tcip), Some(xff))                         => Some(s"$tcip, $xff")
     }).map(ForwardedFor)
-
 }
