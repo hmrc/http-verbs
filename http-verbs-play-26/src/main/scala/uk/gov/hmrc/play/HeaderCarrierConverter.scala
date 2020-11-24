@@ -117,15 +117,12 @@ trait HeaderCarrierConverter {
       otherHeaders     = otherHeaders(headers, requestHeader)
     )
 
-  private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] = {
-    val remaining =
-      headers.keys
-        .filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_))
-        .filter(h => allowlistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
-    remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq ++
+  private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] =
+      headers.headers
+        .filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) }
+        .filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
       //adding path so that play-auditing can access the request path without a dependency on play
       requestHeader.map(rh => Path -> rh.path).toSeq
-  }
 
   private val deprecationLogged = new AtomicBoolean(false)
 

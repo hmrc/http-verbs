@@ -33,9 +33,8 @@ case class HeaderCarrier(
   deviceID        : Option[String]           = None,
   akamaiReputation: Option[AkamaiReputation] = None,
   otherHeaders    : Seq[(String, String)]    = Seq()
-)
-    extends LoggingDetails
-    with HeaderProvider {
+) extends LoggingDetails
+     with HeaderProvider {
 
   /**
     * @return the time, in nanoseconds, since this header carrier was created
@@ -44,7 +43,7 @@ case class HeaderCarrier(
 
   val names = HeaderNames
 
-  lazy val headers: Seq[(String, String)] = {
+  private lazy val explicitHeaders: Seq[(String, String)] =
     List(
       requestId.map(rid => names.xRequestId  -> rid.value),
       sessionId.map(sid => names.xSessionId  -> sid.value),
@@ -57,15 +56,12 @@ case class HeaderCarrier(
       gaUserId.map(HeaderNames.googleAnalyticUserId     -> _),
       deviceID.map(HeaderNames.deviceID                 -> _),
       akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
-    ).flatten ++
-      extraHeaders ++
-      otherHeaders
-  }
+    ).flatten
 
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
-  def headersForUrl(config: Option[com.typesafe.config.Config])(url: String): Seq[(String, String)] = {
+  override def headersForUrl(config: Option[com.typesafe.config.Config])(url: String): Seq[(String, String)] = {
     import java.net.URL
     import scala.collection.JavaConverters.iterableAsScalaIterableConverter
     import scala.util.matching.Regex
@@ -86,12 +82,14 @@ case class HeaderCarrier(
           Seq.empty
       }
 
-    val hdrs = if (internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())) {
-      headers
-    } else {
-      headers.filterNot(otherHeaders.contains(_))
-    }
+    val isInternalHost = internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-    hdrs ++ userAgentHeader
+    // TODO add allowList to ensure we're not sending all explicit headers to external (e.g. Authorization)
+    // TODO remove "path", which was added for auditing
+    // TODO can we inline the otherHeaders filter from HeaderCarrierConverter here to keep all in one place?
+    if (isInternalHost)
+      explicitHeaders ++ extraHeaders ++ otherHeaders ++ userAgentHeader
+    else
+      explicitHeaders ++ extraHeaders ++ userAgentHeader
   }
 }
