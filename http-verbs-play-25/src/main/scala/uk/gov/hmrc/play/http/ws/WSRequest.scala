@@ -26,20 +26,32 @@ trait WSRequest extends WSRequestBuilder {
   import play.api.libs.ws.WS
 
   @silent("deprecated")
-  def wsClient: WSClient =
+  override def wsClient: WSClient =
     WS.client(play.api.Play.current)
 
-  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest =
+  override def buildRequest[A](
+    url    : String,
+    headers: Seq[(String, String)] = Seq.empty
+  )(implicit
+    hc: HeaderCarrier
+  ): PlayWSRequest = {
+    val hdrs = hc.headersForUrl(configuration)(url) ++ headers
+    // TODO log if duplicate headers
     wsClient.url(url)
-      .withHeaders(applicableHeaders(url)(hc): _*)
-      .withHeaders(headers: _*)
+      .withHeaders(hdrs: _*)
+  }
 }
 
 trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest =
+  override def buildRequest[A](
+    url    : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    hc: HeaderCarrier
+  ): PlayWSRequest =
     wsProxyServer match {
       case Some(proxy) => super.buildRequest(url, headers).withProxyServer(proxy)
       case None        => super.buildRequest(url, headers)

@@ -19,7 +19,7 @@ package uk.gov.hmrc.play.http
 import java.net.{ServerSocket, URI}
 import java.util.concurrent.TimeoutException
 
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -31,11 +31,16 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.TestHttpCore
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
-class HttpTimeoutSpec extends AnyWordSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
+class HttpTimeoutSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with ScalaFutures
+     with IntegrationPatience
+     with BeforeAndAfterAll {
+
+  import ExecutionContext.Implicits.global
 
   lazy val fakeApplication = FakeApplication(additionalConfiguration = Map("ws.timeout.request" -> "1000"))
 
@@ -52,7 +57,9 @@ class HttpTimeoutSpec extends AnyWordSpecLike with Matchers with ScalaFutures wi
   "HttpCalls" should {
 
     "be gracefully timeout when no response is received within the 'timeout' frame" in {
-      val http = new WSHttp with TestHttpCore
+      val http = new WSHttp with TestHttpCore {
+        override val configuration = None
+      }
 
       // get an unused port
       val ss = new ServerSocket(0)
@@ -63,16 +70,17 @@ class HttpTimeoutSpec extends AnyWordSpecLike with Matchers with ScalaFutures wi
         //starts web server
         ws.add(
           "/test",
-          new DelayedHttpHandler(global, 2000, new StringHttpHandler("application/json", "{name:'pong'}")))
+          new DelayedHttpHandler(global, 2000, new StringHttpHandler("application/json", "{name:'pong'}"))
+        )
         ws.start().get()
 
         implicit val hc = HeaderCarrier()
 
         val start = System.currentTimeMillis()
-        intercept[TimeoutException] {
-          //make request to web server
-          Await.result(http.doPost(s"$publicUri/test", "{name:'ping'}", Seq()), 5.seconds)
-        }
+
+        //make request to web server
+        http.doPost(s"$publicUri/test", "{name:'ping'}", Seq()).failed.futureValue shouldBe a [TimeoutException]
+
         val diff = (System.currentTimeMillis() - start).toInt
         // there is test execution delay around 700ms
         diff should be >= 1000

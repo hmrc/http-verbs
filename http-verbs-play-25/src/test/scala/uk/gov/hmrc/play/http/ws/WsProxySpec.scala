@@ -38,10 +38,8 @@ class WsProxySpec extends AnyWordSpecLike with Matchers with MockitoSugar with O
       val wSProxyServer = mock[WSProxyServer]
 
       object ProxiedGet extends WSProxy {
-
-        override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = Nil
-
-        def wsProxyServer = Some(wSProxyServer)
+        override val configuration = None
+        override def wsProxyServer = Some(wSProxyServer)
       }
 
       val request = ProxiedGet.buildRequest("http://example.com", headers = Seq.empty)
@@ -54,10 +52,8 @@ class WsProxySpec extends AnyWordSpecLike with Matchers with MockitoSugar with O
     "still work by making the request without using a proxy server" in new Setup {
 
       object ProxiedGet extends WSProxy {
-
-        override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = Nil
-
-        def wsProxyServer = None
+        override val configuration = None
+        override def wsProxyServer = None
       }
 
       val request = ProxiedGet.buildRequest("http://example.com", headers = Seq.empty)
@@ -110,5 +106,4 @@ class WsProxySpec extends AnyWordSpecLike with Matchers with MockitoSugar with O
     super.afterAll()
     Play.stop(fakeApplication)
   }
-
 }

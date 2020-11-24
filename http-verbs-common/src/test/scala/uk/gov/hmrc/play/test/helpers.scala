@@ -23,8 +23,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait TestHttpCore extends CorePost with CoreGet with CorePut with CorePatch with CoreDelete with Request {
 
-  override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = Nil
-
   override def POST[I, O](
     url: String,
     body: I,

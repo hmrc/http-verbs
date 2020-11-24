@@ -22,13 +22,13 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 trait WSRequest extends WSRequestBuilder {
 
-  def wsClient: WSClient
-
-  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest =
+  // TODO or buildRequest expects that headers have already been extracted from headercarrier?
+  override def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest = {
+    val hdrs = hc.headersForUrl(configuration)(url) ++ headers
+    // TODO log if duplicate headers
     wsClient.url(url)
-      .withHttpHeaders(applicableHeaders(url)(hc): _*)
-      .addHttpHeaders(headers: _*)
-
+      .withHttpHeaders(hdrs: _*)
+  }
 }
 
 trait WSProxy extends WSRequest {

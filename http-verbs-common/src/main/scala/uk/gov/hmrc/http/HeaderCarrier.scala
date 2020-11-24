@@ -64,4 +64,34 @@ case class HeaderCarrier(
 
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
+
+  def headersForUrl(config: Option[com.typesafe.config.Config])(url: String): Seq[(String, String)] = {
+    import java.net.URL
+    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+    import scala.util.matching.Regex
+
+    val internalHostPatterns: Seq[Regex] =
+      config match {
+        case Some(config) if config.hasPathOrNull("internalServiceHostPatterns") =>
+          config.getStringList("internalServiceHostPatterns").asScala.map(_.r).toSeq
+        case _ =>
+          Seq("^.*\\.service$".r, "^.*\\.mdtp$".r)
+      }
+
+    val userAgentHeader: Seq[(String, String)] =
+      config match {
+        case Some(config) if config.hasPathOrNull("appName") =>
+          Seq("User-Agent" -> config.getString("appName"))
+        case _ =>
+          Seq.empty
+      }
+
+    val hdrs = if (internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())) {
+      headers
+    } else {
+      headers.filterNot(otherHeaders.contains(_))
+    }
+
+    hdrs ++ userAgentHeader
+  }
 }

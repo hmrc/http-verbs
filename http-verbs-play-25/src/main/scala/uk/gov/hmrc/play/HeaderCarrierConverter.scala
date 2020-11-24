@@ -44,12 +44,12 @@ object HeaderCarrierConverter {
 
   @silent("deprecated")
   private def allowlistedHeaders: Seq[String] =
-      Play.maybeApplication.map(_.configuration)
-        .flatMap { configuration =>
-          if (configuration.keys.contains("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
-            logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
-          configuration.getStringSeq("bootstrap.http.headersAllowlist")
-        }.getOrElse(Seq.empty)
+    Play.maybeApplication.map(_.configuration)
+      .flatMap { configuration =>
+        if (configuration.keys.contains("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
+          logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
+        configuration.getStringSeq("bootstrap.http.headersAllowlist")
+      }.getOrElse(Seq.empty)
 
   def buildRequestChain(currentChain: Option[String]): RequestChain =
     currentChain match {
@@ -65,46 +65,51 @@ object HeaderCarrierConverter {
 
   val Path = "path"
 
-  private def getSessionId(s: Session, headers: Headers) =
-    s.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
+  private def getSessionId(session: Session, headers: Headers) =
+    session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
 
   private def getDeviceId(c: Cookies, headers: Headers) =
     c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
 
   private def fromHeaders(headers: Headers, requestHeader: Option[RequestHeader]): HeaderCarrier =
     HeaderCarrier(
-      headers.get(HeaderNames.authorisation).map(Authorization),
-      forwardedFor(headers),
-      headers.get(HeaderNames.xSessionId).map(SessionId),
-      headers.get(HeaderNames.xRequestId).map(RequestId),
-      buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      requestTimestamp(headers),
-      Seq.empty,
-      headers.get(HeaderNames.trueClientIp),
-      headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
-      headers.get(HeaderNames.deviceID),
-      headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders(headers, requestHeader)
+      authorization    = headers.get(HeaderNames.authorisation).map(Authorization),
+      forwarded        = forwardedFor(headers),
+      sessionId        = headers.get(HeaderNames.xSessionId).map(SessionId),
+      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
+      requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
+      nsStamp          = requestTimestamp(headers),
+      extraHeaders     = Seq.empty,
+      trueClientIp     = headers.get(HeaderNames.trueClientIp),
+      trueClientPort   = headers.get(HeaderNames.trueClientPort),
+      gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
+      gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
+      deviceID         = headers.get(HeaderNames.deviceID),
+      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      otherHeaders     = otherHeaders(headers, requestHeader)
     )
 
-  private def fromSession(headers: Headers, cookies: Cookies, requestHeader: Option[RequestHeader], s: Session): HeaderCarrier =
+  private def fromSession(
+    headers      : Headers,
+    cookies      : Cookies,
+    requestHeader: Option[RequestHeader],
+    session      : Session
+  ): HeaderCarrier =
     HeaderCarrier(
-      s.get(SessionKeys.authToken).map(Authorization),
-      forwardedFor(headers),
-      getSessionId(s, headers).map(SessionId),
-      headers.get(HeaderNames.xRequestId).map(RequestId),
-      buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      requestTimestamp(headers),
-      Seq.empty,
-      headers.get(HeaderNames.trueClientIp),
-      headers.get(HeaderNames.trueClientPort),
-      headers.get(HeaderNames.googleAnalyticTokenId),
-      headers.get(HeaderNames.googleAnalyticUserId),
-      getDeviceId(cookies, headers),
-      headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders(headers, requestHeader)
+      authorization    = s.get(SessionKeys.authToken).map(Authorization),
+      forwarded        = forwardedFor(headers),
+      sessionId        = getSessionId(s, headers).map(SessionId),
+      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
+      requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
+      nsStamp          = requestTimestamp(headers),
+      extraHeaders     = Seq.empty,
+      trueClientIp     = headers.get(HeaderNames.trueClientIp),
+      trueClientPort   = headers.get(HeaderNames.trueClientPort),
+      gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
+      gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
+      deviceID         = getDeviceId(cookies, headers),
+      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      otherHeaders     = otherHeaders(headers, requestHeader)
     )
 
   private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] = {
@@ -114,7 +119,7 @@ object HeaderCarrierConverter {
         .filter(h => allowlistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
     remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq ++
       //adding path so that play-auditing can access the request path without a dependency on play
-      requestHeader.map(rh => Path -> rh.path)
+      requestHeader.map(rh => Path -> rh.path).toSeq
   }
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] =

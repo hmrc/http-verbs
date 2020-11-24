@@ -17,5 +17,5 @@
 package uk.gov.hmrc.http
 
 trait HeaderProvider {
-  def headers: Seq[(String, String)]
+  def headersForUrl(config: Option[com.typesafe.config.Config])(url: String): Seq[(String, String)]
 }

@@ -71,9 +71,6 @@ class Examples
     override protected def configuration: Option[Config] = None
     override val hooks: Seq[HttpHook]                    = Seq.empty
     override protected def actorSystem: ActorSystem      = ActorSystem("test-actor-system")
-
-    // The default implementation doesn't allow setting headers on calls to hosts external to mdtp.
-    override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = hc.headers
   }
 
   private implicit val userWrites: Writes[User] = User.writes
@@ -82,7 +79,7 @@ class Examples
 
   "A verb" should {
     "allow the user to set additional headers using the header carrier" in {
-      implicit val hc = HeaderCarrier(otherHeaders = Seq("some-header" -> "header value"))
+      implicit val hc = HeaderCarrier().withExtraHeaders("some-header" -> "header value")
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
