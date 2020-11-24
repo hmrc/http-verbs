@@ -16,7 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import uk.gov.hmrc.http.logging._
+import play.api.Logger // TODO this library shouldn't depend on play
 
 case class HeaderCarrier(
   authorization   : Option[Authorization]    = None,
@@ -36,30 +39,32 @@ case class HeaderCarrier(
 ) extends LoggingDetails
      with HeaderProvider {
 
+  private val logger = Logger(getClass)
+
   /**
     * @return the time, in nanoseconds, since this header carrier was created
     */
   def age = System.nanoTime() - nsStamp
 
-  val names = HeaderNames
-
   private lazy val explicitHeaders: Seq[(String, String)] =
-    List(
-      requestId.map(rid => names.xRequestId  -> rid.value),
-      sessionId.map(sid => names.xSessionId  -> sid.value),
-      forwarded.map(f => names.xForwardedFor -> f.value),
-      Some(names.xRequestChain -> requestChain.value),
-      authorization.map(auth => names.authorisation -> auth.value),
-      trueClientIp.map(HeaderNames.trueClientIp         -> _),
-      trueClientPort.map(HeaderNames.trueClientPort     -> _),
-      gaToken.map(HeaderNames.googleAnalyticTokenId     -> _),
-      gaUserId.map(HeaderNames.googleAnalyticUserId     -> _),
-      deviceID.map(HeaderNames.deviceID                 -> _),
-      akamaiReputation.map(HeaderNames.akamaiReputation -> _.value)
-    ).flatten
+    Seq(
+      HeaderNames.xRequestId            -> requestId.map(_.value),
+      HeaderNames.xSessionId            -> sessionId.map(_.value),
+      HeaderNames.xForwardedFor         -> forwarded.map(_.value),
+      HeaderNames.xRequestChain         -> Some(requestChain.value),
+      HeaderNames.authorisation         -> authorization.map(_.value),
+      HeaderNames.trueClientIp          -> trueClientIp,
+      HeaderNames.trueClientPort        -> trueClientPort,
+      HeaderNames.googleAnalyticTokenId -> gaToken,
+      HeaderNames.googleAnalyticUserId  -> gaUserId,
+      HeaderNames.deviceID              -> deviceID,
+      HeaderNames.akamaiReputation      -> akamaiReputation.map(_.value)
+    ).collect { case (k, Some(v)) => (k, v) }
 
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
+
+  private val deprecationLogged = new AtomicBoolean(false)
 
   override def headersForUrl(config: Option[com.typesafe.config.Config])(url: String): Seq[(String, String)] = {
     import java.net.URL
@@ -74,6 +79,15 @@ case class HeaderCarrier(
           Seq("^.*\\.service$".r, "^.*\\.mdtp$".r)
       }
 
+    val allowlistedHeaders: Seq[String] =
+      config match {
+        case Some(config) =>
+          if (config.hasPath("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
+            logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
+          config.getStringList("bootstrap.http.headersAllowlist").asScala.toSeq
+        case None => Seq.empty
+      }
+
     val userAgentHeader: Seq[(String, String)] =
       config match {
         case Some(config) if config.hasPathOrNull("appName") =>
@@ -85,10 +99,11 @@ case class HeaderCarrier(
     val isInternalHost = internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
     // TODO add allowList to ensure we're not sending all explicit headers to external (e.g. Authorization)
-    // TODO remove "path", which was added for auditing
-    // TODO can we inline the otherHeaders filter from HeaderCarrierConverter here to keep all in one place?
     if (isInternalHost)
-      explicitHeaders ++ extraHeaders ++ otherHeaders ++ userAgentHeader
+      explicitHeaders ++
+        extraHeaders ++
+        otherHeaders.filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+        userAgentHeader
     else
       explicitHeaders ++ extraHeaders ++ userAgentHeader
   }

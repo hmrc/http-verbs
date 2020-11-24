@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.play
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import com.github.ghik.silencer.silent
-import play.api.{Logger, Play}
+import play.api.Play
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging._
@@ -27,8 +25,6 @@ import uk.gov.hmrc.http.logging._
 import scala.util.Try
 
 object HeaderCarrierConverter {
-
-  private val logger = Logger(getClass)
 
   def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) =
     fromHeadersAndSessionAndRequest(headers, session, None)
@@ -39,17 +35,6 @@ object HeaderCarrierConverter {
       fromSession(headers, cookies, request, _)
     }
   }
-
-  private val deprecationLogged = new AtomicBoolean(false)
-
-  @silent("deprecated")
-  private def allowlistedHeaders: Seq[String] =
-    Play.maybeApplication.map(_.configuration)
-      .flatMap { configuration =>
-        if (configuration.keys.contains("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
-          logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
-        configuration.getStringSeq("bootstrap.http.headersAllowlist")
-      }.getOrElse(Seq.empty)
 
   def buildRequestChain(currentChain: Option[String]): RequestChain =
     currentChain match {
@@ -114,10 +99,9 @@ object HeaderCarrierConverter {
 
   private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] =
     headers.headers
-      .filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) }
-      .filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-    //adding path so that play-auditing can access the request path without a dependency on play
-    requestHeader.map(rh => Path -> rh.path).toSeq
+      .filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+      // adding path so that play-auditing can access the request path without a dependency on play
+      requestHeader.map(rh => Path -> rh.path).toSeq
 
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] =
