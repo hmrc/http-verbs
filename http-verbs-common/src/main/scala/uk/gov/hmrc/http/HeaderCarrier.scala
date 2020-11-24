@@ -103,21 +103,14 @@ case class HeaderCarrier(
 
     val isInternalHost = internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-    val hdrs =
-      if (isInternalHost)
-        explicitHeaders ++
-          extraHeaders ++
-          otherHeaders.filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-          userAgentHeader
-      else
-        explicitHeaders.filter { case (k, _) => externalAllowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-          extraHeaders ++
-          userAgentHeader
-
-    val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
-    if (duplicates.nonEmpty)
-      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
-
-    hdrs
+    if (isInternalHost)
+      explicitHeaders ++
+        extraHeaders ++
+        otherHeaders.filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+        userAgentHeader
+    else
+      explicitHeaders.filter { case (k, _) => externalAllowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+        extraHeaders ++
+        userAgentHeader
   }
 }
