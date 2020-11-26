@@ -87,8 +87,9 @@ class HeaderCarrierSpec
 
       val config = ConfigFactory.parseString(
         """|appName: myApp
+           |internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
            |bootstrap.http.headersAllowlist: []
-           |bootstrap.http.headersExternalAllowlist = [x-session-id, x-request-id, x-forwarded-for]
+           |bootstrap.http.externalHeadersAllowlist = [x-session-id, x-request-id, x-forwarded-for]
            |""".stripMargin
       )
 
@@ -106,8 +107,9 @@ class HeaderCarrierSpec
     "should include the User-Agent header when the 'appName' config value is present" in {
       val config = ConfigFactory.parseString(
         """|appName: myApp
+           |internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
            |bootstrap.http.headersAllowlist: []
-           |bootstrap.http.headersExternalAllowlist = []
+           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 
@@ -146,8 +148,9 @@ class HeaderCarrierSpec
       )
 
       val config = ConfigFactory.parseString(
-        """|bootstrap.http.headersAllowlist: []
-           |bootstrap.http.headersExternalAllowlist = []
+        """|internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
+           |bootstrap.http.headersAllowlist: []
+           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 
@@ -163,8 +166,9 @@ class HeaderCarrierSpec
       )
 
       val config = ConfigFactory.parseString(
-        """|bootstrap.http.headersAllowlist: [foo]
-           |bootstrap.http.headersExternalAllowlist = []
+        """|internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
+           |bootstrap.http.headersAllowlist: [foo]
+           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 
@@ -183,7 +187,7 @@ class HeaderCarrierSpec
       val config = ConfigFactory.parseString(
         """|internalServiceHostPatterns: [localhost]
            |bootstrap.http.headersAllowlist: [foo]
-           |bootstrap.http.headersExternalAllowlist = []
+           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 

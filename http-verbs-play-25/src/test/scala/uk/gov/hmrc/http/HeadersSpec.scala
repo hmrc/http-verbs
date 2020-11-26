@@ -17,13 +17,14 @@
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
+import com.github.ghik.silencer.silent
 import com.github.tomakehurst.wiremock._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -37,12 +38,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 class HeadersSpec
-    extends AnyFreeSpec
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with ScalaFutures
-    with IntegrationPatience {
+  extends AnyWordSpecLike
+     with Matchers
+     with BeforeAndAfterAll
+     with BeforeAndAfterEach
+     with ScalaFutures
+     with IntegrationPatience {
 
   private lazy val app: Application = new GuiceApplicationBuilder().build()
   private val server                = new WireMockServer(wireMockConfig().port(PortTester.findPort()))
@@ -62,7 +63,8 @@ class HeadersSpec
     server.start()
   }
 
-  private implicit val headerCarrier: HeaderCarrier = HeaderCarrier(
+  @silent("deprecated")
+  private implicit val hc: HeaderCarrier = HeaderCarrier(
     authorization = Some(Authorization("authorization")),
     forwarded     = Some(ForwardedFor("forwarded-for")),
     sessionId     = Some(SessionId("session-id")),
@@ -76,15 +78,13 @@ class HeadersSpec
     override protected def actorSystem: ActorSystem      = ActorSystem("test-actor-system")
   }
 
-  "a post request" - {
-
-    "with an arbitrary body" - {
-
-      "must contain headers from the header carrier" in {
-
+  "a post request" when {
+    "with an arbitrary body" should {
+      "contain headers from the header carrier" in {
         server.stubFor(
           post(urlEqualTo("/arbitrary"))
-            .willReturn(aResponse().withStatus(200)))
+            .willReturn(aResponse().withStatus(200))
+        )
 
         client.POST[JsValue, HttpResponse](s"http://localhost:${server.port()}/arbitrary", Json.obj()).futureValue
 
@@ -94,18 +94,21 @@ class HeadersSpec
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
             .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
             .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-            .withHeader("extra-header", equalTo("my-extra-header")))
+            .withHeader("extra-header", equalTo("my-extra-header"))
+        )
       }
 
       "should allow a user to set an authorization header in the POST and override the Authorization header in the headerCarrier" in {
         server.stubFor(
           post(urlEqualTo("/arbitrary"))
-            .willReturn(aResponse().withStatus(200)))
+            .willReturn(aResponse().withStatus(200))
+        )
 
         client.POST[JsValue, HttpResponse](
-          url = s"http://localhost:${server.port()}/arbitrary",
-          body = Json.obj(),
-          headers = Seq(HeaderNames.authorisation -> "Basic dXNlcjoxMjM=")).futureValue
+          url     = s"http://localhost:${server.port()}/arbitrary",
+          body    = Json.obj(),
+          headers = Seq(HeaderNames.authorisation -> "Basic dXNlcjoxMjM=")
+        ).futureValue
 
         server.verify(
           postRequestedFor(urlEqualTo("/arbitrary"))
@@ -113,19 +116,22 @@ class HeadersSpec
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
             .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
             .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-            .withHeader("extra-header", equalTo("my-extra-header")))
+            .withHeader("extra-header", equalTo("my-extra-header"))
+        )
       }
     }
 
-    "with a string body" - {
-
-      "must contain headers from the header carrier" in {
-
+    "with a string body" should {
+      "contain headers from the header carrier" in {
         server.stubFor(
           post(urlEqualTo("/string"))
-            .willReturn(aResponse().withStatus(200)))
+            .willReturn(aResponse().withStatus(200))
+        )
 
-        client.POSTString[HttpResponse](s"http://localhost:${server.port()}/string", "foo").futureValue
+        client.POSTString[HttpResponse](
+          url  = s"http://localhost:${server.port()}/string",
+          body = "foo"
+        ).futureValue
 
         server.verify(
           postRequestedFor(urlEqualTo("/string"))
@@ -133,15 +139,17 @@ class HeadersSpec
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
             .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
             .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-            .withHeader("extra-header", equalTo("my-extra-header")))
+            .withHeader("extra-header", equalTo("my-extra-header"))
+        )
       }
     }
 
-    "with an empty body" - {
-      "must add a content length header if none is present" in {
+    "with an empty body" should {
+      "add a content length header if none is present" in {
         server.stubFor(
           post(urlEqualTo("/empty"))
-            .willReturn(aResponse().withStatus(200)))
+            .willReturn(aResponse().withStatus(200))
+        )
 
         client.POSTEmpty[HttpResponse](s"http://localhost:${server.port()}/empty").futureValue
 
@@ -158,13 +166,12 @@ class HeadersSpec
     }
   }
 
-  "a get request" - {
-
-    "must contain headers from the header carrier" in {
-
+  "a get request" should {
+    "contain headers from the header carrier" in {
       server.stubFor(
         get(urlEqualTo("/"))
-          .willReturn(aResponse().withStatus(200)))
+          .willReturn(aResponse().withStatus(200))
+      )
 
       client
         .GET[HttpResponse](s"http://localhost:${server.port()}/")
@@ -176,19 +183,22 @@ class HeadersSpec
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
           .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
           .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-          .withHeader("extra-header", equalTo("my-extra-header")))
+          .withHeader("extra-header", equalTo("my-extra-header"))
+      )
     }
   }
 
-  "a delete request" - {
-
-    "must contain headers from the header carrier" in {
-
+  "a delete request" should {
+    "contain headers from the header carrier" in {
       server.stubFor(
         delete(urlEqualTo("/"))
-          .willReturn(aResponse().withStatus(200)))
+          .willReturn(aResponse().withStatus(200))
+      )
 
-      client.DELETE[HttpResponse](s"http://localhost:${server.port()}/", Seq("header" -> "foo")).futureValue
+      client.DELETE[HttpResponse](
+        url     = s"http://localhost:${server.port()}/",
+        headers = Seq("header" -> "foo")
+      ).futureValue
 
       server.verify(
         deleteRequestedFor(urlEqualTo("/"))
@@ -196,20 +206,25 @@ class HeadersSpec
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
           .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
           .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-          .withHeader("extra-header", equalTo("my-extra-header")))
+          .withHeader("extra-header", equalTo("my-extra-header"))
+          .withHeader("header", equalTo("foo"))
+      )
     }
   }
 
-  "a patch request" - {
-
-    "must contain headers from the header carrier" in {
-
+  "a patch request" should {
+    "contain headers from the header carrier" in {
       server.stubFor(
         patch(urlEqualTo("/"))
-          .willReturn(aResponse().withStatus(200)))
+          .willReturn(aResponse().withStatus(200))
+      )
 
       client
-        .PATCH[JsValue, HttpResponse](s"http://localhost:${server.port()}/", Json.obj(), Seq("header" -> "foo"))
+        .PATCH[JsValue, HttpResponse](
+          url     = s"http://localhost:${server.port()}/",
+          body    = Json.obj(),
+          headers = Seq("header" -> "foo")
+        )
         .futureValue
 
       server.verify(
@@ -218,19 +233,23 @@ class HeadersSpec
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
           .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
           .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-          .withHeader("extra-header", equalTo("my-extra-header")))
+          .withHeader("extra-header", equalTo("my-extra-header"))
+          .withHeader("header", equalTo("foo"))
+      )
     }
   }
 
-  "a put request" - {
-
-    "must contain headers from the header carrier" in {
-
+  "a put request" should {
+    "contain headers from the header carrier" in {
       server.stubFor(
         put(urlEqualTo("/"))
-          .willReturn(aResponse().withStatus(200)))
+          .willReturn(aResponse().withStatus(200))
+      )
 
-      client.PUT[JsValue, HttpResponse](s"http://localhost:${server.port()}/", Json.obj()).futureValue
+      client.PUT[JsValue, HttpResponse](
+        url  = s"http://localhost:${server.port()}/",
+        body = Json.obj()
+      ).futureValue
 
       server.verify(
         putRequestedFor(urlEqualTo("/"))
@@ -238,7 +257,8 @@ class HeadersSpec
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
           .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
           .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
-          .withHeader("extra-header", equalTo("my-extra-header")))
+          .withHeader("extra-header", equalTo("my-extra-header"))
+      )
     }
   }
 }

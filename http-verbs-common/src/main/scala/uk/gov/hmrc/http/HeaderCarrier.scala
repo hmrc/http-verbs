@@ -45,6 +45,8 @@ case class HeaderCarrier(
     */
   def age = System.nanoTime() - nsStamp
 
+  val names = HeaderNames
+
   private lazy val explicitHeaders: Seq[(String, String)] =
     Seq(
       HeaderNames.xRequestId            -> requestId.map(_.value),
@@ -60,6 +62,7 @@ case class HeaderCarrier(
       HeaderNames.akamaiReputation      -> akamaiReputation.map(_.value)
     ).collect { case (k, Some(v)) => (k, v) }
 
+  @deprecated("Provide extra headers to VERB (GET, POST) functions", "13.0.0")
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
@@ -67,17 +70,16 @@ case class HeaderCarrier(
     val isInternalHost = config.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
     // QUESTIONS:
-    // 1) Do we need extraHeaders at all, given that they can be provided per endpoint?
-    // 2) Should the externalAllowlist apply to `otherHeaders` too?
-    // 3) Should allowlist be configured per endpoint, rather than global config?
-    // 4) Do we need to forward explicitHeaders for external at all? Better that clients just copy values from header-carrier to endpoint specific headers?
+    // 1) Should the externalAllowlist apply to `otherHeaders` too?
+    // 2) Should allowlist be configured per endpoint, rather than global config?
+    // 3) Do we need to forward explicitHeaders for external at all? Better that clients just copy values from header-carrier to endpoint specific headers?
     if (isInternalHost)
       explicitHeaders ++
         extraHeaders ++
         otherHeaders.filter { case (k, _) => config.headersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
         config.userAgent.map("User-Agent" -> _).toSeq
     else
-      explicitHeaders ++ //.filter { case (k, _) => config.externalHeadersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
+      explicitHeaders.filter { case (k, _) => config.externalHeadersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
         extraHeaders ++
         config.userAgent.map("User-Agent" -> _).toSeq
   }
@@ -85,7 +87,7 @@ case class HeaderCarrier(
 
 object HeaderCarrier {
   case class Config(
-    internalHostPatterns    : Seq[Regex]     = Seq("^.*\\.service$".r, "^.*\\.mdtp$".r),
+    internalHostPatterns    : Seq[Regex]     = Seq("^.*\\.service$".r, "^.*\\.mdtp$".r, "^localhost$".r),
     headersAllowlist        : Seq[String]    = Seq.empty,
     externalHeadersAllowlist: Seq[String]    = Seq.empty,
     userAgent               : Option[String] = None

@@ -31,11 +31,12 @@ trait WSRequest extends WSRequestBuilder {
   override def wsClient: WSClient =
     WS.client(play.api.Play.current)
 
-  private val config = configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
+  private lazy val config =
+    configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
 
   override def buildRequest[A](
     url    : String,
-    headers: Seq[(String, String)] = Seq.empty
+    headers: Seq[(String, String)]
   )(implicit
     hc: HeaderCarrier
   ): PlayWSRequest = {

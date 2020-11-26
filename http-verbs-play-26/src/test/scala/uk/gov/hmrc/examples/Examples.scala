@@ -78,21 +78,25 @@ class Examples
   private implicit val bankHolidaysReads: Reads[BankHolidays] = BankHolidays.reads
 
   "A verb" should {
-    "allow the user to set additional headers using the header carrier" in {
-      implicit val hc = HeaderCarrier().withExtraHeaders("some-header" -> "header value")
+    "allow the user to set additional headers" in {
+      implicit val hc = HeaderCarrier()
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
           .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
       )
 
-      client.GET[BankHolidays]("http://localhost:20001/bank-holidays.json").futureValue
+      client.GET[BankHolidays](
+        url         = "http://localhost:20001/bank-holidays.json",
+        queryParams = Seq.empty, // TODO add default queryParams to client.GET?
+        headers     = Seq("some-header" -> "header value")
+      ).futureValue
 
       verify(getRequestedFor(urlEqualTo("/bank-holidays.json"))
         .withHeader("some-header", equalTo("header value")))
     }
 
-    "allow the use to set an authorization header using the header carrier" in {
+    "allow the user to set an authorization header using the header carrier for internal hosts" in {
       val username = "user"
       val password = "123"
       val encodedAuthHeader = Base64.encodeBase64String(s"$username:$password".getBytes("UTF-8"))
@@ -105,30 +109,13 @@ class Examples
 
       client.GET[BankHolidays]("http://localhost:20001/bank-holidays.json").futureValue
 
-      verify(getRequestedFor(urlEqualTo("/bank-holidays.json"))
-        .withHeader("Authorization", equalTo("Basic dXNlcjoxMjM=")))
-    }
-
-    "allow the user to set additional headers as part of the POST" in {
-      implicit val hc = HeaderCarrier()
-
-      stubFor(
-        post(urlEqualTo("/create-user")).willReturn(aResponse().withStatus(200))
+      verify(
+        getRequestedFor(urlEqualTo("/bank-holidays.json"))
+          .withHeader("Authorization", equalTo(s"Basic $encodedAuthHeader"))
       )
-
-      val user = User("me@mail.com", "John Smith")
-
-      client.POST[User, HttpResponse](
-        "http://localhost:20001/create-user",
-        user,
-        headers = Seq("some-header" -> "header value")
-      ).futureValue
-
-      verify(postRequestedFor(urlEqualTo("/create-user"))
-        .withHeader("some-header", equalTo("header value")))
     }
 
-    "allow the use to set an authorization header as part of a header in the POST and override the Authorization header in the headerCarrier" in {
+    "allow the user to set an authorization header as part of a header in the POST and override the Authorization header in the headerCarrier" in {
       implicit val hc = HeaderCarrier(authorization = None)
 
       stubFor(
@@ -138,13 +125,15 @@ class Examples
       val user = User("me@mail.com", "John Smith")
 
       client.POST[User, HttpResponse](
-        "http://localhost:20001/create-user",
-        user,
+        url     = "http://localhost:20001/create-user",
+        body    = user,
         headers = Seq("Authorization" -> "Basic dXNlcjoxMjM=")
       ).futureValue
 
-      verify(postRequestedFor(urlEqualTo("/create-user"))
-        .withHeader("Authorization", equalTo("Basic dXNlcjoxMjM=")))
+      verify(
+        postRequestedFor(urlEqualTo("/create-user"))
+          .withHeader("Authorization", equalTo("Basic dXNlcjoxMjM="))
+      )
     }
   }
 
@@ -253,8 +242,7 @@ class Examples
       response.status match {
         case 200 => Try(fromXml(response.body)) match {
           case Success(data) => Some(data)
-          case Failure(e) =>
-            throw new CustomException("Unable to parse response")
+          case Failure(e)    => throw new CustomException("Unable to parse response")
         }
       }
 
@@ -289,7 +277,7 @@ class Examples
         response.status match {
           case 200 => Try(response.json.as[BankHolidays]) match {
             case Success(data) => Some(data)
-            case Failure(e) => throw new CustomException("Unable to parse response")
+            case Failure(e)    => throw new CustomException("Unable to parse response")
           }
           case 404 => None
           case unexpectedStatus => throw new CustomException(s"Unexpected response code '$unexpectedStatus'")

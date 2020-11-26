@@ -24,10 +24,15 @@ trait WSRequest extends WSRequestBuilder {
 
   private val logger = Logger(getClass)
 
-  private val config = configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
+  private lazy val config =
+    configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
 
-  // TODO or buildRequest expects that headers have already been extracted from headercarrier?
-  override def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest = {
+  override def buildRequest[A](
+    url    : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    hc: HeaderCarrier
+  ): PlayWSRequest = {
     val hdrs = hc.headersForUrl(config)(url) ++ headers
 
     val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)

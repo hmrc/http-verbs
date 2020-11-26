@@ -57,7 +57,7 @@ class HttpTimeoutSpec
     Play.stop(fakeApplication)
   }
 
-  WsTestClient.withClient{ client =>
+  WsTestClient.withClient { client =>
 
     "HttpCalls" should {
 
