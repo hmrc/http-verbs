@@ -66,12 +66,14 @@ case class HeaderCarrier(
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
+  def headers(names: Seq[String]): Seq[(String, String)] =
+    (explicitHeaders ++ otherHeaders).filter { case (k, _) => names.map(_.toLowerCase).contains(k.toLowerCase) }
+
   def headersForUrl(config: HeaderCarrier.Config)(url: String): Seq[(String, String)] = {
     val isInternalHost = config.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
     if (isInternalHost)
-      explicitHeaders ++
-        otherHeaders.filter { case (k, _) => config.headersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
+      headers(HeaderNames.explicitlyIncludedHeaders ++ config.headersAllowlist) ++
         config.userAgent.map("User-Agent" -> _).toSeq ++
         extraHeaders
     else

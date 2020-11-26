@@ -30,11 +30,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.examples
+package uk.gov.hmrc.http.examples
 
 import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.codec.binary.Base64
 import java.time.LocalDate
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -44,7 +44,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Reads, Writes}
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.examples.utils._
+import uk.gov.hmrc.http.examples.utils._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.http.logging.Authorization
@@ -66,12 +66,15 @@ class Examples
 
   private lazy val app: Application = new GuiceApplicationBuilder().build()
 
-  private lazy val client = new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
-    override def wsClient: WSClient                      = app.injector.instanceOf[WSClient]
-    override protected def configuration: Option[Config] = None
-    override val hooks: Seq[HttpHook]                    = Seq.empty
-    override protected def actorSystem: ActorSystem      = ActorSystem("test-actor-system")
-  }
+  private def mkClient(config: Option[String]) =
+    new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
+      override def wsClient: WSClient                      = app.injector.instanceOf[WSClient]
+      override protected def configuration: Option[Config] = config.map(ConfigFactory.parseString)
+      override val hooks: Seq[HttpHook]                    = Seq.empty
+      override protected def actorSystem: ActorSystem      = ActorSystem("test-actor-system")
+    }
+
+  private lazy val client = mkClient(config = None)
 
   private implicit val userWrites: Writes[User] = User.writes
   private implicit val userIdentifierWrites: Reads[UserIdentifier] = UserIdentifier.reads
@@ -119,15 +122,41 @@ class Examples
       implicit val hc = HeaderCarrier(authorization = None)
 
       stubFor(
-        post(urlEqualTo("/create-user")).willReturn(aResponse().withStatus(200))
+        post(urlEqualTo("/create-user"))
+          .willReturn(aResponse().withStatus(200))
       )
-
-      val user = User("me@mail.com", "John Smith")
 
       client.POST[User, HttpResponse](
         url     = "http://localhost:20001/create-user",
-        body    = user,
+        body    = User("me@mail.com", "John Smith"),
         headers = Seq("Authorization" -> "Basic dXNlcjoxMjM=")
+      ).futureValue
+
+      verify(
+        postRequestedFor(urlEqualTo("/create-user"))
+          .withHeader("Authorization", equalTo("Basic dXNlcjoxMjM="))
+      )
+    }
+
+    "allow the user to explicitly forward headers to external hosts" in {
+      implicit val hc = HeaderCarrier(authorization = Some(Authorization("Basic dXNlcjoxMjM=")))
+
+      // for demonstration, we're initialising a client which considers `localhost` as an external host
+      val client = mkClient(config = Some(
+        """|bootstrap.http.headersAllowlist = []
+           |internalServiceHostPatterns = []
+           |""".stripMargin
+      ))
+
+      stubFor(
+        post(urlEqualTo("/create-user"))
+          .willReturn(aResponse().withStatus(200))
+      )
+
+      client.POST[User, HttpResponse](
+        url     = "http://localhost:20001/create-user",
+        body    = User("me@mail.com", "John Smith"),
+        headers = hc.headers(Seq(hc.names.authorisation))
       ).futureValue
 
       verify(
@@ -163,7 +192,8 @@ class Examples
 
     "be able to handle a 404 without throwing an exception" in {
       stubFor(
-        get(urlEqualTo("/404.json")).willReturn(aResponse().withStatus(404))
+        get(urlEqualTo("/404.json"))
+          .willReturn(aResponse().withStatus(404))
       )
 
       // By adding an Option to your case class, the 404 is translated into None
@@ -175,7 +205,8 @@ class Examples
       implicit val hc = HeaderCarrier()
 
       stubFor(
-        get(urlEqualTo("/401.json")).willReturn(aResponse().withStatus(401))
+        get(urlEqualTo("/401.json"))
+          .willReturn(aResponse().withStatus(401))
       )
 
       client.GET[Option[BankHolidays]]("http://localhost:20001/401.json")
@@ -188,7 +219,8 @@ class Examples
       implicit val hc = HeaderCarrier()
 
       stubFor(
-        get(urlEqualTo("/500.json")).willReturn(aResponse().withStatus(500))
+        get(urlEqualTo("/500.json"))
+          .willReturn(aResponse().withStatus(500))
       )
 
       client.GET[Option[BankHolidays]]("http://localhost:20001/500.json")
@@ -273,7 +305,7 @@ class Examples
     implicit val hc = HeaderCarrier()
 
     implicit val responseHandler = new HttpReads[Option[BankHolidays]] {
-      override def read(method: String, url: String, response: HttpResponse): Option[BankHolidays] = {
+      override def read(method: String, url: String, response: HttpResponse): Option[BankHolidays] =
         response.status match {
           case 200 => Try(response.json.as[BankHolidays]) match {
             case Success(data) => Some(data)
@@ -282,7 +314,6 @@ class Examples
           case 404 => None
           case unexpectedStatus => throw new CustomException(s"Unexpected response code '$unexpectedStatus'")
         }
-      }
     }
 
     "Return some data when getting a 200 back" in {
