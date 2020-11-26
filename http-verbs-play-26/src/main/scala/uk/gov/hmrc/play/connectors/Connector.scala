@@ -18,7 +18,6 @@ package uk.gov.hmrc.play.connectors
 
 import play.api.libs.ws.{WSClient, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.HeaderCarrierConverter
 
 // TODO deprecate connectors package
 

@@ -122,12 +122,29 @@ class Examples
         post(urlEqualTo("/create-user")).willReturn(aResponse().withStatus(200))
       )
 
-      val user = User("me@mail.com", "John Smith")
-
       client.POST[User, HttpResponse](
         url     = "http://localhost:20001/create-user",
-        body    = user,
+        body    = User("me@mail.com", "John Smith"),
         headers = Seq("Authorization" -> "Basic dXNlcjoxMjM=")
+      ).futureValue
+
+      verify(
+        postRequestedFor(urlEqualTo("/create-user"))
+          .withHeader("Authorization", equalTo("Basic dXNlcjoxMjM="))
+      )
+    }
+
+    "allow the user to explicitly forward headers to external hosts" in {
+      implicit val hc = HeaderCarrier(authorization = Some(Authorization("Basic dXNlcjoxMjM=")))
+
+      stubFor(
+        post(urlEqualTo("/create-user")).willReturn(aResponse().withStatus(200))
+      )
+
+      client.POST[User, HttpResponse](
+        url     = "http://external/create-user",
+        body    = User("me@mail.com", "John Smith"),
+        headers = hc.authorization.map(hc.names.authorisation -> _.value).toSeq // TODO can this be nicer? e.g. hc.headers(hc.names.authorisation, hc.names.deviceID)
       ).futureValue
 
       verify(

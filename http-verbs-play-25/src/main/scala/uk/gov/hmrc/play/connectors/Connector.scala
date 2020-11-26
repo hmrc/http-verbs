@@ -19,7 +19,6 @@ package uk.gov.hmrc.play.connectors
 import com.github.ghik.silencer.silent
 import play.api.libs.ws.{WS, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.HeaderCarrierConverter
 
 // TODO deprecate connectors package
 

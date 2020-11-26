@@ -77,39 +77,11 @@ class HeaderCarrierSpec
       ).map(k => result.map(_._1) should not contain k)
     }
 
-    "should contain the values passed in by header-carrier for external urls, if in allowlist" in {
-      val hc = HeaderCarrier(
-        authorization = Some(Authorization("auth")),
-        sessionId     = Some(SessionId("session")),
-        requestId     = Some(RequestId("request")),
-        forwarded     = Some(ForwardedFor("forwarded"))
-      )
-
-      val config = ConfigFactory.parseString(
-        """|appName: myApp
-           |internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
-           |bootstrap.http.headersAllowlist: []
-           |bootstrap.http.externalHeadersAllowlist = [x-session-id, x-request-id, x-forwarded-for]
-           |""".stripMargin
-      )
-
-      val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url = externalUrl)
-
-      Seq(
-        HeaderNames.xSessionId    -> "session",
-        HeaderNames.xRequestId    -> "request",
-        HeaderNames.xForwardedFor -> "forwarded"
-      ).map(hdr => result should contain (hdr))
-
-      result.map(_._1) should not contain HeaderNames.authorisation
-    }
-
     "should include the User-Agent header when the 'appName' config value is present" in {
       val config = ConfigFactory.parseString(
         """|appName: myApp
            |internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
            |bootstrap.http.headersAllowlist: []
-           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 
@@ -150,7 +122,6 @@ class HeaderCarrierSpec
       val config = ConfigFactory.parseString(
         """|internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
            |bootstrap.http.headersAllowlist: []
-           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 
@@ -168,7 +139,6 @@ class HeaderCarrierSpec
       val config = ConfigFactory.parseString(
         """|internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
            |bootstrap.http.headersAllowlist: [foo]
-           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 
@@ -187,7 +157,6 @@ class HeaderCarrierSpec
       val config = ConfigFactory.parseString(
         """|internalServiceHostPatterns: [localhost]
            |bootstrap.http.headersAllowlist: [foo]
-           |bootstrap.http.externalHeadersAllowlist = []
            |""".stripMargin
       )
 

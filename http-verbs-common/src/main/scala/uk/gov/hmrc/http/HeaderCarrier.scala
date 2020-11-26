@@ -69,19 +69,14 @@ case class HeaderCarrier(
   def headersForUrl(config: HeaderCarrier.Config)(url: String): Seq[(String, String)] = {
     val isInternalHost = config.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-    // QUESTIONS:
-    // 1) Should the externalAllowlist apply to `otherHeaders` too?
-    // 2) Should allowlist be configured per endpoint, rather than global config?
-    // 3) Do we need to forward explicitHeaders for external at all? Better that clients just copy values from header-carrier to endpoint specific headers?
     if (isInternalHost)
       explicitHeaders ++
-        extraHeaders ++
         otherHeaders.filter { case (k, _) => config.headersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
-        config.userAgent.map("User-Agent" -> _).toSeq
+        config.userAgent.map("User-Agent" -> _).toSeq ++
+        extraHeaders
     else
-      explicitHeaders.filter { case (k, _) => config.externalHeadersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
-        extraHeaders ++
-        config.userAgent.map("User-Agent" -> _).toSeq
+      config.userAgent.map("User-Agent" -> _).toSeq ++
+        extraHeaders
   }
 }
 
@@ -89,7 +84,6 @@ object HeaderCarrier {
   case class Config(
     internalHostPatterns    : Seq[Regex]     = Seq("^.*\\.service$".r, "^.*\\.mdtp$".r, "^localhost$".r),
     headersAllowlist        : Seq[String]    = Seq.empty,
-    externalHeadersAllowlist: Seq[String]    = Seq.empty,
     userAgent               : Option[String] = None
   )
 
@@ -105,7 +99,6 @@ object HeaderCarrier {
       Config(
         internalHostPatterns     = config.getStringList("internalServiceHostPatterns"            ).asScala.toSeq.map(_.r),
         headersAllowlist         = config.getStringList("bootstrap.http.headersAllowlist"        ).asScala.toSeq,
-        externalHeadersAllowlist = config.getStringList("bootstrap.http.externalHeadersAllowlist").asScala.toSeq,
         userAgent                = if (config.hasPath("appName")) Some(config.getString("appName")) else None
       )
     }
