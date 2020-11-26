@@ -31,11 +31,11 @@ trait PlayWSRequestBuilder extends RequestBuilder {
   @silent("deprecated")
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
     WS.url(url)(play.api.Play.current)
-      .withHeaders(hc.headersForUrl(config = None)(url): _*)
+      .withHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
 }
 
 trait WSClientRequestBuilder extends RequestBuilder { this: WSClientProvider =>
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
     client.url(url)
-      .withHeaders(hc.headersForUrl(config = None)(url): _*)
+      .withHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
 }

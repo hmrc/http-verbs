@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.http
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.net.URL
 
+import org.slf4j.{Logger, LoggerFactory}
 import uk.gov.hmrc.http.logging._
-import play.api.Logger // TODO this library shouldn't depend on play
+
+import scala.util.matching.Regex
 
 case class HeaderCarrier(
   authorization   : Option[Authorization]    = None,
@@ -36,10 +38,7 @@ case class HeaderCarrier(
   deviceID        : Option[String]           = None,
   akamaiReputation: Option[AkamaiReputation] = None,
   otherHeaders    : Seq[(String, String)]    = Seq()
-) extends LoggingDetails
-     with HeaderProvider {
-
-  private val logger = Logger(getClass)
+) extends LoggingDetails {
 
   /**
     * @return the time, in nanoseconds, since this header carrier was created
@@ -64,53 +63,49 @@ case class HeaderCarrier(
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
-  private val deprecationLogged = new AtomicBoolean(false)
+  def headersForUrl(config: HeaderCarrier.Config)(url: String): Seq[(String, String)] = {
+    val isInternalHost = config.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-  override def headersForUrl(config: Option[com.typesafe.config.Config])(url: String): Seq[(String, String)] = {
-    import java.net.URL
-    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-    import scala.util.matching.Regex
-
-    val internalHostPatterns: Seq[Regex] =
-      config match {
-        case Some(config) if config.hasPathOrNull("internalServiceHostPatterns") =>
-          config.getStringList("internalServiceHostPatterns").asScala.map(_.r).toSeq
-        case _ =>
-          Seq("^.*\\.service$".r, "^.*\\.mdtp$".r)
-      }
-
-    val allowlistedHeaders: Seq[String] =
-      config match {
-        case Some(config) =>
-          if (config.hasPath("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
-            logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
-          config.getStringList("bootstrap.http.headersAllowlist").asScala.toSeq
-        case None => Seq.empty
-      }
-
-    val externalAllowlistedHeaders: Seq[String] =
-      config.fold(Seq.empty[String])(
-        _.getStringList("bootstrap.http.headersExternalAllowlist").asScala.toSeq
-      )
-
-    val userAgentHeader: Seq[(String, String)] =
-      config match {
-        case Some(config) if config.hasPathOrNull("appName") =>
-          Seq("User-Agent" -> config.getString("appName"))
-        case _ =>
-          Seq.empty
-      }
-
-    val isInternalHost = internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
-
+    // QUESTIONS:
+    // 1) Do we need extraHeaders at all, given that they can be provided per endpoint?
+    // 2) Should the externalAllowlist apply to `otherHeaders` too?
+    // 3) Should allowlist be configured per endpoint, rather than global config?
+    // 4) Do we need to forward explicitHeaders for external at all? Better that clients just copy values from header-carrier to endpoint specific headers?
     if (isInternalHost)
       explicitHeaders ++
         extraHeaders ++
-        otherHeaders.filter { case (k, _) => allowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-        userAgentHeader
+        otherHeaders.filter { case (k, _) => config.headersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
+        config.userAgent.map("User-Agent" -> _).toSeq
     else
-      explicitHeaders.filter { case (k, _) => externalAllowlistedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+      explicitHeaders ++ //.filter { case (k, _) => config.externalHeadersAllowlist.map(_.toLowerCase).contains(k.toLowerCase) } ++
         extraHeaders ++
-        userAgentHeader
+        config.userAgent.map("User-Agent" -> _).toSeq
+  }
+}
+
+object HeaderCarrier {
+  case class Config(
+    internalHostPatterns    : Seq[Regex]     = Seq("^.*\\.service$".r, "^.*\\.mdtp$".r),
+    headersAllowlist        : Seq[String]    = Seq.empty,
+    externalHeadersAllowlist: Seq[String]    = Seq.empty,
+    userAgent               : Option[String] = None
+  )
+
+  object Config {
+    private val logger: Logger = LoggerFactory.getLogger(getClass)
+
+    def fromConfig(config: com.typesafe.config.Config): Config = {
+      import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
+      if (config.hasPath("httpHeadersWhitelist"))
+        logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
+
+      Config(
+        internalHostPatterns     = config.getStringList("internalServiceHostPatterns"            ).asScala.toSeq.map(_.r),
+        headersAllowlist         = config.getStringList("bootstrap.http.headersAllowlist"        ).asScala.toSeq,
+        externalHeadersAllowlist = config.getStringList("bootstrap.http.externalHeadersAllowlist").asScala.toSeq,
+        userAgent                = if (config.hasPath("appName")) Some(config.getString("appName")) else None
+      )
+    }
   }
 }

@@ -30,5 +30,5 @@ trait WSClientRequestBuilder extends RequestBuilder {
   def client: WSClient
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
     client.url(url)
-      .withHttpHeaders(hc.headersForUrl(config = None)(url): _*)
+      .withHttpHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
 }

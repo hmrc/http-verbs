@@ -48,7 +48,7 @@ class HeaderCarrierSpec
       )
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(config = None)(url)
+        val result = hc.headersForUrl(HeaderCarrier.Config())(url)
 
         Seq(
           HeaderNames.authorisation -> "auth",
@@ -67,7 +67,7 @@ class HeaderCarrierSpec
         forwarded     = Some(ForwardedFor("forwarded"))
       )
 
-      val result = hc.headersForUrl(config = None)(url = externalUrl)
+      val result = hc.headersForUrl(HeaderCarrier.Config())(url = externalUrl)
 
       Seq(
         HeaderNames.authorisation,
@@ -92,7 +92,7 @@ class HeaderCarrierSpec
            |""".stripMargin
       )
 
-      val result = hc.headersForUrl(config = Some(config))(url = externalUrl)
+      val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url = externalUrl)
 
       Seq(
         HeaderNames.xSessionId    -> "session",
@@ -112,7 +112,7 @@ class HeaderCarrierSpec
       )
 
       (externalUrl :: internalUrls).map { url =>
-        val result = HeaderCarrier().headersForUrl(config = Some(config))(url)
+        val result = HeaderCarrier().headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
 
         result should contain ("User-Agent" -> "myApp")
       }
@@ -123,7 +123,7 @@ class HeaderCarrierSpec
         otherHeaders = Seq("foo" -> "secret!")
       )
 
-      val result = hc.headersForUrl(config = None)(url = externalUrl)
+      val result = hc.headersForUrl(HeaderCarrier.Config())(url = externalUrl)
 
       result.map(_._1) should not contain "foo"
     }
@@ -134,7 +134,7 @@ class HeaderCarrierSpec
       )
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(config = None)(url)
+        val result = hc.headersForUrl(HeaderCarrier.Config())(url)
         result.map(_._1) should not contain "foo"
       }
     }
@@ -152,7 +152,7 @@ class HeaderCarrierSpec
       )
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(config = Some(config))(url)
+        val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
         result.map(_._1) should not contain "foo"
       }
     }
@@ -169,7 +169,7 @@ class HeaderCarrierSpec
       )
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(config = Some(config))(url)
+        val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
         result should contain ("foo" -> "secret!")
       }
     }
@@ -187,7 +187,7 @@ class HeaderCarrierSpec
            |""".stripMargin
       )
 
-      val result = hc.headersForUrl(config = Some(config))(url)
+      val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
       result should contain ("foo" -> "secret!")
     }
   }
