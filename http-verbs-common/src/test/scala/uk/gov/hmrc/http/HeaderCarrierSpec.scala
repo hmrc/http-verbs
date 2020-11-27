@@ -37,8 +37,18 @@ class HeaderCarrierSpec
 
   "headersForUrl" should {
 
-   val internalUrls = List("http://test.public.service/bar", "http://test.public.mdtp/bar")
+   val internalUrls = List(
+     "http://test.public.service/bar",
+     "http://test.public.mdtp/bar",
+     "http://localhost:1234/bar"
+   )
    val externalUrl  = "http://test.me"
+
+   def mkConfig(s: String = ""): HeaderCarrier.Config =
+     HeaderCarrier.Config.fromConfig(
+       ConfigFactory.parseString(s)
+         .withFallback(ConfigFactory.load())
+     )
 
     "should contain the values passed in by header-carrier for internal urls" in {
       val hc = HeaderCarrier(
@@ -49,7 +59,7 @@ class HeaderCarrierSpec
       )
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(HeaderCarrier.Config())(url)
+        val result = hc.headersForUrl(mkConfig())(url)
 
         Seq(
           HeaderNames.authorisation -> "auth",
@@ -68,7 +78,7 @@ class HeaderCarrierSpec
         forwarded     = Some(ForwardedFor("forwarded"))
       )
 
-      val result = hc.headersForUrl(HeaderCarrier.Config())(url = externalUrl)
+      val result = hc.headersForUrl(mkConfig())(url = externalUrl)
 
       Seq(
         HeaderNames.authorisation,
@@ -79,15 +89,10 @@ class HeaderCarrierSpec
     }
 
     "should include the User-Agent header when the 'appName' config value is present" in {
-      val config = ConfigFactory.parseString(
-        """|appName: myApp
-           |internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
-           |bootstrap.http.headersAllowlist: []
-           |""".stripMargin
-      )
+      val config = mkConfig("appName: myApp")
 
       (externalUrl :: internalUrls).map { url =>
-        val result = HeaderCarrier().headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
+        val result = HeaderCarrier().headersForUrl(config)(url)
 
         result should contain ("User-Agent" -> "myApp")
       }
@@ -98,7 +103,7 @@ class HeaderCarrierSpec
         otherHeaders = Seq("foo" -> "secret!")
       )
 
-      val result = hc.headersForUrl(HeaderCarrier.Config())(url = externalUrl)
+      val result = hc.headersForUrl(mkConfig())(url = externalUrl)
 
       (result.map(_._1) should not contain "foo") (after being lowerCased)
     }
@@ -109,7 +114,7 @@ class HeaderCarrierSpec
       )
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(HeaderCarrier.Config())(url)
+        val result = hc.headersForUrl(mkConfig())(url)
         (result.map(_._1) should not contain "foo") (after being lowerCased)
       }
     }
@@ -119,14 +124,10 @@ class HeaderCarrierSpec
         otherHeaders = Seq("foo" -> "secret!")
       )
 
-      val config = ConfigFactory.parseString(
-        """|internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
-           |bootstrap.http.headersAllowlist: []
-           |""".stripMargin
-      )
+      val config = mkConfig("bootstrap.http.headersAllowlist: []")
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
+        val result = hc.headersForUrl(config)(url)
         (result.map(_._1) should not contain "foo") (after being lowerCased)
       }
     }
@@ -136,14 +137,11 @@ class HeaderCarrierSpec
         otherHeaders = Seq("foo" -> "secret!")
       )
 
-      val config = ConfigFactory.parseString(
-        """|internalServiceHostPatterns: [ "^.*\\.service$", "^.*\\.mdtp$" ]
-           |bootstrap.http.headersAllowlist: [foo]
-           |""".stripMargin
-      )
+      val config =
+        mkConfig("bootstrap.http.headersAllowlist: [foo]")
 
       internalUrls.map { url =>
-        val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
+        val result = hc.headersForUrl(config)(url)
         result should contain ("foo" -> "secret!")
       }
     }
@@ -154,13 +152,9 @@ class HeaderCarrierSpec
         otherHeaders = Seq("foo" -> "secret!")
       )
 
-      val config = ConfigFactory.parseString(
-        """|internalServiceHostPatterns: [localhost]
-           |bootstrap.http.headersAllowlist: [foo]
-           |""".stripMargin
-      )
+      val config = mkConfig("bootstrap.http.headersAllowlist: [foo]")
 
-      val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
+      val result = hc.headersForUrl(config)(url)
       result should contain ("foo" -> "secret!")
     }
   }

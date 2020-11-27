@@ -31,7 +31,7 @@ trait Retries {
 
   protected def actorSystem: ActorSystem
 
-  protected def configuration: Option[Config]
+  protected def configuration: Config
 
   private val logger = LoggerFactory.getLogger("application")
 
@@ -48,24 +48,15 @@ trait Retries {
     loop(intervals)(Mdc.mdcData)(block)
   }
 
-  private[http] lazy val intervals: Seq[FiniteDuration] = {
-    val defaultIntervals = Seq(500.millis, 1.second, 2.seconds, 4.seconds, 8.seconds)
-    configuration
-      .map { c =>
-        val path = "http-verbs.retries.intervals"
-        if (c.hasPath(path)) {
-          c.getDurationList(path).asScala.map { d =>
-            FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
-          }
-        } else {
-          defaultIntervals
-        }
-      }
-      .getOrElse(defaultIntervals)
-  }
+  private[http] lazy val intervals: Seq[FiniteDuration] =
+    configuration.getDurationList("http-verbs.retries.intervals").asScala.map { d =>
+      FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
+    }
 
   private lazy val sslEngineClosedMatcher =
-    new SSlEngineClosedMatcher(isEnabled("ssl-engine-closed-already"))
+    new SSlEngineClosedMatcher(
+      enabled = configuration.getBoolean("http-verbs.retries.ssl-engine-closed-already.enabled")
+    )
 
   private class SSlEngineClosedMatcher(enabled: Boolean) {
     def unapply(ex: Throwable): Boolean =
@@ -74,11 +65,4 @@ trait Retries {
         case _                                                              => false
       }
   }
-
-  private def isEnabled(name: String): Boolean =
-    configuration.exists { c =>
-      val path = s"http-verbs.retries.$name.enabled"
-      c.hasPath(path) && c.getBoolean(path)
-    }
-
 }

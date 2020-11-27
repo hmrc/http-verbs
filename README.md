@@ -41,6 +41,12 @@ The hosts identified as internal is configured by `internalServiceHostPatterns` 
 
 See Headers section below.
 
+#### Config is not optional
+
+`configuration` as required by some traits (`WSRequestBuilder` and `Retry`) has changed from `Option[com.typesafe.config.Config]` to `com.typesafe.config.Config`.
+
+If you don't want to provide any specific configuration (e.g. testing), then change `configuration = None` to `configuration = com.typesafe.config.ConfigFactory.load()`
+
 ### Version 12.0.0
 
 #### SessionKeys

@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.connectors
 
+import com.typesafe.config.ConfigFactory
 import play.api.libs.ws.{WSClient, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -25,7 +26,11 @@ trait RequestBuilder {
 
 trait WSClientRequestBuilder extends RequestBuilder {
   def client: WSClient
+
+  private val hcConfig =
+    HeaderCarrier.Config.fromConfig(ConfigFactory.load())
+
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
     client.url(url)
-      .withHttpHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
+      .withHttpHeaders(hc.headersForUrl(hcConfig)(url): _*)
 }

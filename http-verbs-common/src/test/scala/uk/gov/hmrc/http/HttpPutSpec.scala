@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
@@ -41,8 +41,8 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
     val testHook1                                   = mock[HttpHook]
     val testHook2                                   = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
-    override def configuration: Option[Config]      = None
-    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
+    override val configuration: Config              = ConfigFactory.load()
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
       doPutResult

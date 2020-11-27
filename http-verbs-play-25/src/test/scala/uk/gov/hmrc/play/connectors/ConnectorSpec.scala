@@ -24,19 +24,28 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 class ConnectorSpec extends AnyWordSpecLike with Matchers {
-  class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc: ((=> Any) => Any)) {
-    def setup(f:                                                                      => Any) = setupFunc(f)
+  class TestConfig(
+    val builderName: String,
+    val builder    : RequestBuilder,
+    setupFunc      : ((=> Any) => Any)
+  ) {
+    def setup(f: => Any) = setupFunc(f)
   }
 
   val withFakeApp: (=>     Any) => Any = running(FakeApplication())
   def withoutFakeApp(f: => Any)        = f
 
   val permutations = Seq(
-    new TestConfig("PlayWS Request Builder", new PlayWSRequestBuilder {}, withFakeApp),
     new TestConfig(
-      "WSClient Request Builder",
-      new WSClientRequestBuilder with DefaultWSClientProvider {},
-      withoutFakeApp)
+      builderName = "PlayWS Request Builder",
+      builder     = new PlayWSRequestBuilder {},
+      setupFunc   = withFakeApp
+    ),
+    new TestConfig(
+      builderName = "WSClient Request Builder",
+      builder     = new WSClientRequestBuilder with DefaultWSClientProvider {},
+      setupFunc   = withoutFakeApp
+    )
   )
 
   "AuthConnector.buildRequest" should {

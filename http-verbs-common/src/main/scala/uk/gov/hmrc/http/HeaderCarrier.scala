@@ -84,7 +84,7 @@ case class HeaderCarrier(
 
 object HeaderCarrier {
   case class Config(
-    internalHostPatterns    : Seq[Regex]     = Seq("^.*\\.service$".r, "^.*\\.mdtp$".r, "^localhost$".r),
+    internalHostPatterns    : Seq[Regex]     = Seq.empty,
     headersAllowlist        : Seq[String]    = Seq.empty,
     userAgent               : Option[String] = None
   )

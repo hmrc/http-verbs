@@ -18,14 +18,13 @@ package uk.gov.hmrc.http
 
 import java.time.Instant
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import javax.net.ssl.SSLException
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import org.slf4j.MDC
-import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
 import scala.collection.JavaConverters._
@@ -41,17 +40,17 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
   "Retries" should {
     "be disabled by default" in {
       val retries = new Retries {
-        override protected val configuration = None
+        override protected val configuration = ConfigFactory.load()
         override val actorSystem             = ActorSystem("test-actor-system")
       }
 
       @volatile var counter = 0
       val resultF =
         retries.retry("GET", "url") {
-          Future.failed({
+          Future.failed {
             counter += 1
             new SSLException("SSLEngine closed already")
-          })
+          }
         }
 
       whenReady(resultF.failed) { e =>
@@ -63,12 +62,9 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
     "have configurable intervals" in {
       val retries = new Retries {
         override protected val configuration =
-          Some(
-            Configuration(
-              "http-verbs.retries.intervals.0" -> "100 ms",
-              "http-verbs.retries.intervals.1" -> "200 ms",
-              "http-verbs.retries.intervals.2" -> "1 s"
-            ).underlying)
+            ConfigFactory.parseString(
+              "http-verbs.retries.intervals = [ 100 ms, 200 ms,  1 s]"
+            )
         override val actorSystem = ActorSystem("test-actor-system")
       }
 
@@ -77,17 +73,17 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
     "run a successful future only once" in {
       val retries: Retries = new Retries {
-        override protected val configuration = None
+        override protected val configuration = ConfigFactory.load()
         override val actorSystem             = ActorSystem("test-actor-system")
       }
 
       @volatile var counter = 0
       val resultF =
         retries.retry("GET", "url") {
-          Future.successful({
+          Future.successful {
             counter += 1
             counter
-          })
+          }
         }
 
       whenReady(resultF) { c =>
@@ -100,7 +96,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       val retries: Retries = new Retries {
         override protected val configuration =
-          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+          ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
         override val actorSystem                  = ActorSystem("test-actor-system")
       }
@@ -131,16 +127,16 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       val retries: Retries = new Retries {
         override protected val configuration =
-          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+          ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
         override val actorSystem                  = ActorSystem("test-actor-system")
       }
 
       val resultF =
         retries.retry("GET", "url") {
-          Future.failed({
+          Future.failed {
             new SSLException("SSLEngine closed already")
-          })
+          }
         }
 
       whenReady(resultF.failed) { e =>
@@ -154,7 +150,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
         override protected val configuration =
-          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+          ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
         override val actorSystem                  = ActorSystem("test-actor-system")
       }
@@ -178,7 +174,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
         override protected val configuration =
-          Some(Configuration("http-verbs.retries.ssl-engine-closed-already.enabled" -> true).underlying)
+          ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
         override val actorSystem                  = ActorSystem("test-actor-system")
       }
@@ -369,10 +365,8 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
   trait TestHttpVerb extends HttpVerb with Retries with HttpHooks with SucceedNthCall {
     System.setProperty("akka.jvm-shutdown-hooks", "off")
-    protected def configuration: Option[Config] =
-      Some(Configuration(
-        "http-verbs.retries.ssl-engine-closed-already.enabled" -> true
-      ).underlying)
+    protected def configuration: Config =
+      ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
     override val hooks: Seq[HttpHook]                              = Nil
     override private[http] lazy val intervals: Seq[FiniteDuration] = List.fill(3)(1.millis)
     override def actorSystem: ActorSystem                          = ActorSystem("test-actor-system")

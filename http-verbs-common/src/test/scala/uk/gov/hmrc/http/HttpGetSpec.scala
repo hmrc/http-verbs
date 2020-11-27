@@ -33,7 +33,7 @@
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
@@ -63,9 +63,9 @@ class HttpGetSpec
     val testHook2 = mock[HttpHook]
     val hooks = Seq(testHook1, testHook2)
 
-    override def configuration: Option[Config] = None
+    override val configuration: Config = ConfigFactory.load()
 
-    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doGet(
       url: String,
@@ -81,9 +81,9 @@ class HttpGetSpec
     val hooks = Seq(testHook1, testHook2)
     var lastUrl: Option[String] = None
 
-    override def configuration: Option[Config] = None
+    override val configuration: Config = ConfigFactory.load()
 
-    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doGet(
       url: String,
