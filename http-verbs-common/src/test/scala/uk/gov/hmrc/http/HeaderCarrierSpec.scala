@@ -21,6 +21,8 @@ import java.util
 import com.typesafe.config.{Config, ConfigFactory}
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
+import org.scalactic.Explicitly._
+import org.scalactic.StringNormalizations.lowerCased
 import org.scalatest.LoneElement
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -33,7 +35,6 @@ class HeaderCarrierSpec
      with MockitoSugar
      with LoneElement {
 
-  // TODO checks (especially `not contains`) should be case insensitive
   "headersForUrl" should {
 
    val internalUrls = List("http://test.public.service/bar", "http://test.public.mdtp/bar")
@@ -74,7 +75,7 @@ class HeaderCarrierSpec
         HeaderNames.xSessionId,
         HeaderNames.xRequestId,
         HeaderNames.xForwardedFor
-      ).map(k => result.map(_._1) should not contain k)
+      ).map(k => (result.map(_._1) should not contain k) (after being lowerCased))
     }
 
     "should include the User-Agent header when the 'appName' config value is present" in {
@@ -99,7 +100,7 @@ class HeaderCarrierSpec
 
       val result = hc.headersForUrl(HeaderCarrier.Config())(url = externalUrl)
 
-      result.map(_._1) should not contain "foo"
+      (result.map(_._1) should not contain "foo") (after being lowerCased)
     }
 
     "filter 'other headers' in request for internal urls, if no allowlist provided" in {
@@ -109,10 +110,9 @@ class HeaderCarrierSpec
 
       internalUrls.map { url =>
         val result = hc.headersForUrl(HeaderCarrier.Config())(url)
-        result.map(_._1) should not contain "foo"
+        (result.map(_._1) should not contain "foo") (after being lowerCased)
       }
     }
-
 
     "filter 'other headers' in request for internal urls, if not in provided allowlist" in {
       val hc = HeaderCarrier(
@@ -127,7 +127,7 @@ class HeaderCarrierSpec
 
       internalUrls.map { url =>
         val result = hc.headersForUrl(HeaderCarrier.Config.fromConfig(config))(url)
-        result.map(_._1) should not contain "foo"
+        (result.map(_._1) should not contain "foo") (after being lowerCased)
       }
     }
 

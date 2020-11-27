@@ -91,7 +91,7 @@ class Examples
 
       client.GET[BankHolidays](
         url         = "http://localhost:20001/bank-holidays.json",
-        queryParams = Seq.empty, // TODO add default queryParams to client.GET?
+        queryParams = Seq.empty,
         headers     = Seq("some-header" -> "header value")
       ).futureValue
 

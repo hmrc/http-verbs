@@ -21,6 +21,26 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 ## Migration
 
+### Version 13.0.0
+
+#### Headers
+
+##### External hosts
+
+Explicit headers (those modelled explicitly in the `HeaderCarrier`) are no longer forwarded to external hosts. They will have to be provided explicitly via the *VERB* methods (GET, POST etc.).
+You can look them up from the headerCarrier by name. E.g. to forward Authorization and X-Request-Id header (case insensitive):
+```scala
+client.GET("https://externalhost/api", headers = hc.headers("Authorization", "X-Request-Id"))
+```
+
+##### Internal hosts
+
+There is no change in which headers are forwarded to internal hosts.
+
+The hosts identified as internal is configured by `internalServiceHostPatterns` and now includes `localhost` as default.
+
+See Headers section below.
+
 ### Version 12.0.0
 
 #### SessionKeys
@@ -76,9 +96,48 @@ Where `play-xx` is `play-25`, `play-26` or `play-27` depending on your version o
 
 ## Usage
 
-Play 2.5 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-25/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
+Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-common/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
 
-Play 2.6 and 2.7 examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-play-26/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
+### Headers
+
+#### Creating HeaderCarrier
+
+The `HeaderCarrier` should be created with `HeaderCarrierConverter` when a request is available, this will ensure that the appropriate headers are forwarded to internal hosts.
+
+E.g. for frontends:
+
+```scala
+HeaderCarrierConverter.fromHeadersAndSessionAndRequest(
+  headers = request.headers,
+  session = Some(request.session),
+  request = Some(request)
+)
+```
+and for backends:
+
+```scala
+HeaderCarrierConverter.fromHeadersAndSessionAndRequest(
+  headers = request.headers,
+  session = None,
+  request = Some(request)
+)
+```
+
+#### Propagation of headers
+
+Internal hosts are identified with the configuration `internalServiceHostPatterns`.
+The headers which are forwarded include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
+For external hosts, the headers must be provided explicitly to the VERB function (`GET`, `POST` etc).
+
+When providing additional headers to http requests, if it corresponds to an explicit one on the HeaderCarrier, it is recommended to replace it, otherwise you will be sending it twice:
+```scala
+client.GET("https://externalhost/api")(hc.copy(authorisation = "Basic 1234"))
+```
+
+For all other headers, provide them to the VERB function:
+```scala
+client.GET("https://externalhost/api", headers = Seq["AdditionHeader" -> "AdditionalValue"])(hc)
+```
 
 ## Test Helpers
 

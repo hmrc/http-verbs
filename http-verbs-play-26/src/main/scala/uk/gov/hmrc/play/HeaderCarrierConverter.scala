@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.play
 
-// TODO should be in package uk.gov.hmrc.play.http
-
 import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}

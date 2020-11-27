@@ -98,7 +98,7 @@ class HeadersSpec
         )
       }
 
-      "should allow a user to set an authorization header in the POST and override the Authorization header in the headerCarrier" in {
+      "allow a user to set an extra header in the POST" in {
         server.stubFor(
           post(urlEqualTo("/arbitrary"))
             .willReturn(aResponse().withStatus(200))
@@ -107,16 +107,17 @@ class HeadersSpec
         client.POST[JsValue, HttpResponse](
           url     = s"http://localhost:${server.port()}/arbitrary",
           body    = Json.obj(),
-          headers = Seq(HeaderNames.authorisation -> "Basic dXNlcjoxMjM=")
+          headers = Seq("extra-header-2" -> "my-extra-header-2")
         ).futureValue
 
         server.verify(
           postRequestedFor(urlEqualTo("/arbitrary"))
-            .withHeader(HeaderNames.authorisation, equalTo("Basic dXNlcjoxMjM=")) // TODO this doesn't check that we didn't get two headers
+            .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
             .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
             .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
             .withHeader("extra-header", equalTo("my-extra-header"))
+            .withHeader("extra-header-2", equalTo("my-extra-header-2"))
         )
       }
     }
@@ -143,7 +144,7 @@ class HeadersSpec
         )
       }
 
-      "allow a user to set an authorization header in the POST and override the Authorization header in the headerCarrier" in {
+      "allow a user to set an extra header in the POST" in {
         server.stubFor(
           post(urlEqualTo("/string"))
             .willReturn(aResponse().withStatus(200))
@@ -152,16 +153,17 @@ class HeadersSpec
         client.POSTString[HttpResponse](
           url     = s"http://localhost:${server.port()}/string",
           body    = "foo",
-          headers = Seq(HeaderNames.authorisation -> "Basic dXNlcjoxMjM=")
+          headers = Seq("extra-header-2" -> "my-extra-header-2")
         ).futureValue
 
         server.verify(
           postRequestedFor(urlEqualTo("/string"))
-            .withHeader(HeaderNames.authorisation, equalTo("Basic dXNlcjoxMjM=")) // TODO this doesn't check that we didn't get two headers
+            .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
             .withHeader(HeaderNames.xSessionId, equalTo("session-id"))
             .withHeader(HeaderNames.xRequestId, equalTo("request-id"))
             .withHeader("extra-header", equalTo("my-extra-header"))
+            .withHeader("extra-header-2", equalTo("my-extra-header-2"))
         )
       }
     }

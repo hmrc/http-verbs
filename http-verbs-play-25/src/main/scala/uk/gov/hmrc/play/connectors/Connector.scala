@@ -20,8 +20,6 @@ import com.github.ghik.silencer.silent
 import play.api.libs.ws.{WS, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
-// TODO deprecate connectors package
-
 trait RequestBuilder {
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest
 }
