@@ -14,30 +14,45 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.examples.utils
+package uk.gov.hmrc.http.examples.utils
 
 import play.api.libs.json.{Json, Reads}
 import java.time.LocalDate
 import scala.io.Source
 
 object XmlPayloads {
-  val bankHolidays: String = Source.fromFile(getClass.getResource("/bankHolidays.xml").toURI, "UTF-8").getLines.mkString
+  val bankHolidays: String =
+    Source.fromFile(getClass.getResource("/bankHolidays.xml").toURI, "UTF-8").getLines.mkString
 }
 
 object JsonPayloads {
-  val bankHolidays: String = Source.fromFile(getClass.getResource("/bankHolidays.json").toURI, "UTF-8").getLines.mkString
-  val userId: String = Source.fromFile(getClass.getResource("/userId.json").toURI, "UTF-8").getLines.mkString
+  val bankHolidays: String =
+    Source.fromFile(getClass.getResource("/bankHolidays.json").toURI, "UTF-8").getLines.mkString
+
+  val userId: String =
+    Source.fromFile(getClass.getResource("/userId.json").toURI, "UTF-8").getLines.mkString
 }
 
-case class BankHolidays(events: Seq[BankHoliday])
-case class BankHoliday(title: String, date: LocalDate)
+case class BankHolidays(
+  events: Seq[BankHoliday]
+)
+
+case class BankHoliday(
+  title: String,
+  date : LocalDate
+)
 
 object BankHolidays {
-  implicit val bhr: Reads[BankHoliday] = Json.reads[BankHoliday]
-  val reads: Reads[BankHolidays] = Json.reads[BankHolidays]
+  val reads: Reads[BankHolidays] = {
+    implicit val bhr: Reads[BankHoliday] = Json.reads[BankHoliday]
+    Json.reads[BankHolidays]
+  }
 }
 
-case class User(email: String, fullName: String)
+case class User(
+  email   : String,
+  fullName: String
+)
 
 object User {
   val writes = Json.writes[User]

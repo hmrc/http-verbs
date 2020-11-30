@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.play
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import com.typesafe.config.ConfigFactory
-import play.api.{Configuration, Logger}
+import play.api.Configuration
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging._
@@ -33,15 +31,14 @@ object HeaderCarrierConverter extends HeaderCarrierConverter {
 
 trait HeaderCarrierConverter {
 
-  private val logger = Logger(getClass)
-
   def fromHeadersAndSession(headers: Headers, session: Option[Session] = None): HeaderCarrier =
     fromHeadersAndSessionAndRequest(headers, session, None)
 
   def fromHeadersAndSessionAndRequest(
     headers: Headers,
     session: Option[Session]       = None,
-    request: Option[RequestHeader] = None): HeaderCarrier =
+    request: Option[RequestHeader] = None
+  ): HeaderCarrier =
     session.fold(fromHeaders(headers, request)) { session =>
       // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
       // cookie can be set for backwards compatibility
@@ -67,8 +64,8 @@ trait HeaderCarrierConverter {
 
   val Path = "path"
 
-  private def getSessionId(s: Session, headers: Headers) =
-    s.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
+  private def getSessionId(session: Session, headers: Headers) =
+    session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
 
   private def getDeviceId(c: Cookies, headers: Headers) =
     c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
@@ -92,14 +89,15 @@ trait HeaderCarrierConverter {
     )
 
   private def fromSession(
-    headers: Headers,
-    cookies: Cookies,
+    headers      : Headers,
+    cookies      : Cookies,
     requestHeader: Option[RequestHeader],
-    s: Session): HeaderCarrier =
+    session      : Session
+  ): HeaderCarrier =
     HeaderCarrier(
-      authorization    = s.get(SessionKeys.authToken).map(Authorization),
+      authorization    = session.get(SessionKeys.authToken).map(Authorization),
       forwarded        = forwardedFor(headers),
-      sessionId        = getSessionId(s, headers).map(SessionId),
+      sessionId        = getSessionId(session, headers).map(SessionId),
       requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
       requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
       nsStamp          = requestTimestamp(headers),
@@ -113,23 +111,10 @@ trait HeaderCarrierConverter {
       otherHeaders     = otherHeaders(headers, requestHeader)
     )
 
-  private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] = {
-    val remaining =
-      headers.keys
-        .filterNot(HeaderNames.explicitlyIncludedHeaders.contains(_))
-        .filter(h => allowlistedHeaders.map(_.toLowerCase).contains(h.toLowerCase))
-    remaining.map(h => h -> headers.get(h).getOrElse("")).toSeq ++
-      //adding path so that play-auditing can access the request path without a dependency on play
-      requestHeader.map(rh => Path -> rh.path)
-  }
-
-  private val deprecationLogged = new AtomicBoolean(false)
-
-  private def allowlistedHeaders: Seq[String] = {
-    if (configuration.has("httpHeadersWhitelist") && !deprecationLogged.getAndSet(true))
-      logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")
-    configuration.get[Seq[String]]("bootstrap.http.headersAllowlist")
-  }
+  private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] =
+      headers.headers.filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+        // adding path so that play-auditing can access the request path without a dependency on play
+        requestHeader.map(rh => Path -> rh.path).toSeq
 
   protected def configuration: Configuration
 
@@ -140,5 +125,4 @@ trait HeaderCarrierConverter {
       case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
       case (Some(tcip), Some(xff))                         => Some(s"$tcip, $xff")
     }).map(ForwardedFor)
-
 }

@@ -21,10 +21,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.WsTestClient
 import uk.gov.hmrc.http._
+
 import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
-  WsTestClient.withClient(wsClient => {
+  WsTestClient.withClient { wsClient =>
 
     "AuthConnector.buildRequest" should {
       val builder = new WSClientRequestBuilder {
@@ -38,7 +39,7 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
         val requestId         = RequestId("requestId")
         val deviceID          = "deviceIdTest"
 
-        val carrier: HeaderCarrier = HeaderCarrier(
+        val hc = HeaderCarrier(
           authorization = Some(testAuthorisation),
           forwarded     = Some(forwarded),
           sessionId     = Some(sessionId),
@@ -47,14 +48,14 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
           otherHeaders  = Seq("path" -> "/the/request/path")
         )
 
-        val request = builder.buildRequest("http://auth.base")(carrier)
-        request.headers.get(HeaderNames.authorisation).flatMap(_.headOption) shouldBe Some(testAuthorisation.value)
-        request.headers.get(HeaderNames.xForwardedFor).flatMap(_.headOption) shouldBe Some(forwarded.value)
-        request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption)    shouldBe Some(sessionId.value)
-        request.headers.get(HeaderNames.xRequestId).flatMap(_.headOption)    shouldBe Some(requestId.value)
-        request.headers.get(HeaderNames.deviceID).flatMap(_.headOption)      shouldBe Some(deviceID)
-        request.headers.get("path")                                          shouldBe None
+        val request = builder.buildRequest("http://test.public.service/bar")(hc)
+        request.header(HeaderNames.authorisation) shouldBe Some(testAuthorisation.value)
+        request.header(HeaderNames.xForwardedFor) shouldBe Some(forwarded.value)
+        request.header(HeaderNames.xSessionId)    shouldBe Some(sessionId.value)
+        request.header(HeaderNames.xRequestId)    shouldBe Some(requestId.value)
+        request.header(HeaderNames.deviceID)      shouldBe Some(deviceID)
+        request.header("path")                    shouldBe None
       }
     }
-  })
+  }
 }

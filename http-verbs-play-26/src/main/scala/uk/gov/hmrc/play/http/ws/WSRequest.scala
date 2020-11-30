@@ -16,19 +16,32 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.Configuration
-import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer, WSRequest => PlayWSRequest}
+import play.api.{Configuration, Logger}
+import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
 trait WSRequest extends WSRequestBuilder {
 
-  def wsClient: WSClient
+  private val logger = Logger(getClass)
 
-  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest =
+  private lazy val config =
+    configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
+
+  override def buildRequest[A](
+    url    : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    hc: HeaderCarrier
+  ): PlayWSRequest = {
+    val hdrs = hc.headersForUrl(config)(url) ++ headers
+
+    val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
+    if (duplicates.nonEmpty)
+      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
+
     wsClient.url(url)
-      .withHttpHeaders(applicableHeaders(url)(hc): _*)
-      .addHttpHeaders(headers: _*)
-
+      .withHttpHeaders(hdrs: _*)
+  }
 }
 
 trait WSProxy extends WSRequest {

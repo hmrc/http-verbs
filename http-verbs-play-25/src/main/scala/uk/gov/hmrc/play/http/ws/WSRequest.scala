@@ -18,28 +18,49 @@ package uk.gov.hmrc.play.http.ws
 
 import com.github.ghik.silencer.silent
 import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer, WSRequest => PlayWSRequest }
-import play.api.{Configuration, Play}
+import play.api.{Configuration, Play, Logger}
 import uk.gov.hmrc.http.HeaderCarrier
 
 trait WSRequest extends WSRequestBuilder {
 
+  private val logger = Logger(getClass)
+
   import play.api.libs.ws.WS
 
   @silent("deprecated")
-  def wsClient: WSClient =
+  override def wsClient: WSClient =
     WS.client(play.api.Play.current)
 
-  def buildRequest[A](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier): PlayWSRequest =
+  private lazy val config =
+    configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
+
+  override def buildRequest[A](
+    url    : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    hc: HeaderCarrier
+  ): PlayWSRequest = {
+    val hdrs = hc.headersForUrl(config)(url) ++ headers
+
+    val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
+    if (duplicates.nonEmpty)
+      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
+
     wsClient.url(url)
-      .withHeaders(applicableHeaders(url)(hc): _*)
-      .withHeaders(headers: _*)
+      .withHeaders(hdrs: _*)
+  }
 }
 
 trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest =
+  override def buildRequest[A](
+    url    : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    hc: HeaderCarrier
+  ): PlayWSRequest =
     wsProxyServer match {
       case Some(proxy) => super.buildRequest(url, headers).withProxyServer(proxy)
       case None        => super.buildRequest(url, headers)

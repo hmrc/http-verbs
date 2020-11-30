@@ -16,7 +16,4 @@
 
 package uk.gov.hmrc.http
 
-trait Request {
-
-  def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)]
-}
+trait Request

@@ -16,21 +16,20 @@
 
 package uk.gov.hmrc.http
 
-import java.net.{ConnectException, URL}
+import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
-import com.typesafe.config.Config
-
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 
 trait HttpVerb extends Request {
 
-  protected def configuration: Option[Config]
-
-  def mapErrors(httpMethod: String, url: String, f: Future[HttpResponse])(
-    implicit ec: ExecutionContext): Future[HttpResponse] =
+  def mapErrors(
+    httpMethod: String,
+    url       : String,
+    f         : Future[HttpResponse]
+  )(implicit
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
     f.recoverWith {
       case e: TimeoutException => Future.failed(new GatewayTimeoutException(gatewayTimeoutMessage(httpMethod, url, e)))
       case e: ConnectException => Future.failed(new BadGatewayException(badGatewayMessage(httpMethod, url, e)))
@@ -41,28 +40,4 @@ trait HttpVerb extends Request {
 
   def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String =
     s"$verbName of '$url' timed out with message '${e.getMessage}'"
-
-  lazy val internalHostPatterns: Seq[Regex] = configuration match {
-    case Some(config) if config.hasPathOrNull("internalServiceHostPatterns") =>
-      config.getStringList("internalServiceHostPatterns").asScala.map(_.r).toSeq
-    case _ =>
-      Seq("^.*\\.service$".r, "^.*\\.mdtp$".r)
-  }
-
-  lazy val userAgentHeader: Seq[(String, String)] = configuration match {
-    case Some(config) if config.hasPathOrNull("appName") =>
-      Seq("User-Agent" -> config.getString("appName"))
-    case _ =>
-      Seq.empty
-  }
-
-  override def applicableHeaders(url: String)(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-    val headers = if (internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())) {
-      hc.headers
-    } else {
-      hc.headers.filterNot(hc.otherHeaders.contains(_))
-    }
-
-    headers ++ userAgentHeader
-  }
 }

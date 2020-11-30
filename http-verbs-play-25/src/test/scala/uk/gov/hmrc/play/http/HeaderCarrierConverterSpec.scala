@@ -53,7 +53,10 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
     "copy it from the X-Forwarded-For header if there is an empty True-Client-IP header" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(
-          headers(HeaderNames.trueClientIp -> "", HeaderNames.xForwardedFor -> "192.168.0.1"),
+          headers(
+            HeaderNames.trueClientIp  -> "",
+            HeaderNames.xForwardedFor -> "192.168.0.1"
+          ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
@@ -61,7 +64,10 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
     "be blank if the True-Client-IP header and the X-Forwarded-For header if both exist but are empty" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(
-          headers(HeaderNames.trueClientIp -> "", HeaderNames.xForwardedFor -> ""),
+          headers(
+            HeaderNames.trueClientIp  -> "",
+            HeaderNames.xForwardedFor -> ""
+          ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor(""))
     }
@@ -75,7 +81,10 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
     "merge the True-Client-IP header and the X-Forwarded-For header if both exist" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(
-          headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.2"),
+          headers(
+            HeaderNames.trueClientIp  -> "192.168.0.1",
+            HeaderNames.xForwardedFor -> "192.168.0.2"
+          ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
     }
@@ -83,7 +92,10 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
     "do not add the True-Client-IP header if it's already at the beginning of X-Forwarded-For" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(
-          headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.1, 192.168.0.2"),
+          headers(
+            HeaderNames.trueClientIp  -> "192.168.0.1",
+            HeaderNames.xForwardedFor -> "192.168.0.1, 192.168.0.2"
+          ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
     }
@@ -91,16 +103,18 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
     "merge the True-Client-IP header if it already exists, but is not at the front ofthe X-Forwarded-For header" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(
-          headers(HeaderNames.trueClientIp -> "192.168.0.1", HeaderNames.xForwardedFor -> "192.168.0.2, 192.168.0.1"),
+          headers(
+            HeaderNames.trueClientIp  -> "192.168.0.1",
+            HeaderNames.xForwardedFor -> "192.168.0.2, 192.168.0.1"
+          ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2, 192.168.0.1"))
     }
   }
 
-  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => (k -> v) })
+  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
 
   "Extracting the remaining header carrier values from the session and headers" should {
-
     "find nothing with a blank request" in {
       val hc = HeaderCarrierConverter.fromHeadersAndSession(FakeHeaders())
       hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
@@ -136,26 +150,26 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
 
     "find the akamai reputation from the headers" in {
       HeaderCarrierConverter
-        .fromHeadersAndSession(headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"), Some(Session()))
+        .fromHeadersAndSession(
+          headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"),
+          Some(Session())
+        )
         .akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
     }
 
-    "add all allowlisted remaining headers, ignoring explicit ones" in running(
-      FakeApplication(additionalConfiguration = Map("bootstrap.http.headersAllowlist" -> Seq("quix")))) {
+    "add all remaining headers as other headers" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(
-          headers(HeaderNames.xRequestId -> "18476239874162", "User-Agent" -> "quix", "quix" -> "foo"),
+          headers(
+            HeaderNames.xRequestId -> "18476239874162",
+            "User-Agent"           -> "quix",
+            "quix"                 -> "foo"
+          ),
           Some(Session()))
-        .otherHeaders shouldBe Seq("quix" -> "foo")
-    }
-
-    "allowlisted headers check should be case insensitive" in running(
-      FakeApplication(additionalConfiguration = Map("bootstrap.http.headersAllowlist" -> Seq("x-client-id")))) {
-      HeaderCarrierConverter
-        .fromHeadersAndSession(
-          headers(HeaderNames.xRequestId -> "18476239874162", "User-Agent" -> "quix", "X-Client-ID" -> "foo"),
-          Some(Session()))
-        .otherHeaders shouldBe Seq("X-Client-ID" -> "foo")
+        .otherHeaders shouldBe Seq(
+          "User-Agent" -> "quix",
+          "quix"       -> "foo"
+        )
     }
 
     "add the request path" in running(FakeApplication()) {
@@ -166,26 +180,26 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         )
         .otherHeaders shouldBe Seq("path" -> "/the/request/path")
     }
-
   }
 
   "build Google Analytics headers from request" should {
-
     "find the GA user id and token" in {
       val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(
-        headers(HeaderNames.googleAnalyticTokenId -> "ga-token", HeaderNames.googleAnalyticUserId -> "123.456"))
+          headers(
+            HeaderNames.googleAnalyticTokenId -> "ga-token",
+            HeaderNames.googleAnalyticUserId  -> "123.456"
+          )
+        )
       hc.gaToken  shouldBe Some("ga-token")
       hc.gaUserId shouldBe Some("123.456")
     }
-
   }
 
   "utilise values from cookies" should {
-
     object TestController extends Controller {
       def index = Action { req =>
-        HeaderCarrierConverter.fromHeadersAndSession(req.headers, Some(req.session)).deviceID shouldBe Some(
-          "deviceIdCookie")
+        HeaderCarrierConverter.fromHeadersAndSession(req.headers, Some(req.session))
+          .deviceID shouldBe Some("deviceIdCookie")
         Ok("Test")
       }
     }
@@ -199,7 +213,5 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         .fromHeadersAndSession(headers(HeaderNames.deviceID -> "deviceIdTest"), Some(Session(Map.empty)))
         .deviceID shouldBe Some("deviceIdTest")
     }
-
   }
-
 }

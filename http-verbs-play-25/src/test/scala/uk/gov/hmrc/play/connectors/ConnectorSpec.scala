@@ -48,7 +48,7 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers {
         val requestId         = RequestId("requestId")
         val deviceID          = "deviceIdTest"
 
-        val carrier: HeaderCarrier = HeaderCarrier(
+        val hc = HeaderCarrier(
           authorization = Some(testAuthorisation),
           forwarded     = Some(forwarded),
           sessionId     = Some(sessionId),
@@ -57,13 +57,13 @@ class ConnectorSpec extends AnyWordSpecLike with Matchers {
           otherHeaders  = Seq("path" -> "/the/request/path")
         )
 
-        val request = p.builder.buildRequest("authBase")(carrier)
-        request.headers.get(HeaderNames.authorisation).flatMap(_.headOption) shouldBe Some(testAuthorisation.value)
-        request.headers.get(HeaderNames.xForwardedFor).flatMap(_.headOption) shouldBe Some(forwarded.value)
-        request.headers.get(HeaderNames.xSessionId).flatMap(_.headOption)    shouldBe Some(sessionId.value)
-        request.headers.get(HeaderNames.xRequestId).flatMap(_.headOption)    shouldBe Some(requestId.value)
-        request.headers.get(HeaderNames.deviceID).flatMap(_.headOption)      shouldBe Some(deviceID)
-        request.headers.get("path")                                          shouldBe None
+        val request = p.builder.buildRequest("http://test.public.service/bar")(hc)
+        request.headers.get(HeaderNames.authorisation) shouldBe Some(Seq(testAuthorisation.value))
+        request.headers.get(HeaderNames.xForwardedFor) shouldBe Some(Seq(forwarded.value))
+        request.headers.get(HeaderNames.xSessionId)    shouldBe Some(Seq(sessionId.value))
+        request.headers.get(HeaderNames.xRequestId)    shouldBe Some(Seq(requestId.value))
+        request.headers.get(HeaderNames.deviceID)      shouldBe Some(Seq(deviceID))
+        request.headers.get("path")                    shouldBe None
       }
     }
   }

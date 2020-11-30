@@ -21,7 +21,9 @@ import uk.gov.hmrc.http.{HeaderCarrier, Request}
 
 trait WSRequestBuilder extends Request {
 
-  def wsClient: WSClient
+  protected def wsClient: WSClient
 
-  def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest
+  protected def configuration: Option[com.typesafe.config.Config]
+
+  protected def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest
 }
