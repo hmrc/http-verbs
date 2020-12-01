@@ -112,8 +112,6 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
     }
   }
 
-  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
-
   "Extracting the remaining header carrier values from the session and headers" should {
     "find nothing with a blank request" in {
       val hc = HeaderCarrierConverter.fromHeadersAndSession(FakeHeaders())
@@ -214,4 +212,6 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         .deviceID shouldBe Some("deviceIdTest")
     }
   }
+
+  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
 }

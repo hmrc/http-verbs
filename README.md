@@ -106,16 +106,26 @@ Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http
 
 The `HeaderCarrier` should be created with `HeaderCarrierConverter` when a request is available, this will ensure that the appropriate headers are forwarded to internal hosts.
 
-E.g. for frontends:
-
-```scala
-HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-```
-and for backends:
+E.g. for backends:
 
 ```scala
 HeaderCarrierConverter.fromRequest(request)
 ```
+
+and for frontends:
+
+```scala
+HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+```
+
+If a frontend endpoint is servicing an API call, it should probably use `fromRequest` since `fromRequestAndSession` will only look for an Authorization token in the session, and ignore any provided as a request header.
+
+For asynchronous calls, where no request is available, a new HeaderCarrier can be created with default params:
+
+```scala
+HeaderCarrier()
+```
+
 
 #### Propagation of headers
 

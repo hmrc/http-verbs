@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.play.http
 
-import com.typesafe.config.ConfigFactory
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
 import play.api.http.{HeaderNames => PlayHeaderNames}
@@ -25,30 +24,35 @@ import scala.util.Try
 
 trait HeaderCarrierConverter {
 
-  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None): HeaderCarrier =
-    fromHeadersAndSessionAndRequest(headers, session, None)
+  def fromRequest(request: RequestHeader): HeaderCarrier =
+    buildHeaderCarrier(
+      headers = request.headers,
+      session = None,
+      request = Some(request)
+    )
 
+  def fromRequestAndSession(request: RequestHeader, session: Session): HeaderCarrier =
+    buildHeaderCarrier(
+      headers = request.headers,
+      session = Some(session),
+      request = Some(request)
+    )
+
+  @deprecated("Use fromRequest or fromRequestAndSession as appropriate", "13.0.0")
+  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None): HeaderCarrier =
+    buildHeaderCarrier(headers, session, request = None)
+
+  @deprecated("Use fromRequest or fromRequestAndSession as appropriate", "13.0.0")
   def fromHeadersAndSessionAndRequest(
     headers: Headers,
     session: Option[Session]       = None,
     request: Option[RequestHeader] = None
   ): HeaderCarrier =
-    session.fold(fromHeaders(headers, request)) { session =>
-      // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
-      // cookie can be set for backwards compatibility
-      val cookiesInHeader =
-        Cookies.fromCookieHeader(headers.get(PlayHeaderNames.COOKIE)).toList
-      val cookiesInSession =
-        request.map(_.cookies).map(_.toList).getOrElse(List.empty)
-      val cookies = Cookies(cookiesInSession ++ cookiesInHeader)
-      fromSession(headers, cookies, request, session)
-    }
+    buildHeaderCarrier(headers, session, request)
 
   private def buildRequestChain(currentChain: Option[String]): RequestChain =
-    currentChain match {
-      case None        => RequestChain.init
-      case Some(chain) => RequestChain(chain).extend
-    }
+    currentChain
+      .fold(RequestChain.init)(chain => RequestChain(chain).extend)
 
   private def requestTimestamp(headers: Headers): Long =
     headers
@@ -58,17 +62,30 @@ trait HeaderCarrierConverter {
 
   val Path = "path"
 
-  private def getSessionId(session: Session, headers: Headers) =
-    session.get(SessionKeys.sessionId).fold[Option[String]](headers.get(HeaderNames.xSessionId))(Some(_))
+  private def lookupCookies(headers: Headers, request: Option[RequestHeader]): Cookies = {
+    // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
+    // cookie can be set for backwards compatibility
+    val cookiesInHeader =
+      Cookies.fromCookieHeader(headers.get(PlayHeaderNames.COOKIE)).toList
+    val cookiesInSession =
+      request.map(_.cookies).map(_.toList).getOrElse(List.empty)
+    Cookies(cookiesInSession ++ cookiesInHeader)
+  }
 
-  private def getDeviceId(c: Cookies, headers: Headers) =
-    c.get(CookieNames.deviceID).map(_.value).fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
-
-  private def fromHeaders(headers: Headers, requestHeader: Option[RequestHeader]): HeaderCarrier =
+  private def buildHeaderCarrier(
+    headers: Headers,
+    session: Option[Session],
+    request: Option[RequestHeader]
+  ): HeaderCarrier = {
+    lazy val cookies = lookupCookies(headers, request)
     HeaderCarrier(
-      authorization    = headers.get(HeaderNames.authorisation).map(Authorization),
+      authorization    = // Note, if a session is provided, any Authorization header in the request will be ignored
+                         session.fold(headers.get(HeaderNames.authorisation))(_.get(SessionKeys.authToken))
+                           .map(Authorization),
       forwarded        = forwardedFor(headers),
-      sessionId        = headers.get(HeaderNames.xSessionId).map(SessionId),
+      sessionId        = session.flatMap(_.get(SessionKeys.sessionId))
+                           .orElse(headers.get(HeaderNames.xSessionId))
+                           .map(SessionId),
       requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
       requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
       nsStamp          = requestTimestamp(headers),
@@ -77,38 +94,20 @@ trait HeaderCarrierConverter {
       trueClientPort   = headers.get(HeaderNames.trueClientPort),
       gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
       gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
-      deviceID         = headers.get(HeaderNames.deviceID),
+      deviceID         = session.fold(headers.get(HeaderNames.deviceID))(_ =>
+                           cookies.get(CookieNames.deviceID).map(_.value)
+                             .fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
+                         ),
       akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders     = otherHeaders(headers, requestHeader)
+      otherHeaders     = otherHeaders(headers, request)
     )
+  }
 
-  private def fromSession(
-    headers      : Headers,
-    cookies      : Cookies,
-    requestHeader: Option[RequestHeader],
-    session      : Session
-  ): HeaderCarrier =
-    HeaderCarrier(
-      authorization    = session.get(SessionKeys.authToken).map(Authorization),
-      forwarded        = forwardedFor(headers),
-      sessionId        = getSessionId(session, headers).map(SessionId),
-      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
-      requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
-      nsStamp          = requestTimestamp(headers),
-      extraHeaders     = Seq.empty,
-      trueClientIp     = headers.get(HeaderNames.trueClientIp),
-      trueClientPort   = headers.get(HeaderNames.trueClientPort),
-      gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
-      gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
-      deviceID         = getDeviceId(cookies, headers),
-      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders     = otherHeaders(headers, requestHeader)
-    )
-
-  private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] =
-      headers.headers.filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+  private def otherHeaders(headers: Headers, request: Option[RequestHeader]): Seq[(String, String)] =
+      headers.headers
+        .filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
         // adding path so that play-auditing can access the request path without a dependency on play
-        requestHeader.map(rh => Path -> rh.path).toSeq
+        request.map(rh => Path -> rh.path).toSeq
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] =
     ((headers.get(HeaderNames.trueClientIp), headers.get(HeaderNames.xForwardedFor)) match {
