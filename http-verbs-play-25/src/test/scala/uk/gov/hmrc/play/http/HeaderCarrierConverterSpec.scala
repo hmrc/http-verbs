@@ -22,7 +22,6 @@ import play.api.mvc.{Action, Controller, Cookie, Session}
 import play.api.test.Helpers._
 import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import scala.concurrent.duration._
 

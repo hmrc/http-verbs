@@ -14,48 +14,34 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play
+package uk.gov.hmrc.play.http
 
-import com.typesafe.config.ConfigFactory
-import play.api.Configuration
+import com.github.ghik.silencer.silent
+import play.api.Play
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
-import play.api.http.{HeaderNames => PlayHeaderNames}
 
 import scala.util.Try
 
-object HeaderCarrierConverter extends HeaderCarrierConverter {
-  protected val configuration: Configuration = Configuration(ConfigFactory.load())
-}
-
 trait HeaderCarrierConverter {
 
-  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None): HeaderCarrier =
+  def fromHeadersAndSession(headers: Headers, session: Option[Session] = None) =
     fromHeadersAndSessionAndRequest(headers, session, None)
 
-  def fromHeadersAndSessionAndRequest(
-    headers: Headers,
-    session: Option[Session]       = None,
-    request: Option[RequestHeader] = None
-  ): HeaderCarrier =
-    session.fold(fromHeaders(headers, request)) { session =>
-      // Cookie setting changed between Play 2.5 and Play 2.6, this now checks both ways
-      // cookie can be set for backwards compatibility
-      val cookiesInHeader =
-        Cookies.fromCookieHeader(headers.get(PlayHeaderNames.COOKIE)).toList
-      val cookiesInSession =
-        request.map(_.cookies).map(_.toList).getOrElse(List.empty)
-      val cookies = Cookies(cookiesInSession ++ cookiesInHeader)
-      fromSession(headers, cookies, request, session)
+  def fromHeadersAndSessionAndRequest(headers: Headers, session: Option[Session] = None, request: Option[RequestHeader] = None) = {
+    lazy val cookies: Cookies = Cookies.fromCookieHeader(headers.get(play.api.http.HeaderNames.COOKIE))
+    session.fold(fromHeaders(headers, request)) {
+      fromSession(headers, cookies, request, _)
     }
+  }
 
-  private def buildRequestChain(currentChain: Option[String]): RequestChain =
+  def buildRequestChain(currentChain: Option[String]): RequestChain =
     currentChain match {
       case None        => RequestChain.init
       case Some(chain) => RequestChain(chain).extend
     }
 
-  private def requestTimestamp(headers: Headers): Long =
+  def requestTimestamp(headers: Headers): Long =
     headers
       .get(HeaderNames.xRequestTimestamp)
       .flatMap(tsAsString => Try(tsAsString.toLong).toOption)
@@ -111,11 +97,11 @@ trait HeaderCarrierConverter {
     )
 
   private def otherHeaders(headers: Headers, requestHeader: Option[RequestHeader]): Seq[(String, String)] =
-      headers.headers.filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-        // adding path so that play-auditing can access the request path without a dependency on play
-        requestHeader.map(rh => Path -> rh.path).toSeq
+    headers.headers
+      .filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
+      // adding path so that play-auditing can access the request path without a dependency on play
+      requestHeader.map(rh => Path -> rh.path).toSeq
 
-  protected def configuration: Configuration
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] =
     ((headers.get(HeaderNames.trueClientIp), headers.get(HeaderNames.xForwardedFor)) match {
@@ -125,3 +111,5 @@ trait HeaderCarrierConverter {
       case (Some(tcip), Some(xff))                         => Some(s"$tcip, $xff")
     }).map(ForwardedFor)
 }
+
+object HeaderCarrierConverter extends HeaderCarrierConverter

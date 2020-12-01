@@ -26,7 +26,6 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, FakeRequestFactory}
 import play.api.mvc.request.RequestFactory
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import scala.concurrent.duration._
 
