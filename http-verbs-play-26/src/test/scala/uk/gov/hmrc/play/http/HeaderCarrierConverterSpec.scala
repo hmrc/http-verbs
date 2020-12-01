@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
+import com.github.ghik.silencer.silent
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -29,6 +30,7 @@ import uk.gov.hmrc.http._
 
 import scala.concurrent.duration._
 
+@silent("deprecated")
 class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
   "Extracting the request timestamp from the session and headers" should {

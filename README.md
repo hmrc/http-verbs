@@ -109,20 +109,12 @@ The `HeaderCarrier` should be created with `HeaderCarrierConverter` when a reque
 E.g. for frontends:
 
 ```scala
-HeaderCarrierConverter.fromHeadersAndSessionAndRequest(
-  headers = request.headers,
-  session = Some(request.session),
-  request = Some(request)
-)
+HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 ```
 and for backends:
 
 ```scala
-HeaderCarrierConverter.fromHeadersAndSessionAndRequest(
-  headers = request.headers,
-  session = None,
-  request = Some(request)
-)
+HeaderCarrierConverter.fromRequest(request)
 ```
 
 #### Propagation of headers
