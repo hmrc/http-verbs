@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http
 import java.net.{ServerSocket, URI}
 import java.util.concurrent.TimeoutException
 
+import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -58,7 +59,7 @@ class HttpTimeoutSpec
 
     "be gracefully timeout when no response is received within the 'timeout' frame" in {
       val http = new WSHttp with TestHttpCore {
-        override val configuration = None
+        override val configuration = fakeApplication.configuration.underlying
       }
 
       // get an unused port

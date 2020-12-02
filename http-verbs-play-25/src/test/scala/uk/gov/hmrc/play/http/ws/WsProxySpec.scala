@@ -18,6 +18,7 @@ package uk.gov.hmrc.play.http.ws
 
 import com.github.tomakehurst.wiremock.client.VerificationException
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, OptionValues}
@@ -38,7 +39,7 @@ class WsProxySpec extends AnyWordSpecLike with Matchers with MockitoSugar with O
       val wSProxyServer = mock[WSProxyServer]
 
       object ProxiedGet extends WSProxy {
-        override val configuration = None
+        override val configuration = ConfigFactory.load()
         override def wsProxyServer = Some(wSProxyServer)
       }
 
@@ -52,7 +53,7 @@ class WsProxySpec extends AnyWordSpecLike with Matchers with MockitoSugar with O
     "still work by making the request without using a proxy server" in new Setup {
 
       object ProxiedGet extends WSProxy {
-        override val configuration = None
+        override val configuration: Config = ConfigFactory.load()
         override def wsProxyServer = None
       }
 

@@ -31,8 +31,8 @@ trait WSRequest extends WSRequestBuilder {
   override def wsClient: WSClient =
     WS.client(play.api.Play.current)
 
-  private lazy val config =
-    configuration.fold(HeaderCarrier.Config())(HeaderCarrier.Config.fromConfig)
+  private lazy val hcConfig =
+    HeaderCarrier.Config.fromConfig(configuration)
 
   override def buildRequest[A](
     url    : String,
@@ -40,7 +40,7 @@ trait WSRequest extends WSRequestBuilder {
   )(implicit
     hc: HeaderCarrier
   ): PlayWSRequest = {
-    val hdrs = hc.headersForUrl(config)(url) ++ headers
+    val hdrs = hc.headersForUrl(hcConfig)(url) ++ headers
 
     val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
     if (duplicates.nonEmpty)

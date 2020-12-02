@@ -66,15 +66,15 @@ class Examples
 
   private lazy val app: Application = new GuiceApplicationBuilder().build()
 
-  private def mkClient(config: Option[String]) =
+  private def mkClient(config: Config) =
     new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
-      override def wsClient: WSClient                      = app.injector.instanceOf[WSClient]
-      override protected def configuration: Option[Config] = config.map(ConfigFactory.parseString)
-      override val hooks: Seq[HttpHook]                    = Seq.empty
-      override protected def actorSystem: ActorSystem      = ActorSystem("test-actor-system")
+      override def wsClient: WSClient                 = app.injector.instanceOf[WSClient]
+      override protected def configuration: Config    = config
+      override val hooks: Seq[HttpHook]               = Seq.empty
+      override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
     }
 
-  private lazy val client = mkClient(config = None)
+  private lazy val client = mkClient(config = ConfigFactory.load())
 
   private implicit val userWrites: Writes[User] = User.writes
   private implicit val userIdentifierWrites: Reads[UserIdentifier] = UserIdentifier.reads
@@ -142,11 +142,12 @@ class Examples
       implicit val hc = HeaderCarrier(authorization = Some(Authorization("Basic dXNlcjoxMjM=")))
 
       // for demonstration, we're initialising a client which considers `localhost` as an external host
-      val client = mkClient(config = Some(
-        """|bootstrap.http.headersAllowlist = []
-           |internalServiceHostPatterns = []
-           |""".stripMargin
-      ))
+      val client = mkClient(config =
+        ConfigFactory.parseString(
+          """|internalServiceHostPatterns = []
+             |""".stripMargin
+        ).withFallback(ConfigFactory.load())
+      )
 
       stubFor(
         post(urlEqualTo("/create-user"))
