@@ -308,7 +308,6 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           session = Session()
         )
         .otherHeaders.toSet should contain allElementsOf (Set(
-          "Host"       -> "localhost",
           "User-Agent" -> "quix",
           "quix"       -> "foo",
           "path"       -> "/"

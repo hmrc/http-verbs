@@ -20,10 +20,12 @@ import com.github.ghik.silencer.silent
 import play.api.libs.ws.{WS, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequestBuilder", "13.0.0")
 trait RequestBuilder {
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest
 }
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequest", "13.0.0")
 trait PlayWSRequestBuilder extends RequestBuilder {
   @silent("deprecated")
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
@@ -31,6 +33,7 @@ trait PlayWSRequestBuilder extends RequestBuilder {
       .withHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
 }
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequest", "13.0.0")
 trait WSClientRequestBuilder extends RequestBuilder { this: WSClientProvider =>
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest =
     client.url(url)

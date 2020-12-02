@@ -21,10 +21,12 @@ import akka.stream.ActorMaterializer
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.{AhcConfigBuilder, AhcWSClient}
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequest and inject WSClient", "13.0.0")
 trait WSClientProvider {
   implicit val client: WSClient
 }
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequest and inject WSClient", "13.0.0")
 trait DefaultWSClientProvider extends WSClientProvider {
   val builder    = new AhcConfigBuilder()
   val ahcBuilder = builder.configure()

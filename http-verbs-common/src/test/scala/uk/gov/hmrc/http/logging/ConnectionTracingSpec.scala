@@ -24,7 +24,6 @@ import org.scalatest.matchers.should.Matchers
 import org.slf4j.Logger
 import uk.gov.hmrc.http._
 
-
 import scala.util.{Failure, Success}
 
 class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {

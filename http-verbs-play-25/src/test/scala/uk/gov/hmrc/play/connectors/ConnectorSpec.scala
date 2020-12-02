@@ -16,12 +16,14 @@
 
 package uk.gov.hmrc.play.connectors
 
+import com.github.ghik.silencer.silent
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
 
+@silent("deprecated")
 class ConnectorSpec extends AnyWordSpecLike with Matchers {
   class TestConfig(val builderName: String, val builder: RequestBuilder, setupFunc: ((=> Any) => Any)) {
     def setup(f:                                                                      => Any) = setupFunc(f)
