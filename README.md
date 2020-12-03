@@ -29,7 +29,7 @@ The Headers `Authorization`, `ForwardedFor`, `RequestChain`, `RequestId`, `Sessi
 
 ##### External hosts
 
-Explicit headers (those modelled explicitly in the `HeaderCarrier`) are no longer forwarded to external hosts. They will have to be provided explicitly via the *VERB* methods (GET, POST etc.).
+Explicit headers (those modelled explicitly in the `HeaderCarrier`) are no longer forwarded to external hosts. They should be provided explicitly via the *VERB* methods (GET, POST etc.).
 You can look them up from the headerCarrier by name. E.g. to forward Authorization and X-Request-Id header (case insensitive):
 ```scala
 client.GET("https://externalhost/api", headers = hc.headers("Authorization", "X-Request-Id"))
@@ -137,7 +137,7 @@ HeaderCarrier()
 
 Internal hosts are identified with the configuration `internalServiceHostPatterns`.
 The headers which are forwarded include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
-For external hosts, the headers must be provided explicitly to the VERB function (`GET`, `POST` etc).
+For external hosts, the headers should be provided explicitly to the VERB function (`GET`, `POST` etc).
 
 When providing additional headers to http requests, if it corresponds to an explicit one on the HeaderCarrier, it is recommended to replace it, otherwise you will be sending it twice:
 ```scala

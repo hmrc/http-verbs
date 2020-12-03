@@ -63,11 +63,7 @@ case class HeaderCarrier(
       HeaderNames.akamaiReputation      -> akamaiReputation.map(_.value)
     ).collect { case (k, Some(v)) => (k, v) }
 
-  @deprecated("Provide extra headers to VERB (GET, POST) functions", "13.0.0")
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
-    this.copy(extraHeaders = extraHeaders ++ headers)
-
-  def addExtraHeaders(headers: Seq[(String, String)]): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
   def headers(names: Seq[String]): Seq[(String, String)] =

@@ -39,7 +39,7 @@ trait WSRequest extends WSRequestBuilder {
   ): PlayWSRequest =
     wsClient.url(url)
       .withHeaders(
-        hc.addExtraHeaders(headers)
+        hc.withExtraHeaders(headers: _*)
           .headersForUrl(hcConfig)(url): _*
       )
 }
