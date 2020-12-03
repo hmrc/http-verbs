@@ -1,7 +1,7 @@
 http-verbs
 ==========
 
-[![Build Status](https://travis-ci.org/hmrc/http-verbs.svg)](https://travis-ci.org/hmrc/http-verbs) [ ![Download](https://api.bintray.com/packages/hmrc/releases/http-verbs/images/download.svg) ](https://bintray.com/hmrc/releases/http-verbs/_latestVersion)
+
 
 http-verbs is a Scala library providing an interface to make asynchronous HTTP calls.
 
