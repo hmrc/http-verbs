@@ -39,6 +39,7 @@ case class HeaderCarrier(
   akamaiReputation: Option[AkamaiReputation] = None,
   otherHeaders    : Seq[(String, String)]    = Seq()
 ) extends LoggingDetails {
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /**
     * @return the time, in nanoseconds, since this header carrier was created
@@ -66,19 +67,29 @@ case class HeaderCarrier(
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
+  def addExtraHeaders(headers: Seq[(String, String)]): HeaderCarrier =
+    this.copy(extraHeaders = extraHeaders ++ headers)
+
   def headers(names: Seq[String]): Seq[(String, String)] =
     (explicitHeaders ++ otherHeaders).filter { case (k, _) => names.map(_.toLowerCase).contains(k.toLowerCase) }
 
   def headersForUrl(config: HeaderCarrier.Config)(url: String): Seq[(String, String)] = {
     val isInternalHost = config.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-    if (isInternalHost)
-      headers(HeaderNames.explicitlyIncludedHeaders ++ config.headersAllowlist) ++
+    val hdrs =
+      if (isInternalHost)
+        headers(HeaderNames.explicitlyIncludedHeaders ++ config.headersAllowlist) ++
+          config.userAgent.map("User-Agent" -> _).toSeq ++
+          extraHeaders
+      else
         config.userAgent.map("User-Agent" -> _).toSeq ++
-        extraHeaders
-    else
-      config.userAgent.map("User-Agent" -> _).toSeq ++
-        extraHeaders
+          extraHeaders
+
+    val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
+    if (duplicates.nonEmpty)
+      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
+
+    hdrs
   }
 }
 

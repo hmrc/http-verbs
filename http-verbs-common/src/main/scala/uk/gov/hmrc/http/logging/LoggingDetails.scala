@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.http.logging
 
-import scala.util.Random
 import uk.gov.hmrc.http.{Authorization, ForwardedFor, HeaderNames, RequestChain, RequestId, SessionId}
 
 trait LoggingDetails {
