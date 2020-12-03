@@ -27,7 +27,6 @@ import org.scalatest.LoneElement
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 
 class HeaderCarrierSpec
   extends AnyWordSpecLike

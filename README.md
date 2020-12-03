@@ -25,6 +25,8 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 #### Headers
 
+The Headers `Authorization`, `ForwardedFor`, `RequestChain`, `RequestId`, `SessionId` have been moved from package `uk.gov.hmrc.http.logging` to `uk.gov.hmrc.http`
+
 ##### External hosts
 
 Explicit headers (those modelled explicitly in the `HeaderCarrier`) are no longer forwarded to external hosts. They will have to be provided explicitly via the *VERB* methods (GET, POST etc.).
@@ -110,24 +112,26 @@ Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http
 
 The `HeaderCarrier` should be created with `HeaderCarrierConverter` when a request is available, this will ensure that the appropriate headers are forwarded to internal hosts.
 
-E.g. for frontends:
+E.g. for backends:
 
 ```scala
-HeaderCarrierConverter.fromHeadersAndSessionAndRequest(
-  headers = request.headers,
-  session = Some(request.session),
-  request = Some(request)
-)
+HeaderCarrierConverter.fromRequest(request)
 ```
-and for backends:
+
+and for frontends:
 
 ```scala
-HeaderCarrierConverter.fromHeadersAndSessionAndRequest(
-  headers = request.headers,
-  session = None,
-  request = Some(request)
-)
+HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 ```
+
+If a frontend endpoint is servicing an API call, it should probably use `fromRequest` since `fromRequestAndSession` will only look for an Authorization token in the session, and ignore any provided as a request header.
+
+For asynchronous calls, where no request is available, a new HeaderCarrier can be created with default params:
+
+```scala
+HeaderCarrier()
+```
+
 
 #### Propagation of headers
 

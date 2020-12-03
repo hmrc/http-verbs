@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.play.http
 
+import com.github.ghik.silencer.silent
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.mvc.{Action, Controller, Cookie, Session}
 import play.api.test.Helpers._
 import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging._
-import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import scala.concurrent.duration._
 
+@silent("deprecated")
 class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
 
   "Extracting the request timestamp from the session and headers" should {
@@ -111,8 +111,6 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2, 192.168.0.1"))
     }
   }
-
-  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
 
   "Extracting the remaining header carrier values from the session and headers" should {
     "find nothing with a blank request" in {
@@ -214,4 +212,6 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers {
         .deviceID shouldBe Some("deviceIdTest")
     }
   }
+
+  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
 }

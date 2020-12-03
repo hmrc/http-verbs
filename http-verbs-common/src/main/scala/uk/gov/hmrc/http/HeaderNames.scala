@@ -84,3 +84,24 @@ object SessionKeys {
   val portalRedirectUrl    = "portalRedirectUrl"
   val portalState          = "portalState"
 }
+
+
+case class Authorization(value: String) extends AnyVal
+
+case class SessionId(value: String) extends AnyVal
+
+case class RequestId(value: String) extends AnyVal
+
+case class AkamaiReputation(value: String) extends AnyVal
+
+case class RequestChain(value: String) extends AnyVal {
+  def extend = RequestChain(s"$value-${RequestChain.newComponent}")
+}
+
+object RequestChain {
+  def newComponent = (scala.util.Random.nextInt & 0xffff).toHexString
+
+  def init = RequestChain(newComponent)
+}
+
+case class ForwardedFor(value: String) extends AnyVal

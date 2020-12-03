@@ -21,10 +21,12 @@ import com.typesafe.config.ConfigFactory
 import play.api.libs.ws.{WS, WSRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequestBuilder", "13.0.0")
 trait RequestBuilder {
   def buildRequest(url: String)(implicit hc: HeaderCarrier): WSRequest
 }
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequest", "13.0.0")
 trait PlayWSRequestBuilder extends RequestBuilder {
 
   @silent("deprecated")
@@ -40,6 +42,7 @@ trait PlayWSRequestBuilder extends RequestBuilder {
       .withHeaders(hc.headersForUrl(hcConfig)(url): _*)
 }
 
+@deprecated("Use uk.gov.hmrc.play.http.ws.WSRequest", "13.0.0")
 trait WSClientRequestBuilder extends RequestBuilder { this: WSClientProvider =>
   private val hcConfig =
     HeaderCarrier.Config.fromConfig(ConfigFactory.load())

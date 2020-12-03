@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.play.http
 
+import com.github.ghik.silencer.silent
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -26,11 +27,10 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, FakeRequestFactory}
 import play.api.mvc.request.RequestFactory
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging._
-import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import scala.concurrent.duration._
 
+@silent("deprecated")
 class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
   "Extracting the request timestamp from the session and headers" should {
@@ -38,11 +38,25 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.xRequestTimestamp -> "12345"), Some(Session()))
         .nsStamp shouldBe 12345
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.xRequestTimestamp -> "12345"),
+          session = Session()
+        )
+        .nsStamp shouldBe 12345
     }
 
     "ignore it in the header if present but not a valid Long" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.xRequestTimestamp -> "13:14"), Some(Session()))
+        .nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.xRequestTimestamp -> "13:14"),
+          session = Session()
+        )
         .nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
     }
   }
@@ -51,6 +65,13 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
     "copy it from the X-Forwarded-For header if there is no True-Client-IP header" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.xForwardedFor -> "192.168.0.1"), Some(Session()))
+        .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.xForwardedFor -> "192.168.0.1"),
+          session = Session()
+        )
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
 
@@ -63,6 +84,16 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.trueClientIp  -> "",
+                      HeaderNames.xForwardedFor -> "192.168.0.1"
+                    ),
+          session = Session()
+        )
+        .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
 
     "be blank if the True-Client-IP header and the X-Forwarded-For header if both exist but are empty" in {
@@ -74,11 +105,28 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor(""))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.trueClientIp  -> "",
+                      HeaderNames.xForwardedFor -> ""
+                    ),
+          session = Session()
+        )
+        .forwarded shouldBe Some(ForwardedFor(""))
     }
 
     "copy it from the True-Client-IP header if there is no X-Forwarded-For header" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.trueClientIp -> "192.168.0.1"), Some(Session()))
+        .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.trueClientIp -> "192.168.0.1"),
+          session = Session()
+        )
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1"))
     }
 
@@ -91,6 +139,16 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.trueClientIp  -> "192.168.0.1",
+                      HeaderNames.xForwardedFor -> "192.168.0.2"
+                    ),
+          session = Session()
+        )
+        .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
     }
 
     "do not add the True-Client-IP header if it's already at the beginning of X-Forwarded-For" in {
@@ -101,6 +159,16 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
             HeaderNames.xForwardedFor -> "192.168.0.1, 192.168.0.2"
           ),
           Some(Session()))
+        .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.trueClientIp  -> "192.168.0.1",
+                      HeaderNames.xForwardedFor -> "192.168.0.1, 192.168.0.2"
+                    ),
+          session = Session()
+        )
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2"))
     }
 
@@ -113,20 +181,43 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           ),
           Some(Session()))
         .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2, 192.168.0.1"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.trueClientIp  -> "192.168.0.1",
+                      HeaderNames.xForwardedFor -> "192.168.0.2, 192.168.0.1"
+                    ),
+          session = Session()
+        )
+        .forwarded shouldBe Some(ForwardedFor("192.168.0.1, 192.168.0.2, 192.168.0.1"))
     }
   }
-
-  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
 
   "Extracting the remaining header carrier values from the session and headers" should {
     "find nothing with a blank request" in {
       val hc = HeaderCarrierConverter.fromHeadersAndSession(FakeHeaders())
       hc.nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
+
+      HeaderCarrierConverter
+        .fromRequest(FakeRequest())
+        .nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(FakeRequest(), Session())
+        .nsStamp shouldBe System.nanoTime() +- 5.seconds.toNanos
     }
 
     "find the authorization from the session" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.authToken -> "let me in!"))))
+        .authorization shouldBe Some(Authorization("let me in!"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest(),
+          session = Session(Map(SessionKeys.authToken -> "let me in!"))
+        )
         .authorization shouldBe Some(Authorization("let me in!"))
     }
 
@@ -134,11 +225,25 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.xRequestId -> "18476239874162"), Some(Session()))
         .requestId shouldBe Some(RequestId("18476239874162"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.xRequestId -> "18476239874162"),
+          session = Session()
+        )
+        .requestId shouldBe Some(RequestId("18476239874162"))
     }
 
     "find the sessionId from the session" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.sessionId -> "sesssionIdFromSession"))))
+        .sessionId shouldBe Some(SessionId("sesssionIdFromSession"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest(),
+          session = Session(Map(SessionKeys.sessionId -> "sesssionIdFromSession"))
+        )
         .sessionId shouldBe Some(SessionId("sesssionIdFromSession"))
     }
 
@@ -146,10 +251,21 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.xSessionId -> "sessionIdFromHeader"), Some(Session(Map.empty)))
         .sessionId shouldBe Some(SessionId("sessionIdFromHeader"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.xSessionId -> "sessionIdFromHeader"),
+          session = Session(Map.empty)
+        )
+        .sessionId shouldBe Some(SessionId("sessionIdFromHeader"))
     }
 
     "ignore the sessionId when it is not present in the headers nor session" in {
       HeaderCarrierConverter.fromHeadersAndSession(headers(), Some(Session(Map.empty))).sessionId shouldBe None
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(FakeRequest(), Session())
+        .sessionId shouldBe None
     }
 
     "find the akamai reputation from the headers" in {
@@ -157,6 +273,13 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .fromHeadersAndSession(
           headers(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"),
           Some(Session())
+        )
+        .akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.akamaiReputation -> "ID=127.0.0.1;WEBATCK=7"),
+          session = Session()
         )
         .akamaiReputation shouldBe Some(AkamaiReputation("ID=127.0.0.1;WEBATCK=7"))
     }
@@ -174,6 +297,35 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           "User-Agent" -> "quix",
           "quix"       -> "foo"
         )
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.xRequestId -> "18476239874162",
+                      "User-Agent"           -> "quix",
+                      "quix"                 -> "foo"
+                    ),
+          session = Session()
+        )
+        .otherHeaders.toSet should contain allElementsOf (Set(
+          "User-Agent" -> "quix",
+          "quix"       -> "foo",
+          "path"       -> "/"
+        ))
+
+      HeaderCarrierConverter
+        .fromRequest(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.xRequestId -> "18476239874162",
+                      "User-Agent"           -> "quix",
+                      "quix"                 -> "foo"
+                    )
+        )
+        .otherHeaders.toSet should contain allElementsOf (Set(
+          "User-Agent" -> "quix",
+          "quix"       -> "foo",
+          "path"       -> "/"
+        ))
     }
 
     "add the request path" in {
@@ -183,19 +335,46 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
           request = Some(FakeRequest(GET, path = "/the/request/path"))
         )
         .otherHeaders shouldBe Seq("path" -> "/the/request/path")
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest(GET, path = "/the/request/path"),
+          session = Session()
+        )
+        .otherHeaders should contain ("path" -> "/the/request/path")
+
+      HeaderCarrierConverter
+        .fromRequest(
+          request = FakeRequest(GET, path = "/the/request/path")
+        )
+        .otherHeaders should contain ("path" -> "/the/request/path")
     }
   }
 
   "build Google Analytics headers from request" should {
     "find the GA user id and token" in {
-      val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(
-        headers(
-          HeaderNames.googleAnalyticTokenId -> "ga-token",
-          HeaderNames.googleAnalyticUserId  -> "123.456"
+      {
+        val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(
+          headers(
+            HeaderNames.googleAnalyticTokenId -> "ga-token",
+            HeaderNames.googleAnalyticUserId  -> "123.456"
+          )
         )
-      )
-      hc.gaToken  shouldBe Some("ga-token")
-      hc.gaUserId shouldBe Some("123.456")
+        hc.gaToken  shouldBe Some("ga-token")
+        hc.gaUserId shouldBe Some("123.456")
+      }
+
+      {
+        val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(
+          request = FakeRequest().withHeaders(
+                      HeaderNames.googleAnalyticTokenId -> "ga-token",
+                      HeaderNames.googleAnalyticUserId  -> "123.456"
+                    ),
+          session = Session()
+        )
+        hc.gaToken  shouldBe Some("ga-token")
+        hc.gaUserId shouldBe Some("123.456")
+      }
     }
   }
 
@@ -230,6 +409,8 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .deviceID shouldBe Some("deviceIdTest")
     }
   }
+
+  def headers(vals: (String, String)*) = FakeHeaders(vals.map { case (k, v) => k -> v })
 
   lazy val fakeApplication =
     GuiceApplicationBuilder(configuration = Configuration("play.allowGlobalApplication" -> true)).build()

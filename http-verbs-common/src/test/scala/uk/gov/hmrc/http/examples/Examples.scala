@@ -47,7 +47,6 @@ import play.api.libs.ws.WSClient
 import uk.gov.hmrc.http.examples.utils._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
