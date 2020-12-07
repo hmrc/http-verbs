@@ -103,11 +103,13 @@ trait HeaderCarrierConverter {
     )
   }
 
-  private def otherHeaders(headers: Headers, request: Option[RequestHeader]): Seq[(String, String)] =
-      headers.headers
-        .filterNot { case (k, _) => HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase).contains(k.toLowerCase) } ++
-        // adding path so that play-auditing can access the request path without a dependency on play
-        request.map(rh => Path -> rh.path).toSeq
+  private def otherHeaders(headers: Headers, request: Option[RequestHeader]): Seq[(String, String)] = {
+    val explicitlyIncludedHeadersLc = HeaderNames.explicitlyIncludedHeaders.map(_.toLowerCase)
+    headers.headers
+      .filterNot { case (k, _) => explicitlyIncludedHeadersLc.contains(k.toLowerCase) } ++
+      // adding path so that play-auditing can access the request path without a dependency on play
+      request.map(rh => Path -> rh.path).toSeq
+  }
 
   private def forwardedFor(headers: Headers): Option[ForwardedFor] =
     ((headers.get(HeaderNames.trueClientIp), headers.get(HeaderNames.xForwardedFor)) match {
