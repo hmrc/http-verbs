@@ -18,13 +18,10 @@ package uk.gov.hmrc.play.http.ws
 
 import com.github.ghik.silencer.silent
 import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer, WSRequest => PlayWSRequest }
-import play.api.{Configuration, Play, Logger}
+import play.api.{Configuration, Play}
 import uk.gov.hmrc.http.HeaderCarrier
 
 trait WSRequest extends WSRequestBuilder {
-
-  private val logger = Logger(getClass)
-
   import play.api.libs.ws.WS
 
   @silent("deprecated")
@@ -39,16 +36,12 @@ trait WSRequest extends WSRequestBuilder {
     headers: Seq[(String, String)]
   )(implicit
     hc: HeaderCarrier
-  ): PlayWSRequest = {
-    val hdrs = hc.headersForUrl(hcConfig)(url) ++ headers
-
-    val duplicates = hdrs.groupBy(_._1).filter(_._2.length > 1).map(_._1)
-    if (duplicates.nonEmpty)
-      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
-
+  ): PlayWSRequest =
     wsClient.url(url)
-      .withHeaders(hdrs: _*)
-  }
+      .withHeaders(
+        hc.withExtraHeaders(headers: _*)
+          .headersForUrl(hcConfig)(url): _*
+      )
 }
 
 trait WSProxy extends WSRequest {

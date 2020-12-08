@@ -39,6 +39,7 @@ case class HeaderCarrier(
   akamaiReputation: Option[AkamaiReputation] = None,
   otherHeaders    : Seq[(String, String)]    = Seq()
 ) extends LoggingDetails {
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /**
     * @return the time, in nanoseconds, since this header carrier was created
@@ -62,23 +63,30 @@ case class HeaderCarrier(
       HeaderNames.akamaiReputation      -> akamaiReputation.map(_.value)
     ).collect { case (k, Some(v)) => (k, v) }
 
-  @deprecated("Provide extra headers to VERB (GET, POST) functions", "13.0.0")
   def withExtraHeaders(headers: (String, String)*): HeaderCarrier =
     this.copy(extraHeaders = extraHeaders ++ headers)
 
-  def headers(names: Seq[String]): Seq[(String, String)] =
-    (explicitHeaders ++ otherHeaders).filter { case (k, _) => names.map(_.toLowerCase).contains(k.toLowerCase) }
+  def headers(names: Seq[String]): Seq[(String, String)] = {
+    val namesLc = names.map(_.toLowerCase)
+    (explicitHeaders ++ otherHeaders).filter { case (k, _) => namesLc.contains(k.toLowerCase) }
+  }
 
   def headersForUrl(config: HeaderCarrier.Config)(url: String): Seq[(String, String)] = {
     val isInternalHost = config.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
 
-    if (isInternalHost)
-      headers(HeaderNames.explicitlyIncludedHeaders ++ config.headersAllowlist) ++
+    val hdrs =
+      (if (isInternalHost)
+         headers(HeaderNames.explicitlyIncludedHeaders ++ config.headersAllowlist)
+       else Seq.empty
+      ) ++
         config.userAgent.map("User-Agent" -> _).toSeq ++
         extraHeaders
-    else
-      config.userAgent.map("User-Agent" -> _).toSeq ++
-        extraHeaders
+
+    val duplicates = hdrs.groupBy(_._1).collect { case (k, vs) if vs.length > 1 => k }
+    if (duplicates.nonEmpty)
+      logger.warn(s"The following headers were detected multiple times: ${duplicates.mkString(",")}")
+
+    hdrs
   }
 }
 
