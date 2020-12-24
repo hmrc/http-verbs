@@ -40,14 +40,14 @@ The Headers `Authorization`, `ForwardedFor`, `RequestChain`, `RequestId`, `Sessi
 
 We believe this was a piece of technical debt, from when these cases classes lived in a different project.
 
-A scalafix is available to run [here](#). Please view the README about how to use it, and how to contribute additions.
+A scalafix is available to run [here](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/Httpverbs.scala). Please view the README about how to use it, and how to contribute additions.
 
 ### Configuration no longer optional on some traits
-`configuration` as required by some traits (`WSRequestBuilder` and `Retry`) has changed from `Option[com.typesafe.config.Config]` to `com.typesafe.config.Config`.
+`configuration` as required by some traits (`WSRequestBuilder` and `Retries`) has changed from `Option[com.typesafe.config.Config]` to `com.typesafe.config.Config`.
 
 This change makes it easier to reason about default behaviour, both for developers, and for automated tooling. Prior to this change, the defaults were split between configuration files and fallback `getOrElse` methods in code.
 
-If you don't want to provide any specific configuration (e.g. testing), then change `configuration = None` to `configuration = com.typesafe.config.ConfigFactory.load()`. A scalafix for this specific change is available to run [here](#).
+If you don't want to provide any specific configuration (e.g. testing), then change `configuration = None` to `configuration = com.typesafe.config.ConfigFactory.load()`. A scalafix for this specific change is available to run [here](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/OptionalConfig.scala).
 
 
 ## Version 12.0.0
