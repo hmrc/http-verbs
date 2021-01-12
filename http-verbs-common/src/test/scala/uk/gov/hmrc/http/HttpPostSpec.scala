@@ -98,22 +98,22 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POSTForm[HttpResponse](url, Map()).futureValue shouldBe response
+      testPOST.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POSTForm[TestClass](url, Map()).futureValue should be(TestClass("t", 10))
+      testPOST.POSTForm[TestClass](url, Map.empty[String, Seq[String]], Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTForm[HttpResponse](url, Map()))
-    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTForm[HttpResponse](url, Map()) }
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty))
+    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty) }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost            = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POSTForm[HttpResponse](url, Map()).futureValue
+      testPost.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty).futureValue
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
