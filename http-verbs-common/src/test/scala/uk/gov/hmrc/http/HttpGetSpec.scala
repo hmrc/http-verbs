@@ -59,9 +59,8 @@ class HttpGetSpec
   class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse)
     extends HttpGet
       with ConnectionTracingCapturing {
-    val testHook1 = mock[HttpHook]
-    val testHook2 = mock[HttpHook]
-    val hooks = Seq(testHook1, testHook2)
+    val testHook1: HttpHook = mock[HttpHook]
+    val testHook2: HttpHook = mock[HttpHook]
 
     override val configuration: Config = ConfigFactory.load()
 
@@ -73,12 +72,11 @@ class HttpGetSpec
         implicit hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doGetResult
+
+    override val hooks: Seq[HttpHook] = Seq(testHook1, testHook2)
   }
 
   class UrlTestingHttpGet() extends HttpGet with GetHttpTransport {
-    val testHook1 = mock[HttpHook]
-    val testHook2 = mock[HttpHook]
-    val hooks = Seq(testHook1, testHook2)
     var lastUrl: Option[String] = None
 
     override val configuration: Config = ConfigFactory.load()
@@ -93,6 +91,8 @@ class HttpGetSpec
       lastUrl = Some(url)
       defaultHttpResponse
     }
+
+    override val hooks: Seq[HttpHook] = Seq.empty
   }
 
   "HttpGet" should {
@@ -153,6 +153,7 @@ class HttpGetSpec
   }
 
   "HttpGet with params Seq" should {
+
     "return an empty string if the query parameters is empty" in {
       val expected = Some("http://test.net")
       val testGet = new UrlTestingHttpGet()
