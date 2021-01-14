@@ -32,7 +32,15 @@ Where `play-xx` is `play-25`, `play-26` or `play-27` depending on your version o
 
 ## Usage
 
-Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-common/src/test/scala/uk/gov/hmrc/examples/Examples.scala)
+Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-common/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
+
+### URLs
+
+Urls can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` for correct escaping of query and path parameters. A [URL interpolator](https://sttp.softwaremill.com/en/latest/model/uri.html) has been implicitly provided for convenience. 
+
+```
+url"http://localhost:8080/users/${user.id}?email=${user.email}"
+```
 
 ### Headers
 

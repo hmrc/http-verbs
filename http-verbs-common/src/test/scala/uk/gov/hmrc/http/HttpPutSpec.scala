@@ -70,22 +70,22 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doPutString(
-                              url: String,
-                              body: String,
-                              headers: Seq[(String, String)])(
-                              implicit hc: HeaderCarrier,
-                              ec: ExecutionContext): Future[HttpResponse] = {
+      url: String,
+      body: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
 
     override def doPut[A](
-                           url: String,
-                           body: A,
-                           headers: Seq[(String, String)])(
-                           implicit rds: Writes[A],
-                           hc: HeaderCarrier,
-                           ec: ExecutionContext): Future[HttpResponse] = {
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
