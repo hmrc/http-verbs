@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,27 +38,96 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       extends HttpPatch
       with ConnectionTracingCapturing
       with MockitoSugar {
-    val testHook1                                   = mock[HttpHook]
-    val testHook2                                   = mock[HttpHook]
+    val testHook1: HttpHook                         = mock[HttpHook]
+    val testHook2: HttpHook                         = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doPatch[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPatchResult
+  }
+
+  class UrlTestingHttpPatch() extends HttpPatch with PatchHttpTransport {
+
+    var lastUrl: Option[String] = None
+
+    override val configuration: Config = ConfigFactory.load()
+
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
+
+    override def doPatch[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override val hooks: Seq[HttpHook] = Seq()
+
   }
 
   "HttpPatch" should {
     val testObject = TestRequestClass("a", 1)
-    "be able to return plain responses" in {
+
+    "return plain responses" in {
       val response  = HttpResponse(200, testBody)
       val testPatch = new StubbedHttpPatch(Future.successful(response), Future.successful(response))
       testPatch.PATCH[TestRequestClass, HttpResponse](url, testObject, Seq("header" -> "foo")).futureValue shouldBe response
     }
-    "be able to return objects deserialised from JSON" in {
+
+    "return objects deserialised from JSON" in {
       val response= Future.successful(HttpResponse(200, """{"foo":"t","bar":10}"""))
       val testPatch = new StubbedHttpPatch(response, response)
       testPatch.PATCH[TestRequestClass, TestClass](url, testObject, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
+    }
+
+    "return a url with encoded param pairs with url builder" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testPatch = new UrlTestingHttpPatch()
+      val queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")
+      testPatch.PATCH[TestRequestClass, HttpResponse](url"http://test.net?$queryParams", testObject)
+      testPatch.lastUrl shouldBe expected
+    }
+
+    "return an encoded url when query param is in baseUrl" in {
+      val expected =
+        Some("http://test.net?email=testalias@email.com&foo=bar&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testPatch = new UrlTestingHttpPatch()
+      val queryParams = Seq("data" -> "{\"message\":\"in json format\"}")
+      testPatch
+        .PATCH[TestRequestClass, HttpResponse](url"http://test.net?email=testalias@email.com&foo=bar&$queryParams", testObject)
+      testPatch.lastUrl shouldBe expected
+    }
+
+    "return encoded url when query params are already encoded" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com")
+      val testPatch = new UrlTestingHttpPatch()
+      testPatch
+        .PATCH[TestRequestClass, HttpResponse](url"http://test.net?email=test%2Balias@email.com", testObject)
+      testPatch.lastUrl shouldBe expected
+    }
+
+    "return encoded url when path needs encoding" in {
+      val expected =
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias@email.com")
+      val testPatch = new UrlTestingHttpPatch()
+      val paths = List("some/other/route?a=b&c=d#", "something")
+      val email = "testalias@email.com"
+      testPatch.PATCH[TestRequestClass, HttpResponse](url"http://test.net/$paths?email=$email", testObject)
+      testPatch.lastUrl shouldBe expected
     }
 
     behave like anErrorMappingHttpCall(

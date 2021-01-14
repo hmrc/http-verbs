@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,35 +38,148 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       extends HttpPost
       with MockitoSugar
       with ConnectionTracingCapturing {
-    val testHook1                                   = mock[HttpHook]
-    val testHook2                                   = mock[HttpHook]
+    val testHook1: HttpHook                         = mock[HttpHook]
+    val testHook2: HttpHook                         = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doPost[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
 
-    override def doFormPost(url: String, body: Map[String, Seq[String]], headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doFormPost(
+      url: String,
+      body: Map[String, Seq[String]],
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
 
-    override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doPostString(
+      url: String,
+      body: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
 
-    override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doEmptyPost[A](
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
+  }
+
+  class UrlTestingHttpPost()
+    extends HttpPost
+      with PostHttpTransport {
+
+    var lastUrl: Option[String] = None
+
+    override val configuration: Config              = ConfigFactory.load()
+
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
+
+    override def doPost[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override def doFormPost(
+      url: String,
+      body: Map[String, Seq[String]],
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override def doPostString(
+      url: String,
+      body: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override def doEmptyPost[A](
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override val hooks: Seq[HttpHook] = Seq.empty
   }
 
   "HttpPost.POST" should {
     val testObject = TestRequestClass("a", 1)
-    "be able to return plain responses" in {
+
+    "return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
       testPOST.POST[TestRequestClass, HttpResponse](url, testObject).futureValue shouldBe response
     }
-    "be able to return objects deserialised from JSON" in {
+
+    "return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
       testPOST.POST[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
+    }
+
+    "return a url with encoded param pairs with url builder" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testPost = new UrlTestingHttpPost()
+      val queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")
+      testPost.POST[TestRequestClass, HttpResponse](url"http://test.net?$queryParams", testObject)
+      testPost.lastUrl shouldBe expected
+    }
+
+    "return an encoded url when query param is in baseUrl" in {
+      val expected =
+        Some("http://test.net?email=testalias@email.com&foo=bar&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testPost = new UrlTestingHttpPost()
+      val queryParams = Seq("data" -> "{\"message\":\"in json format\"}")
+      testPost
+        .POSTForm[HttpResponse](url"http://test.net?email=testalias@email.com&foo=bar&$queryParams", Map.empty[String, Seq[String]])
+      testPost.lastUrl shouldBe expected
+    }
+
+    "return encoded url when query params are already encoded" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com")
+      val testPost = new UrlTestingHttpPost()
+      testPost
+        .POSTString[HttpResponse](url"http://test.net?email=test%2Balias@email.com", "post body")
+      testPost.lastUrl shouldBe expected
+    }
+
+    "return encoded url when path needs encoding" in {
+      val expected =
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias@email.com")
+      val testPost = new UrlTestingHttpPost()
+      val paths = List("some/other/route?a=b&c=d#", "something")
+      val email = "testalias@email.com"
+      testPost.POSTEmpty[HttpResponse](url"http://test.net/$paths?email=$email")
+      testPost.lastUrl shouldBe expected
     }
 
     behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POST[TestRequestClass, HttpResponse](url, testObject))
@@ -98,22 +211,22 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POSTForm[HttpResponse](url, Map()).futureValue shouldBe response
+      testPOST.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POSTForm[TestClass](url, Map()).futureValue should be(TestClass("t", 10))
+      testPOST.POSTForm[TestClass](url, Map.empty[String, Seq[String]], Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTForm[HttpResponse](url, Map()))
-    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTForm[HttpResponse](url, Map()) }
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty))
+    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty) }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost            = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POSTForm[HttpResponse](url, Map()).futureValue
+      testPost.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty).futureValue
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])

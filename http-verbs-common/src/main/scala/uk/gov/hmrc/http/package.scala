@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http.ws
+package uk.gov.hmrc
 
-import play.api.libs.ws.{WSClient, WSRequest => PlayWSRequest}
-import uk.gov.hmrc.http.{HeaderCarrier, Request}
+import java.net.URL
 
-trait WSRequestBuilder extends Request {
+import sttp.model.UriInterpolator
 
-  protected def wsClient: WSClient
-
-  protected def configuration: com.typesafe.config.Config
-
-  protected def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest
+package object http {
+  implicit class StringContextOps(sc: StringContext){
+    def url(args: Any*) : URL = UriInterpolator.interpolate(sc, args: _*).toJavaUri.toURL
+  }
 }

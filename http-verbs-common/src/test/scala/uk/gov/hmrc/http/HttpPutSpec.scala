@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,32 +38,114 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       extends HttpPut
       with MockitoSugar
       with ConnectionTracingCapturing {
-    val testHook1                                   = mock[HttpHook]
-    val testHook2                                   = mock[HttpHook]
+    val testHook1: HttpHook                         = mock[HttpHook]
+    val testHook2: HttpHook                         = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    override def doPutString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doPutString(
+      url: String,
+      body: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
 
-    override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+    override def doPut[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
+  }
+
+  class UrlTestingHttpPut() extends HttpPut with PutHttpTransport {
+    var lastUrl: Option[String] = None
+
+    override val configuration: Config = ConfigFactory.load()
+
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
+
+    override def doPutString(
+      url: String,
+      body: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override def doPut[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit rds: Writes[A],
+        hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override val hooks: Seq[HttpHook] = Seq.empty
   }
 
   "HttpPut" should {
     val testObject = TestRequestClass("a", 1)
-    "be able to return plain responses" in {
+
+    "return plain responses" in {
       val payload = HttpResponse(200, testBody)
       val response = Future.successful(payload)
       val testPut  = new StubbedHttpPut(response)
       testPut.PUT[TestRequestClass, HttpResponse](url, testObject).futureValue shouldBe payload
     }
-    "be able to return objects deserialised from JSON" in {
+
+    "return objects deserialised from JSON" in {
       val payload = HttpResponse(200, """{"foo":"t","bar":10}""")
       val response = Future.successful(payload)
       val testPut = new StubbedHttpPut(response)
       testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
+    }
+
+    "return a url with encoded param pairs with url builder" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testPut = new UrlTestingHttpPut()
+      val queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")
+      testPut.PUT[TestRequestClass, HttpResponse](url"http://test.net?$queryParams", testObject)
+      testPut.lastUrl shouldBe expected
+    }
+
+    "return an encoded url when query param is in baseUrl" in {
+      val expected =
+        Some("http://test.net?email=testalias@email.com&foo=bar&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testPut = new UrlTestingHttpPut()
+      val queryParams = Seq("data" -> "{\"message\":\"in json format\"}")
+      testPut
+        .PUT[TestRequestClass, HttpResponse](url"http://test.net?email=testalias@email.com&foo=bar&$queryParams", testObject)
+      testPut.lastUrl shouldBe expected
+    }
+
+    "return encoded url when query params are already encoded" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com")
+      val testPut = new UrlTestingHttpPut()
+      testPut
+        .PUTString[HttpResponse](url"http://test.net?email=test%2Balias@email.com", "some-string")
+      testPut.lastUrl shouldBe expected
+    }
+
+    "return encoded url when path needs encoding" in {
+      val expected =
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias@email.com")
+      val testPut = new UrlTestingHttpPut()
+      val paths = List("some/other/route?a=b&c=d#", "something")
+      val email = "testalias@email.com"
+      testPut.PUTString[HttpResponse](url"http://test.net/$paths?email=$email", "some-string")
+      testPut.lastUrl shouldBe expected
     }
 
     behave like anErrorMappingHttpCall("PUT", (url, responseF) => new StubbedHttpPut(responseF).PUT[TestRequestClass, HttpResponse](url, testObject))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,7 +220,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.GET[Option[String]](url = "doesnt-matter", Seq("header" -> "foo")).futureValue shouldBe None
+      http.GET[Option[String]](url = "http://doesnt-matter", Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -337,7 +337,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTForm[Option[String]](url = "doesnt-matter", Map()).futureValue shouldBe None
+      http.POSTForm[Option[String]](url = "doesnt-matter", Map.empty[String, Seq[String]], Seq.empty[(String, String)]).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }

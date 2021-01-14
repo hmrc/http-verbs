@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,32 +36,94 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
 
   import ExecutionContext.Implicits.global
 
-  class StubbedHttpDelete(doDeleteResult: Future[HttpResponse], doDeleteWithHeaderResult: Future[HttpResponse]) extends HttpDelete with ConnectionTracingCapturing {
-    val testHook1                                   = mock[HttpHook]
-    val testHook2                                   = mock[HttpHook]
+  class StubbedHttpDelete(doDeleteResult: Future[HttpResponse], doDeleteWithHeaderResult: Future[HttpResponse]) extends HttpDelete with DeleteHttpTransport with ConnectionTracingCapturing {
+    val testHook1: HttpHook                         = mock[HttpHook]
+    val testHook2: HttpHook                         = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     def appName: String = ???
 
-    def doDelete(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+    override def doDelete(
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier,
+        ec: ExecutionContext): Future[HttpResponse] =
       doDeleteResult
   }
 
+  class UrlTestingHttpDelete() extends HttpDelete with DeleteHttpTransport {
+
+    var lastUrl: Option[String] = None
+
+    override val configuration: Config = ConfigFactory.load()
+
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
+
+    override def doDelete(
+      url: String,
+      headers: Seq[(String, String)])(
+        implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+      lastUrl = Some(url)
+      defaultHttpResponse
+    }
+
+    override val hooks: Seq[HttpHook] = Seq()
+  }
+
   "HttpDelete" should {
-    "be able to return plain responses" in {
+
+    "return plain responses" in {
       val response   = HttpResponse(200, testBody)
       val testDelete = new StubbedHttpDelete(Future.successful(response), Future.successful(response))
       testDelete.DELETE[HttpResponse](url, Seq("foo" -> "bar")).futureValue shouldBe response
     }
 
-    "be able to return objects deserialised from JSON" in {
+    "return objects deserialised from JSON" in {
       val testDelete = new StubbedHttpDelete(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")),
         Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
       testDelete
         .DELETE[TestClass](url, Seq("foo" -> "bar"))
         .futureValue(Timeout(Span(2, Seconds)), Interval(Span(15, Millis))) shouldBe TestClass("t", 10)
+    }
+
+    "return a url with encoded param pairs with url builder" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testDelete = new UrlTestingHttpDelete()
+      val queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")
+      testDelete.DELETE[HttpResponse](url"http://test.net?$queryParams")
+      testDelete.lastUrl shouldBe expected
+    }
+
+    "return an encoded url when query param is in baseUrl" in {
+      val expected =
+        Some("http://test.net?email=testalias@email.com&foo=bar&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testDelete = new UrlTestingHttpDelete()
+      val queryParams = Seq("data" -> "{\"message\":\"in json format\"}")
+      testDelete
+        .DELETE[HttpResponse](url"http://test.net?email=testalias@email.com&foo=bar&$queryParams")
+      testDelete.lastUrl shouldBe expected
+    }
+
+    "return encoded url when query params are already encoded" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com")
+      val testDelete = new UrlTestingHttpDelete()
+      testDelete
+        .DELETE[HttpResponse](url"http://test.net?email=test%2Balias@email.com")
+      testDelete.lastUrl shouldBe expected
+    }
+
+    "return encoded url when path needs encoding" in {
+      val expected =
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias@email.com")
+      val testDelete = new UrlTestingHttpDelete()
+      val paths = List("some/other/route?a=b&c=d#", "something")
+      val email = "testalias@email.com"
+      testDelete.DELETE[HttpResponse](url"http://test.net/$paths?email=$email")
+      testDelete.lastUrl shouldBe expected
     }
 
     behave like anErrorMappingHttpCall("DELETE", (url, responseF) => new StubbedHttpDelete(responseF, responseF).DELETE[HttpResponse](url, Seq("foo" -> "bar")))
