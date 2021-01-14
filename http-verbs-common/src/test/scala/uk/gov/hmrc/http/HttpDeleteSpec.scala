@@ -45,7 +45,7 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
 
     def appName: String = ???
 
-    def doDelete(
+    override def doDelete(
       url: String,
       headers: Seq[(String, String)])(
         implicit hc: HeaderCarrier,

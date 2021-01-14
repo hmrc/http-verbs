@@ -44,7 +44,7 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
-    def doPatch[A](
+    override def doPatch[A](
       url: String,
       body: A,
       headers: Seq[(String, String)])(

@@ -63,6 +63,8 @@ class Examples
 
   class CustomException(message: String) extends Exception(message)
 
+  type HttpClient = HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut
+
   private lazy val app: Application = new GuiceApplicationBuilder().build()
 
   private def mkClient(config: Config) =
@@ -73,7 +75,7 @@ class Examples
       override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
     }
 
-  private lazy val client = mkClient(config = ConfigFactory.load())
+  private lazy val client: HttpClient = mkClient(config = ConfigFactory.load())
 
   private implicit val userWrites: Writes[User] = User.writes
   private implicit val userIdentifierWrites: Reads[UserIdentifier] = UserIdentifier.reads
@@ -81,7 +83,7 @@ class Examples
 
   "A verb" should {
     "allow the user to set additional headers" in {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
@@ -89,8 +91,7 @@ class Examples
       )
 
       client.GET[BankHolidays](
-        url         = "http://localhost:20001/bank-holidays.json",
-        queryParams = Seq.empty,
+        url         = url"http://localhost:20001/bank-holidays.json",
         headers     = Seq("some-header" -> "header value")
       ).futureValue
 
@@ -102,14 +103,14 @@ class Examples
       val username = "user"
       val password = "123"
       val encodedAuthHeader = Base64.encodeBase64String(s"$username:$password".getBytes("UTF-8"))
-      implicit val hc = HeaderCarrier(authorization = Some(Authorization(s"Basic $encodedAuthHeader")))
+      implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization(s"Basic $encodedAuthHeader")))
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
           .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
       )
 
-      client.GET[BankHolidays]("http://localhost:20001/bank-holidays.json").futureValue
+      client.GET[BankHolidays](url"http://localhost:20001/bank-holidays.json").futureValue
 
       verify(
         getRequestedFor(urlEqualTo("/bank-holidays.json"))
@@ -118,7 +119,7 @@ class Examples
     }
 
     "allow the user to set an authorization header as part of a header in the POST and override the Authorization header in the headerCarrier" in {
-      implicit val hc = HeaderCarrier(authorization = None)
+      implicit val hc: HeaderCarrier = HeaderCarrier(authorization = None)
 
       stubFor(
         post(urlEqualTo("/create-user"))
@@ -126,7 +127,7 @@ class Examples
       )
 
       client.POST[User, HttpResponse](
-        url     = "http://localhost:20001/create-user",
+        url     = url"http://localhost:20001/create-user",
         body    = User("me@mail.com", "John Smith"),
         headers = Seq("Authorization" -> "Basic dXNlcjoxMjM=")
       ).futureValue
@@ -138,10 +139,10 @@ class Examples
     }
 
     "allow the user to explicitly forward headers to external hosts" in {
-      implicit val hc = HeaderCarrier(authorization = Some(Authorization("Basic dXNlcjoxMjM=")))
+      implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization("Basic dXNlcjoxMjM=")))
 
       // for demonstration, we're initialising a client which considers `localhost` as an external host
-      val client = mkClient(config =
+      val client: HttpClient = mkClient(config =
         ConfigFactory.parseString(
           """|internalServiceHostPatterns = []
              |""".stripMargin
@@ -154,7 +155,7 @@ class Examples
       )
 
       client.POST[User, HttpResponse](
-        url     = "http://localhost:20001/create-user",
+        url     = url"http://localhost:20001/create-user",
         body    = User("me@mail.com", "John Smith"),
         headers = hc.headers(Seq(hc.names.authorisation))
       ).futureValue
@@ -164,10 +165,25 @@ class Examples
           .withHeader("Authorization", equalTo("Basic dXNlcjoxMjM="))
       )
     }
+
+    "allow the user to specify a string url (not recommended)" in {
+      implicit val hc: HeaderCarrier = HeaderCarrier()
+
+      stubFor(
+        get(urlEqualTo("/bank-holidays.json"))
+          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+      )
+
+      client.GET[BankHolidays](
+        url         = "http://localhost:20001/bank-holidays.json"
+      ).futureValue
+
+      verify(getRequestedFor(urlEqualTo("/bank-holidays.json")))
+    }
   }
 
   "A GET" should {
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
 
     "read some json and return a case class" in {
       stubFor(
@@ -175,7 +191,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
       )
 
-      val bankHolidays: BankHolidays = client.GET[BankHolidays]("http://localhost:20001/bank-holidays.json").futureValue
+      val bankHolidays: BankHolidays = client.GET[BankHolidays](url"http://localhost:20001/bank-holidays.json").futureValue
       bankHolidays.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
@@ -185,7 +201,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
       )
 
-      val response: HttpResponse = client.GET[HttpResponse]("http://localhost:20001/bank-holidays.json").futureValue
+      val response: HttpResponse = client.GET[HttpResponse](url"http://localhost:20001/bank-holidays.json").futureValue
       response.status shouldBe 200
       response.body shouldBe JsonPayloads.bankHolidays
     }
@@ -197,33 +213,33 @@ class Examples
       )
 
       // By adding an Option to your case class, the 404 is translated into None
-      val bankHolidays: Option[BankHolidays] = client.GET[Option[BankHolidays]]("http://localhost:20001/404.json").futureValue
+      val bankHolidays: Option[BankHolidays] = client.GET[Option[BankHolidays]](url"http://localhost:20001/404.json").futureValue
       bankHolidays shouldBe None
     }
 
     "throw an Upstream4xxResponse for 4xx errors" in {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       stubFor(
         get(urlEqualTo("/401.json"))
           .willReturn(aResponse().withStatus(401))
       )
 
-      client.GET[Option[BankHolidays]]("http://localhost:20001/401.json")
+      client.GET[Option[BankHolidays]](url"http://localhost:20001/401.json")
         .recover {
           case Upstream4xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 4xx errors
         }.futureValue
     }
 
     "throw an Upstream5xxResponse for 5xx errors" in {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       stubFor(
         get(urlEqualTo("/500.json"))
           .willReturn(aResponse().withStatus(500))
       )
 
-      client.GET[Option[BankHolidays]]("http://localhost:20001/500.json")
+      client.GET[Option[BankHolidays]](url"http://localhost:20001/500.json")
         .recover {
           case Upstream5xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 5xx errors
         }.futureValue
@@ -231,7 +247,7 @@ class Examples
   }
 
   "A POST" should {
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
 
     "write a case class to json body and return a response" in {
       stubFor(
@@ -242,7 +258,7 @@ class Examples
       val user = User("me@mail.com", "John Smith")
 
       // Use HttpResponse when the API always returns an empty body
-      val response: HttpResponse = client.POST[User, HttpResponse]("http://localhost:20001/create-user", user).futureValue
+      val response: HttpResponse = client.POST[User, HttpResponse](url"http://localhost:20001/create-user", user).futureValue
       response.status shouldBe 204
     }
 
@@ -255,13 +271,13 @@ class Examples
       val user = User("me@mail.com", "John Smith")
 
       // Use a case class when the API returns a json body
-      val userId: UserIdentifier = client.POST[User, UserIdentifier]("http://localhost:20001/create-user", user).futureValue
+      val userId: UserIdentifier = client.POST[User, UserIdentifier](url"http://localhost:20001/create-user", user).futureValue
       userId.id shouldBe "123"
     }
   }
 
   "HttpResponse" should {
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
 
     def fromXml(xml: String): BankHolidays =
       BankHolidays(
@@ -284,7 +300,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody(XmlPayloads.bankHolidays))
       )
 
-      val bankHolidays = client.GET[HttpResponse]("http://localhost:20001/bank-holidays.xml")
+      val bankHolidays = client.GET[HttpResponse](url"http://localhost:20001/bank-holidays.xml")
         .map(responseHandler).futureValue
 
       bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
@@ -296,15 +312,15 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody("Not XML"))
       )
 
-      client.GET[HttpResponse]("http://localhost:20001/bank-holidays.xml").map(responseHandler)
+      client.GET[HttpResponse](url"http://localhost:20001/bank-holidays.xml").map(responseHandler)
         .failed.futureValue shouldBe a [CustomException]
     }
   }
 
   "HttpReads" should {
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    implicit val responseHandler = new HttpReads[Option[BankHolidays]] {
+    implicit val responseHandler: HttpReads[Option[BankHolidays]] = new HttpReads[Option[BankHolidays]] {
       override def read(method: String, url: String, response: HttpResponse): Option[BankHolidays] =
         response.status match {
           case 200 => Try(response.json.as[BankHolidays]) match {
@@ -322,7 +338,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
       )
 
-      val bankHolidays = client.GET[Option[BankHolidays]]("http://localhost:20001/bank-holidays.json").futureValue
+      val bankHolidays = client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").futureValue
       bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
@@ -332,7 +348,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody("Not JSON"))
       )
 
-      client.GET[Option[BankHolidays]]("http://localhost:20001/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
+      client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
     }
 
     "Return None when getting a 404 back" in {
@@ -341,7 +357,7 @@ class Examples
           .willReturn(aResponse().withStatus(404))
       )
 
-      val bankHolidays = client.GET[Option[BankHolidays]]("http://localhost:20001/bank-holidays.json").futureValue
+      val bankHolidays = client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").futureValue
       bankHolidays shouldBe None
     }
 
@@ -351,7 +367,7 @@ class Examples
           .willReturn(aResponse().withStatus(418))
       )
 
-      client.GET[Option[BankHolidays]]("http://localhost:20001/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
+      client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
     }
   }
 }

@@ -6,6 +6,7 @@
 | HeaderCarrierConverter method changes                        | Medium     | Syntax usage needs updating. Scalafix pending |
 | Configuration no longer optional on some traits              | Medium     | [Scalafix available](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/OptionalConfig.scala) |
 | HeaderNames package change                                   | Minor      | [Scalafix available](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/Httpverbs.scala) |
+| java.net.URL url overloaded api methods                      | Minor      | Recommended over Strings but optional         |
 
 To run a scalafix rule on your project, please refer to [the usage docs](https://github.com/hmrc/scalafix-http-verbs-v13#usage).
 
