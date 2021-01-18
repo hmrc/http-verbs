@@ -3,12 +3,12 @@
 | Change | Complexity | Fix  |
 |--------------------------------------------------------------|------------|-----------------------------------------------|
 | Headers no longer automatically forwarded to external hosts  | **Major**  | Team decision required on individual services |
-| HeaderCarrierConverter method changes                        | Medium     | Syntax usage needs updating. Scalafix pending |
-| Configuration no longer optional on some traits              | Medium     | [Scalafix available](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/OptionalConfig.scala) |
-| HeaderNames package change                                   | Minor      | [Scalafix available](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/Httpverbs.scala) |
-| java.net.URL url overloaded api methods                      | Minor      | Recommended over Strings but optional         |
+| HeaderCarrierConverter method changes                        | Medium     | [Scalafix available](https://github.com/hmrc/scalafix-rules/blob/master/http-verbs-13/rules/src/main/scala/fix/HeaderCarrier.scala) |
+| Configuration no longer optional on some traits              | Medium     | [Scalafix available](https://github.com/hmrc/scalafix-rules/blob/master/http-verbs-13/rules/src/main/scala/fix/OptionalConfig.scala) |
+| HeaderNames package change                                   | Minor      | [Scalafix available](https://github.com/hmrc/scalafix-rules/blob/master/http-verbs-13/rules/src/main/scala/fix/HttpVerbs13RenamePackages.scala) |
+| URLs can now be supplied as `java.net.URL`                   | Minor      | Optional change |
 
-To run a scalafix rule on your project, please refer to [the usage docs](https://github.com/hmrc/scalafix-http-verbs-v13#usage).
+To run a scalafix rule on your project, please refer to [the usage docs](https://github.com/hmrc/scalafix-rules#usage).
 
 ### Headers no longer automatically forwarded to external hosts
 Explicit headers (those modelled explicitly in the `HeaderCarrier`) are no longer automatically forwarded to external hosts. **This is a potentially breaking change, dependent on the actions of a particular microservice.** We expect a majority of services to see no impact with this change.
@@ -36,20 +36,29 @@ HeaderCarrierConverter has moved package, and consolidated and simplified the av
 
 Please see the [README](README.md#creating-headercarrier) for example usage.
 
+A scalafix for this specific change is available to run.
+
 ### HeaderNames package change
 The Headers `Authorization`, `ForwardedFor`, `RequestChain`, `RequestId`, `SessionId` have been moved from package `uk.gov.hmrc.http.logging` to `uk.gov.hmrc.http`.
 
 We believe this was a piece of technical debt, from when these cases classes lived in a different project.
 
-A scalafix is available to run [here](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/Httpverbs.scala). Please view the README about how to use it, and how to contribute additions.
+A scalafix for this specific change is available to run.
 
 ### Configuration no longer optional on some traits
 `configuration` as required by some traits (`WSRequestBuilder` and `Retries`) has changed from `Option[com.typesafe.config.Config]` to `com.typesafe.config.Config`.
 
 This change makes it easier to reason about default behaviour, both for developers, and for automated tooling. Prior to this change, the defaults were split between configuration files and fallback `getOrElse` methods in code.
 
-If you don't want to provide any specific configuration (e.g. testing), then change `configuration = None` to `configuration = com.typesafe.config.ConfigFactory.load()`. A scalafix for this specific change is available to run [here](https://github.com/hmrc/scalafix-http-verbs-v13/blob/master/rules/src/main/scala/fix/OptionalConfig.scala).
+If you don't want to provide any specific configuration (e.g. testing), then change `configuration = None` to `configuration = com.typesafe.config.ConfigFactory.load()`.
 
+A scalafix for this specific change is available to run.
+
+### URLs can now be supplied as `java.net.URL`
+
+Providing URLs as Strings encourages using string concatenation to build URLs, which may cause unintended issues with escaping. Internally, all Strings parameters are converted to URLs, but exposing this in the API provides earlier feedback that usage may be wrong. String is still supported.
+
+Please see the [README](README.md#urls) for more information.
 
 ## Version 12.0.0
 

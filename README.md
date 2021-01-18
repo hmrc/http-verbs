@@ -36,7 +36,7 @@ Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http
 
 ### URLs
 
-Urls can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` for correct escaping of query and path parameters. A [URL interpolator](https://sttp.softwaremill.com/en/latest/model/uri.html) has been implicitly provided for convenience. 
+URLs can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` for correct escaping of query and path parameters. A [URL interpolator](https://sttp.softwaremill.com/en/latest/model/uri.html) has been implicitly provided for convenience.
 
 ```
 url"http://localhost:8080/users/${user.id}?email=${user.email}"
