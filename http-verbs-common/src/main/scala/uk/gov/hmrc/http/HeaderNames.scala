@@ -65,16 +65,8 @@ object CookieNames {
 
 object SessionKeys {
   val sessionId = "sessionId"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val name = "name"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val email = "email"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val agentName = "agentName"
   val authToken = "authToken"
   val otacToken = "otacToken"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val affinityGroup = "affinityGroup"
   val lastRequestTimestamp = "ts"
   val redirect             = "login_redirect"
   val npsVersion           = "nps-version"
@@ -84,7 +76,6 @@ object SessionKeys {
   val portalRedirectUrl    = "portalRedirectUrl"
   val portalState          = "portalState"
 }
-
 
 case class Authorization(value: String) extends AnyVal
 
