@@ -7,6 +7,7 @@
 | Configuration no longer optional on some traits              | Medium     | [Scalafix available](https://github.com/hmrc/scalafix-rules/blob/master/http-verbs-13/rules/src/main/scala/fix/OptionalConfig.scala) |
 | HeaderNames package change                                   | Minor      | [Scalafix available](https://github.com/hmrc/scalafix-rules/blob/master/http-verbs-13/rules/src/main/scala/fix/HttpVerbs13RenamePackages.scala) |
 | URLs can now be supplied as `java.net.URL`                   | Minor      | Optional change |
+| Removed deprecated values from `SessionKeys`                 | Minor      | Use auth client retrievals |
 
 To run a scalafix rule on your project, please refer to [the usage docs](https://github.com/hmrc/scalafix-rules#usage).
 
@@ -59,6 +60,10 @@ A scalafix for this specific change is available to run.
 Providing URLs as Strings encourages using string concatenation to build URLs, which may cause unintended issues with escaping. Internally, all Strings parameters are converted to URLs, but exposing this in the API provides earlier feedback that usage may be wrong. String is still supported.
 
 Please see the [README](README.md#urls) for more information.
+
+### Removed deprecated values from `SessionKeys`
+
+The deprecated values (since 2016) `SessionKeys.name`, `SessionKeys.email`, `SessionKeys.agentName`, and `SessionKeys.affinityGroup` have been deleted. [Auth client retrievals](https://github.com/hmrc/auth-client/blob/master/src/main/scala/uk/gov/hmrc/auth/core/retrieve/v2/Retrievals.scala) should be used instead.
 
 ## Version 12.0.0
 
