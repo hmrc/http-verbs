@@ -34,7 +34,7 @@ target
 .bloop/
 .metals/
 .vscode/
-project/metals.sbt
+metals.sbt
 
 nohup.out
 rebel.xml
