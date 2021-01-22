@@ -4,6 +4,7 @@ object AppDependencies {
 
   val play26Version = "2.6.20"
   val play27Version = "2.7.4"
+  val play28Version = "2.8.7"
 
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
   val coreCompileCommon = Seq(
@@ -28,6 +29,11 @@ object AppDependencies {
     "com.typesafe.play" %% "play-ahc-ws" % play27Version
   )
 
+  val coreCompilePlay28 = Seq(
+    "com.typesafe.play" %% "play-json"   % "2.8.1",
+    "com.typesafe.play" %% "play-ahc-ws" % play28Version
+  )
+
   val coreTestCommon = Seq(
     "commons-codec"          % "commons-codec"             % "1.12"        % Test,
     "org.scalatest"          %% "scalatest"                % "3.1.1"       % Test,
@@ -50,6 +56,10 @@ object AppDependencies {
     "com.typesafe.play" %% "play-test" % play27Version % Test
   )
 
+  val coreTestPlay28 = Seq(
+    "com.typesafe.play" %% "play-test" % play28Version % Test
+  )
+
   // Dependencies for http-verbs-test modules
   val testCompileCommon = Seq(
     "org.scalatest"        %% "scalatest"   % "3.1.1",
@@ -64,5 +74,10 @@ object AppDependencies {
   val testCompilePlay27 = Seq(
     "com.typesafe.play" %% "play-ws"   % play27Version,
     "com.typesafe.play" %% "play-json" % play27Version
+  )
+
+  val testCompilePlay28 = Seq(
+    "com.typesafe.play" %% "play-ws"   % play28Version,
+    "com.typesafe.play" %% "play-json" % "2.8.1"
   )
 }
