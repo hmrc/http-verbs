@@ -17,16 +17,8 @@
 package uk.gov.hmrc.play.http.logging
 
 import org.slf4j.MDC
-import play.api.libs.concurrent.Execution.defaultContext
-import uk.gov.hmrc.http.logging.LoggingDetails
 
 import scala.concurrent.ExecutionContext
-
-@deprecated("MdcLoggingExecutionContext no longer required, please inject Play's default EC instead", "8.9.0")
-object MdcLoggingExecutionContext {
-  implicit def fromLoggingDetails(implicit loggingDetails: LoggingDetails): ExecutionContext =
-    new MdcLoggingExecutionContext(defaultContext, loggingDetails.mdcData)
-}
 
 class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String, String]) 
   extends ExecutionContext {
