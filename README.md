@@ -28,7 +28,7 @@ resolvers += Resolver.bintrayRepo("hmrc", "releases")
 
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs-play-xx" % "x.x.x"
 ```
-Where `play-xx` is `play-25`, `play-26` or `play-27` depending on your version of Play.
+Where `play-xx` is `play-26`, `play-27` or `play-28` depending on your version of Play.
 
 ## Usage
 
