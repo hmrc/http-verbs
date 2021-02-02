@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ import scala.concurrent.{ExecutionContext, Future}
 trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequestBuilder with WSExecute {
 
   override def doDelete(
-    url: String,
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
+    url    : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers), "DELETE")
       .map(WSHttpResponse.apply)
 }

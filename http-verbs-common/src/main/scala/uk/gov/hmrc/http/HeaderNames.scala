@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,16 +65,8 @@ object CookieNames {
 
 object SessionKeys {
   val sessionId = "sessionId"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val name = "name"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val email = "email"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val agentName = "agentName"
   val authToken = "authToken"
   val otacToken = "otacToken"
-  @deprecated("Use auth-client /v2/Retrievals instead", "2016-06-24")
-  val affinityGroup = "affinityGroup"
   val lastRequestTimestamp = "ts"
   val redirect             = "login_redirect"
   val npsVersion           = "nps-version"
@@ -84,3 +76,23 @@ object SessionKeys {
   val portalRedirectUrl    = "portalRedirectUrl"
   val portalState          = "portalState"
 }
+
+case class Authorization(value: String) extends AnyVal
+
+case class SessionId(value: String) extends AnyVal
+
+case class RequestId(value: String) extends AnyVal
+
+case class AkamaiReputation(value: String) extends AnyVal
+
+case class RequestChain(value: String) extends AnyVal {
+  def extend = RequestChain(s"$value-${RequestChain.newComponent}")
+}
+
+object RequestChain {
+  def newComponent = (scala.util.Random.nextInt & 0xffff).toHexString
+
+  def init = RequestChain(newComponent)
+}
+
+case class ForwardedFor(value: String) extends AnyVal

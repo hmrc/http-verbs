@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import uk.gov.hmrc.http.{HeaderCarrier, Request}
 
 trait WSRequestBuilder extends Request {
 
-  def wsClient: WSClient
+  protected def wsClient: WSClient
 
-  def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest
+  protected def configuration: com.typesafe.config.Config
+
+  protected def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest
 }

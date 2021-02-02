@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => is}
 import org.mockito.Mockito._
@@ -59,13 +59,12 @@ class HttpGetSpec
   class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse)
     extends HttpGet
       with ConnectionTracingCapturing {
-    val testHook1 = mock[HttpHook]
-    val testHook2 = mock[HttpHook]
-    val hooks = Seq(testHook1, testHook2)
+    val testHook1: HttpHook = mock[HttpHook]
+    val testHook2: HttpHook = mock[HttpHook]
 
-    override def configuration: Option[Config] = None
+    override val configuration: Config = ConfigFactory.load()
 
-    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doGet(
       url: String,
@@ -73,17 +72,16 @@ class HttpGetSpec
         implicit hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doGetResult
+
+    override val hooks: Seq[HttpHook] = Seq(testHook1, testHook2)
   }
 
   class UrlTestingHttpGet() extends HttpGet with GetHttpTransport {
-    val testHook1 = mock[HttpHook]
-    val testHook2 = mock[HttpHook]
-    val hooks = Seq(testHook1, testHook2)
     var lastUrl: Option[String] = None
 
-    override def configuration: Option[Config] = None
+    override val configuration: Config = ConfigFactory.load()
 
-    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
+    override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
     override def doGet(
       url: String,
@@ -93,6 +91,8 @@ class HttpGetSpec
       lastUrl = Some(url)
       defaultHttpResponse
     }
+
+    override val hooks: Seq[HttpHook] = Seq.empty
   }
 
   "HttpGet" should {
@@ -153,6 +153,7 @@ class HttpGetSpec
   }
 
   "HttpGet with params Seq" should {
+
     "return an empty string if the query parameters is empty" in {
       val expected = Some("http://test.net")
       val testGet = new UrlTestingHttpGet()
@@ -183,6 +184,44 @@ class HttpGetSpec
         .GET[HttpResponse](
           "http://test.net",
           Seq(("email", "test+alias@email.com"), ("data", "{\"message\":\"in json format\"}")))
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return a url with encoded param pairs with url builder" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testGet = new UrlTestingHttpGet()
+      val queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}")
+      testGet.GET[HttpResponse](url"http://test.net?$queryParams")
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return an encoded url when query param is in baseUrl" in {
+      val expected =
+        Some("http://test.net?email=testalias@email.com&foo=bar&data=%7B%22message%22:%22in+json+format%22%7D")
+      val testGet = new UrlTestingHttpGet()
+      val queryParams = Seq("data" -> "{\"message\":\"in json format\"}")
+      testGet
+        .GET[HttpResponse](url"http://test.net?email=testalias@email.com&foo=bar&$queryParams")
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return encoded url when query params are already encoded" in {
+      val expected =
+        Some("http://test.net?email=test%2Balias@email.com")
+      val testGet = new UrlTestingHttpGet()
+      testGet
+        .GET[HttpResponse](url"http://test.net?email=test%2Balias@email.com")
+      testGet.lastUrl shouldBe expected
+    }
+
+    "return encoded url when path needs encoding" in {
+      val expected =
+        Some("http://test.net/some%2Fother%2Froute%3Fa=b&c=d%23/something?email=testalias@email.com")
+      val testGet = new UrlTestingHttpGet()
+      val paths = List("some/other/route?a=b&c=d#", "something")
+      val email = "testalias@email.com"
+      testGet.GET[HttpResponse](url"http://test.net/$paths?email=$email")
       testGet.lastUrl shouldBe expected
     }
 
