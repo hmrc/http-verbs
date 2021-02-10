@@ -21,7 +21,8 @@ import java.net.URL
 import sttp.model.UriInterpolator
 
 package object http {
-  implicit class StringContextOps(sc: StringContext){
-    def url(args: Any*) : URL = UriInterpolator.interpolate(sc, args: _*).toJavaUri.toURL
+  implicit class StringContextOps(val sc: StringContext) extends AnyVal {
+    def url(args: Any*): URL =
+      UriInterpolator.interpolate(sc, args: _*).toJavaUri.toURL
   }
 }
