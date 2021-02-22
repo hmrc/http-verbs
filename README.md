@@ -2,6 +2,7 @@ http-verbs
 ==========
 
 
+![](https://img.shields.io/github/v/release/hmrc/http-verbs)
 
 http-verbs is a Scala library providing an interface to make asynchronous HTTP calls.
 
@@ -16,8 +17,12 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 * Auditing
 * Logging
 * Propagation of common headers
-* Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be * automatically propagated to the caller
+* Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be automatically propagated to the caller
 * Request & Response de-serializations
+
+## Migration
+
+See [CHANGELOG](https://github.com/hmrc/http-verbs/blob/master/CHANGELOG.md) for changes and migrations.
 
 ## Adding to your build
 
@@ -36,9 +41,12 @@ Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http
 
 ### URLs
 
-URLs can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` for correct escaping of query and path parameters. A [URL interpolator](https://sttp.softwaremill.com/en/latest/model/uri.html) has been implicitly provided for convenience.
+URLs can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` for correct escaping of query and path parameters. A [URL interpolator](https://sttp.softwaremill.com/en/latest/model/uri.html) has been provided for convenience.
 
-```
+
+```scala
+import uk.gov.hmrc.http.StringContextOps
+
 url"http://localhost:8080/users/${user.id}?email=${user.email}"
 ```
 
