@@ -79,18 +79,23 @@ HeaderCarrier()
 
 #### Propagation of headers
 
+For external hosts, headers should be provided explicitly to the VERB function (`GET`, `POST` etc). Only the User-Agent header from the HeaderCarrier is forwarded.
+
+```scala
+client.GET(url"https://externalhost/api", headers = Seq("Authorization" -> "Bearer token"))(hc) //explicit Authorization header for external request
+```
+
 Internal hosts are identified with the configuration `internalServiceHostPatterns`.
 The headers which are forwarded include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
-For external hosts, the headers should be provided explicitly to the VERB function (`GET`, `POST` etc).
 
 When providing additional headers to http requests, if it corresponds to an explicit one on the HeaderCarrier, it is recommended to replace it, otherwise you will be sending it twice:
 ```scala
-client.GET("https://externalhost/api")(hc.copy(authorisation = "Basic 1234"))
+client.GET("https://internalhost/api")(hc.copy(authorization = Some(Authorization("Basic 1234"))))
 ```
 
 For all other headers, provide them to the VERB function:
 ```scala
-client.GET("https://externalhost/api", headers = Seq["AdditionHeader" -> "AdditionalValue"])(hc)
+client.GET(url = url"https://internalhost/api", headers = Seq("AdditionHeader" -> "AdditionalValue"))(hc)
 ```
 
 ## Test Helpers

@@ -44,9 +44,9 @@ case class HeaderCarrier(
   /**
     * @return the time, in nanoseconds, since this header carrier was created
     */
-  def age = System.nanoTime() - nsStamp
+  def age: Long = System.nanoTime() - nsStamp
 
-  val names = HeaderNames
+  val names: HeaderNames.type = HeaderNames
 
   private lazy val explicitHeaders: Seq[(String, String)] =
     Seq(
