@@ -23,7 +23,5 @@ trait WSRequestBuilder extends Request {
 
   protected def wsClient: WSClient
 
-  protected def configuration: com.typesafe.config.Config
-
   protected def buildRequest[A](url: String, headers: Seq[(String, String)]): PlayWSRequest
 }

@@ -19,7 +19,6 @@ package uk.gov.hmrc.play.http
 import java.net.{ServerSocket, URI}
 import java.util.concurrent.TimeoutException
 
-import com.typesafe.config.Config
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
@@ -63,7 +62,6 @@ class HttpTimeoutSpec
 
       "be gracefully timeout when no response is received within the 'timeout' frame" in {
         val http: WSHttp = new WSHttp with TestHttpCore {
-          override val configuration: Config = fakeApplication.configuration.underlying
           override val wsClient: WSClient = fakeApplication.injector.instanceOf[WSClient]
         }
 
