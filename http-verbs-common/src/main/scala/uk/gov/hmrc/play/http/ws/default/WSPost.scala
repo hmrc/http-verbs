@@ -18,7 +18,7 @@ package uk.gov.hmrc.play.http.ws.default
 
 import play.api.libs.json.{Json, Writes}
 import play.api.libs.ws.WSRequest
-import uk.gov.hmrc.http.{CorePost, HeaderCarrier, HttpResponse, PostHttpTransport}
+import uk.gov.hmrc.http.{CorePost, HttpResponse, PostHttpTransport}
 import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +33,6 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with 
     headers: Seq[(String, String)]
   )(
     implicit rds: Writes[A],
-    hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(Json.toJson(body)), "POST")
@@ -44,8 +43,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with 
     body: Map[String, Seq[String]],
     headers: Seq[(String, String)]
   )(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext
+    implicit ec: ExecutionContext
   ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(body), "POST")
       .map(WSHttpResponse.apply)
@@ -55,8 +53,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with 
     body: String,
     headers: Seq[(String, String)]
   )(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext
+    implicit ec: ExecutionContext
   ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(body), "POST")
       .map(WSHttpResponse.apply)
@@ -65,8 +62,7 @@ trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with 
     url: String,
     headers: Seq[(String, String)]
   )(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext
+    implicit ec: ExecutionContext
   ): Future[HttpResponse] =
     execute(withEmptyBody(buildRequest(url, headers)), "POST")
       .map(WSHttpResponse.apply)

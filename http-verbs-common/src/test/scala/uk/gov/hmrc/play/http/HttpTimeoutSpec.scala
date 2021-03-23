@@ -20,17 +20,16 @@ import java.net.{ServerSocket, URI}
 import java.util.concurrent.TimeoutException
 
 import com.typesafe.config.Config
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.webbitserver.handler.{DelayedHttpHandler, StringHttpHandler}
 import org.webbitserver.netty.NettyWebServer
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WSClient
 import play.api.test.WsTestClient
-import play.api.{Configuration, Play}
-import uk.gov.hmrc.http.HeaderCarrier
+import play.api.{Application, Configuration, Play}
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.TestHttpCore
 
@@ -45,7 +44,7 @@ class HttpTimeoutSpec
 
   import ExecutionContext.Implicits.global
 
-  lazy val fakeApplication =
+  private lazy val fakeApplication: Application =
     GuiceApplicationBuilder(configuration = Configuration("play.ws.timeout.request" -> "1000ms")).build()
 
   override def beforeAll() {
@@ -58,20 +57,20 @@ class HttpTimeoutSpec
     Play.stop(fakeApplication)
   }
 
-  WsTestClient.withClient { client =>
+  WsTestClient.withClient { _ =>
 
     "HttpCalls" should {
 
       "be gracefully timeout when no response is received within the 'timeout' frame" in {
-        val http = new WSHttp with TestHttpCore {
-          override val configuration = fakeApplication.configuration.underlying
-          override val wsClient = fakeApplication.injector.instanceOf[WSClient]
+        val http: WSHttp = new WSHttp with TestHttpCore {
+          override val configuration: Config = fakeApplication.configuration.underlying
+          override val wsClient: WSClient = fakeApplication.injector.instanceOf[WSClient]
         }
 
         // get an unused port
         val ss = new ServerSocket(0)
         ss.close()
-        val executor = ExecutionContext.global // fromExecutorService(ExecutionContext.global)
+        val executor = ExecutionContext.global
         val publicUri = URI.create(s"http://localhost:${ss.getLocalPort}")
         val ws        = new NettyWebServer(executor, ss.getLocalSocketAddress, publicUri)
         try {
@@ -81,8 +80,6 @@ class HttpTimeoutSpec
             new DelayedHttpHandler(executor, 2000, new StringHttpHandler("application/json", "{name:'pong'}"))
           )
           ws.start().get()
-
-          implicit val hc = HeaderCarrier()
 
           val start = System.currentTimeMillis()
 

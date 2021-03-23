@@ -48,8 +48,7 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       url: String,
       body: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
 
     override def doPut[A](
@@ -57,7 +56,6 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
   }
@@ -73,8 +71,7 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       url: String,
       body: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
@@ -84,7 +81,6 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.http.logging
 
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import uk.gov.hmrc.http.{HttpException, Upstream4xxResponse}
 
 import scala.concurrent._
@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 trait ConnectionTracing {
 
-  lazy val connectionLogger = LoggerFactory.getLogger("connector")
+  lazy val connectionLogger: Logger = LoggerFactory.getLogger("connector")
 
   def withTracing[T](method: String, uri: String)(
     body: => Future[T])(implicit ld: LoggingDetails, ec: ExecutionContext): Future[T] = {
@@ -34,18 +34,18 @@ trait ConnectionTracing {
     f
   }
 
-  def logResult[A](ld: LoggingDetails, method: String, uri: String, startAge: Long)(result: Try[A]) = result match {
-    case Success(ground) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
+  def logResult[A](ld: LoggingDetails, method: String, uri: String, startAge: Long)(result: Try[A]): Unit = result match {
+    case Success(_) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
     case Failure(ex: HttpException) if ex.responseCode == 404 =>
       connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
-    case Failure(ex: Upstream4xxResponse) if ex.upstreamResponseCode == 404 =>
-      connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
+    case Failure(Upstream4xxResponse(message, upstreamResponseCode, _, _)) if upstreamResponseCode == 404 =>
+      connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed $message"))
     case Failure(ex) => connectionLogger.warn(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
   }
 
   import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 
-  def formatMessage(ld: LoggingDetails, method: String, uri: String, startAge: Long, message: String) = {
+  def formatMessage(ld: LoggingDetails, method: String, uri: String, startAge: Long, message: String): String = {
     val requestId    = ld.requestId.getOrElse("")
     val requestChain = ld.requestChain
     val durationNs   = ld.age - startAge

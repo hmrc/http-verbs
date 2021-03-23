@@ -16,17 +16,12 @@
 
 package uk.gov.hmrc.http
 
-import java.util
-
-import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.Matchers.any
-import org.mockito.Mockito.when
-import org.scalactic.Explicitly._
+import com.typesafe.config.ConfigFactory
 import org.scalactic.StringNormalizations.lowerCased
 import org.scalatest.LoneElement
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatestplus.mockito.MockitoSugar
 
 class HeaderCarrierSpec
   extends AnyWordSpecLike

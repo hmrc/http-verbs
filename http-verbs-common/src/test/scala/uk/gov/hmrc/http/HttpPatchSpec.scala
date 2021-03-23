@@ -49,7 +49,6 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doPatchResult
   }
@@ -67,7 +66,6 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse

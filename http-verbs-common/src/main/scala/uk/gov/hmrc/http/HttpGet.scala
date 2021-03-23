@@ -26,6 +26,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
+  private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
+
   override def GET[A](
     url: String,
     queryParams: Seq[(String, String)],
@@ -43,7 +45,8 @@ trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with Connectio
     val urlWithQuery = url + makeQueryString(queryParams)
 
     withTracing(GET_VERB, urlWithQuery) {
-      val httpResponse = retry(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = allHeaders))
       executeHooks(url, GET_VERB, None, httpResponse)
       mapErrors(GET_VERB, urlWithQuery, httpResponse).map(response => rds.read(GET_VERB, urlWithQuery, response))
     }

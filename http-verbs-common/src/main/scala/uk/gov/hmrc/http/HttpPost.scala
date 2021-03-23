@@ -31,6 +31,8 @@ trait HttpPost
     with HttpHooks
     with Retries {
 
+  private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
+
   override def POST[I, O](
     url: String,
     body: I,
@@ -40,7 +42,8 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = retry(POST_VERB, url)(doPost(url, body, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(POST_VERB, url)(doPost(url, body, allHeaders))
       executeHooks(url, POST_VERB, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -53,7 +56,8 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = retry(POST_VERB, url)(doPostString(url, body, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(POST_VERB, url)(doPostString(url, body, allHeaders))
       executeHooks(url, POST_VERB, Option(HookData.FromString(body)), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -66,7 +70,8 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = retry(POST_VERB, url)(doFormPost(url, body, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(POST_VERB, url)(doFormPost(url, body, allHeaders))
       executeHooks(url, POST_VERB, Option(HookData.FromMap(body)), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -78,7 +83,8 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val httpResponse = retry(POST_VERB, url)(doEmptyPost(url, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(POST_VERB, url)(doEmptyPost(url, allHeaders))
       executeHooks(url, POST_VERB, None, httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }

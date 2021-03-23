@@ -48,8 +48,7 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
     override def doDelete(
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doDeleteResult
   }
 
@@ -64,7 +63,7 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
     override def doDelete(
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }

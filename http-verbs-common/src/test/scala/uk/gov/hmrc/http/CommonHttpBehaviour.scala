@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.logging.{ConnectionTracing, LoggingDetails}
 
 import scala.collection.mutable
@@ -31,28 +31,27 @@ import scala.concurrent.{ExecutionContext, Future}
 trait CommonHttpBehaviour extends ScalaFutures with Matchers with AnyWordSpecLike {
 
   case class TestClass(foo: String, bar: Int)
-  implicit val tcreads = Json.format[TestClass]
+  implicit val tcreads: OFormat[TestClass] = Json.format[TestClass]
 
   case class TestRequestClass(baz: String, bar: Int)
-  implicit val trcreads = Json.format[TestRequestClass]
+  implicit val trcreads: OFormat[TestRequestClass] = Json.format[TestRequestClass]
 
-  implicit val hc     = HeaderCarrier()
-  val testBody        = "testBody"
-  val testRequestBody = "testRequestBody"
-  val url             = "http://some.url"
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  val testBody: String           = "testBody"
+  val testRequestBody: String    = "testRequestBody"
+  val url: String                = "http://some.url"
 
-  def response(returnValue: Option[String] = None, statusCode: Int = 200) =
+  def response(returnValue: Option[String] = None, statusCode: Int = 200): Future[HttpResponse] =
     Future.successful(HttpResponse(
       status = statusCode,
       body   = returnValue.getOrElse("")
     ))
 
-  val defaultHttpResponse = response()
+  val defaultHttpResponse: Future[HttpResponse] = response()
 
-  def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_]) = {
+  def anErrorMappingHttpCall(verb: String, httpCall: (String, Future[HttpResponse]) => Future[_]): Unit = {
     s"throw a GatewayTimeout exception when the HTTP $verb throws a TimeoutException" in {
 
-      implicit val hc = HeaderCarrier()
       val url: String = "http://some.nonexistent.url"
 
       val e = httpCall(url, Future.failed(new TimeoutException("timeout"))).failed.futureValue
@@ -64,7 +63,6 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with AnyWordSpecLik
 
     s"throw a BadGateway exception when the HTTP $verb throws a ConnectException" in {
 
-      implicit val hc = HeaderCarrier()
       val url: String = "http://some.nonexistent.url"
 
       val e = httpCall(url, Future.failed(new ConnectException("timeout"))).failed.futureValue
@@ -76,7 +74,7 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with AnyWordSpecLik
   }
 
   def aTracingHttpCall[T <: ConnectionTracingCapturing](verb: String, method: String, httpBuilder: => T)(
-    httpAction: (T => Future[_]))(implicit mf: Manifest[T]) =
+    httpAction: T => Future[_]): Unit =
     s"trace exactly once when the HTTP $verb calls $method" in {
       val http = httpBuilder
       httpAction(http).futureValue
@@ -88,10 +86,10 @@ trait CommonHttpBehaviour extends ScalaFutures with Matchers with AnyWordSpecLik
 
 trait ConnectionTracingCapturing extends ConnectionTracing {
 
-  val traceCalls = mutable.Buffer[(String, String)]()
+  val traceCalls: mutable.Buffer[(String, String)] = mutable.Buffer[(String, String)]()
 
   override def withTracing[T](method: String, uri: String)(
-    body: => Future[T])(implicit ld: LoggingDetails, ec: ExecutionContext) = {
+    body: => Future[T])(implicit ld: LoggingDetails, ec: ExecutionContext): Future[T] = {
     traceCalls += ((method, uri))
     body
   }

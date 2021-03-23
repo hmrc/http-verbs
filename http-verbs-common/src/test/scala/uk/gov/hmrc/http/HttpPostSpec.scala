@@ -49,7 +49,6 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
 
@@ -57,23 +56,20 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       url: String,
       body: Map[String, Seq[String]],
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
 
     override def doPostString(
       url: String,
       body: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
 
     override def doEmptyPost[A](
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doPostResult
   }
 
@@ -83,7 +79,7 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
 
     var lastUrl: Option[String] = None
 
-    override val configuration: Config              = ConfigFactory.load()
+    override val configuration: Config              = ConfigFactory.load("reference.conf")
 
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
@@ -92,7 +88,6 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
@@ -102,8 +97,7 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       url: String,
       body: Map[String, Seq[String]],
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
@@ -112,8 +106,7 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       url: String,
       body: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
@@ -121,8 +114,7 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
     override def doEmptyPost[A](
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }

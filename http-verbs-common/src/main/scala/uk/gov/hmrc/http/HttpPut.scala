@@ -25,6 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
 
+  private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
+
   override def PUT[I, O](
     url: String,
     body: I,
@@ -34,7 +36,8 @@ trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with Connectio
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
-      val httpResponse = retry(PUT_VERB, url)(doPut(url, body, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(PUT_VERB, url)(doPut(url, body, allHeaders))
       executeHooks(url, PUT_VERB, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
     }
@@ -47,7 +50,8 @@ trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with Connectio
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
-      val httpResponse = retry(PUT_VERB, url)(doPutString(url, body, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(PUT_VERB, url)(doPutString(url, body, allHeaders))
       executeHooks(url, PUT_VERB, Option(HookData.FromString(body)), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))
     }

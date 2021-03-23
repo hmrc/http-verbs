@@ -18,30 +18,22 @@ package uk.gov.hmrc.play.http.ws
 
 import play.api.Configuration
 import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest}
-import uk.gov.hmrc.http.HeaderCarrier
 
 trait WSRequest extends WSRequestBuilder {
-  private lazy val hcConfig =
-    HeaderCarrier.Config.fromConfig(configuration)
 
   override def buildRequest[A](
     url    : String,
     headers: Seq[(String, String)]
-  )(implicit
-    hc: HeaderCarrier
   ): PlayWSRequest =
     wsClient.url(url)
-      .withHttpHeaders(
-        hc.withExtraHeaders(headers: _*)
-          .headersForUrl(hcConfig)(url): _*
-      )
+      .withHttpHeaders(headers: _*)
 }
 
 trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): PlayWSRequest =
+  override def buildRequest[A](url: String, headers: Seq[(String, String)]): PlayWSRequest =
     wsProxyServer match {
       case Some(proxy) => super.buildRequest(url, headers).withProxyServer(proxy)
       case None        => super.buildRequest(url, headers)

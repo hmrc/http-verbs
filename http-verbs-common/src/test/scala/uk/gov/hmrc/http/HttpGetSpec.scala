@@ -69,8 +69,7 @@ class HttpGetSpec
     override def doGet(
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doGetResult
 
     override val hooks: Seq[HttpHook] = Seq(testHook1, testHook2)
@@ -86,8 +85,7 @@ class HttpGetSpec
     override def doGet(
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }

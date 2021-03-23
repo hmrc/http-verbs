@@ -17,31 +17,32 @@
 package uk.gov.hmrc.http
 
 import java.time.Instant
+
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.net.ssl.SSLException
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.MDC
 import play.api.libs.json.{JsValue, Json, Writes}
-import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-import scala.util.{Random, Try}
-
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Random, Try}
 
 class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
   import ExecutionContext.Implicits.global
 
   "Retries" should {
     "be disabled by default" in {
-      val retries = new Retries {
-        override protected val configuration = ConfigFactory.load()
-        override val actorSystem             = ActorSystem("test-actor-system")
+      val retries: Retries = new Retries {
+        override protected val configuration: Config = ConfigFactory.load()
+        override val actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
       @volatile var counter = 0
@@ -60,12 +61,12 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
     }
 
     "have configurable intervals" in {
-      val retries = new Retries {
-        override protected val configuration =
+      val retries: Retries = new Retries {
+        override protected val configuration: Config =
             ConfigFactory.parseString(
               "http-verbs.retries.intervals = [ 100 ms, 200 ms,  1 s]"
             )
-        override val actorSystem = ActorSystem("test-actor-system")
+        override val actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
       retries.intervals shouldBe Seq(100.millis, 200.millis, 1.second)
@@ -95,10 +96,10 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
       val retries: Retries = new Retries {
-        override protected val configuration =
+        override protected val configuration: Config =
           ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
-        override val actorSystem                  = ActorSystem("test-actor-system")
+        override val actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
       @volatile var timestamps = List.empty[Instant]
@@ -126,10 +127,10 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
       val retries: Retries = new Retries {
-        override protected val configuration =
+        override protected val configuration: Config =
           ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
-        override val actorSystem                  = ActorSystem("test-actor-system")
+        override val actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
       val resultF =
@@ -149,10 +150,10 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
       val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
-        override protected val configuration =
+        override protected val configuration: Config =
           ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
-        override val actorSystem                  = ActorSystem("test-actor-system")
+        override val actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
       val expectedResponse = HttpResponse(404, "")
@@ -173,10 +174,10 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       val expectedIntervals = Seq(300.millis, 500.millis, 750.millis)
 
       val retries: Retries with SucceedNthCall = new Retries with SucceedNthCall {
-        override protected val configuration =
+        override protected val configuration: Config =
           ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
         override private[http] lazy val intervals = expectedIntervals
-        override val actorSystem                  = ActorSystem("test-actor-system")
+        override val actorSystem: ActorSystem = ActorSystem("test-actor-system")
       }
 
       val mdcData = Map("key1" -> "value1")
@@ -209,9 +210,9 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
   "GET" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new HttpGet with TestHttpVerb {
+      val http = new HttpGet with TestHttpVerb with SucceedNthCall {
         override def doGet(url: String, headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+          implicit ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -227,9 +228,9 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
   "DELETE" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new HttpDelete with TestHttpVerb {
+      val http = new HttpDelete with TestHttpVerb with SucceedNthCall {
         override def doDelete(url: String, headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+          implicit ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -238,16 +239,16 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.DELETE[Option[String]](url = "doesnt-matter", headers = Seq("header" -> "foo")).futureValue shouldBe None
+      http.DELETE[Option[String]](url = "https://www.google.co.uk", headers = Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
 
   "PATCH" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new HttpPatch with TestHttpVerb {
+      val http = new HttpPatch with TestHttpVerb with SucceedNthCall {
         override def doPatch[A](url: String, body: A, headers: Seq[(String, String)])(
-          implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+          implicit rds: Writes[A], ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -257,7 +258,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
       http
-        .PATCH[JsValue, Option[String]](url = "doesnt-matter", Json.obj(), Seq("header" -> "foo"))
+        .PATCH[JsValue, Option[String]](url = "https://www.google.co.uk", Json.obj(), Seq("header" -> "foo"))
         .futureValue      shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
@@ -265,9 +266,9 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
   "PUT" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPut with TestHttpVerb {
+      val http = new TestHttpPut with TestHttpVerb with SucceedNthCall {
         override def doPut[A](url: String, body: A, headers: Seq[(String, String)])(
-          implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+          implicit rds: Writes[A], ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -276,17 +277,16 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.PUT[JsValue, Option[String]](url = "doesnt-matter", Json.obj()).futureValue shouldBe None
+      http.PUT[JsValue, Option[String]](url = "https://www.google.co.uk", Json.obj()).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
 
   "POST" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with TestHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb with SucceedNthCall {
         override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
           implicit rds: Writes[A],
-          hc: HeaderCarrier,
           ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
@@ -296,17 +296,16 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POST[JsValue, Option[String]](url = "doesnt-matter", Json.obj()).futureValue shouldBe None
+      http.POST[JsValue, Option[String]](url = "https://www.google.co.uk", Json.obj()).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
 
   "POSTString" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with TestHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb with SucceedNthCall {
         override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
-          implicit hc: HeaderCarrier,
-          ec: ExecutionContext): Future[HttpResponse] =
+          implicit ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -315,20 +314,19 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTString[Option[String]](url = "doesnt-matter", "posted-string").futureValue shouldBe None
+      http.POSTString[Option[String]](url = "https://www.google.co.uk", "posted-string").futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
 
   "POSTForm" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with TestHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb with SucceedNthCall {
         override def doFormPost(
           url: String,
           body: Map[String, Seq[String]],
           headers: Seq[(String, String)])(
-            implicit hc: HeaderCarrier,
-            ec: ExecutionContext): Future[HttpResponse] =
+            implicit ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -337,19 +335,18 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTForm[Option[String]](url = "doesnt-matter", Map.empty[String, Seq[String]], Seq.empty[(String, String)]).futureValue shouldBe None
+      http.POSTForm[Option[String]](url = "https://www.google.co.uk", Map.empty[String, Seq[String]], Seq.empty[(String, String)]).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
 
   "POSTEmpty" should {
     "retry on SSLException with message 'SSLEngine closed already'" in {
-      val http = new TestHttpPost with TestHttpVerb {
+      val http = new TestHttpPost with TestHttpVerb with SucceedNthCall {
         override def doEmptyPost[A](
           url: String,
           headers: Seq[(String, String)])(
-            implicit hc: HeaderCarrier,
-            ec: ExecutionContext): Future[HttpResponse] =
+            implicit ec: ExecutionContext): Future[HttpResponse] =
           failFewTimesAndThenSucceed(
             success   = Future.successful(HttpResponse(404, "")),
             exception = new SSLException("SSLEngine closed already")
@@ -358,15 +355,16 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTEmpty[Option[String]](url = "doesnt-matter").futureValue shouldBe None
+      http.POSTEmpty[Option[String]](url = "https://www.google.co.uk").futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
 
-  trait TestHttpVerb extends HttpVerb with Retries with HttpHooks with SucceedNthCall {
+  trait TestHttpVerb extends HttpVerb with Retries with HttpHooks {
     System.setProperty("akka.jvm-shutdown-hooks", "off")
     protected def configuration: Config =
       ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
+        .withFallback(ConfigFactory.load("reference.conf"))
     override val hooks: Seq[HttpHook]                              = Nil
     override private[http] lazy val intervals: Seq[FiniteDuration] = List.fill(3)(1.millis)
     override def actorSystem: ActorSystem                          = ActorSystem("test-actor-system")
@@ -385,33 +383,37 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
   }
 
   trait TestHttpPost extends HttpPost {
-    override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(
-      implicit wts: Writes[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] = ???
+    override def doPost[A](
+      url: String,
+      body: A,
+      headers: Seq[(String, String)])(
+        implicit wts: Writes[A],
+      ec: ExecutionContext): Future[HttpResponse] =
+      ???
 
-    override def doPostString(url: String, body: String, headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] = ???
+    override def doPostString(
+      url: String,
+      body: String,
+      headers: Seq[(String, String)])(
+        implicit ec: ExecutionContext): Future[HttpResponse] =
+      ???
 
     override def doEmptyPost[A](
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       ???
 
     override def doFormPost(
       url: String,
       body: Map[String, Seq[String]],
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       ???
   }
 
   trait TestHttpPut extends HttpPut {
     def doPutString(url: String, body: String, headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = ???
+      implicit ec: ExecutionContext): Future[HttpResponse] = ???
   }
 }

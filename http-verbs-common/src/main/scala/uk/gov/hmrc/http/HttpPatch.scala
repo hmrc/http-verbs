@@ -31,6 +31,8 @@ trait HttpPatch
     with HttpHooks
     with Retries {
 
+  private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
+
   override def PATCH[I, O](
     url: String,
     body: I,
@@ -40,7 +42,8 @@ trait HttpPatch
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(PATCH_VERB, url) {
-      val httpResponse = retry(PATCH_VERB, url)(doPatch(url, body, headers))
+      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val httpResponse = retry(PATCH_VERB, url)(doPatch(url, body, allHeaders))
       executeHooks(url, PATCH_VERB, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(PATCH_VERB, url, httpResponse).map(response => rds.read(PATCH_VERB, url, response))
     }
