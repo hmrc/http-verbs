@@ -42,9 +42,9 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
       val httpResponse = retry(POST_VERB, url)(doPost(url, body, allHeaders))
-      executeHooks(url, POST_VERB, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
+      executeHooks(POST_VERB, url"$url", allHeaders, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 
@@ -56,9 +56,9 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
       val httpResponse = retry(POST_VERB, url)(doPostString(url, body, allHeaders))
-      executeHooks(url, POST_VERB, Option(HookData.FromString(body)), httpResponse)
+      executeHooks(POST_VERB, url"$url", allHeaders, Option(HookData.FromString(body)), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 
@@ -70,9 +70,9 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
       val httpResponse = retry(POST_VERB, url)(doFormPost(url, body, allHeaders))
-      executeHooks(url, POST_VERB, Option(HookData.FromMap(body)), httpResponse)
+      executeHooks(POST_VERB, url"$url", allHeaders, Option(HookData.FromMap(body)), httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 
@@ -83,9 +83,9 @@ trait HttpPost
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(POST_VERB, url) {
-      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
       val httpResponse = retry(POST_VERB, url)(doEmptyPost(url, allHeaders))
-      executeHooks(url, POST_VERB, None, httpResponse)
+      executeHooks(POST_VERB, url"$url", allHeaders, None, httpResponse)
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
 }

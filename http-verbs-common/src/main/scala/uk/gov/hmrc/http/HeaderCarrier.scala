@@ -91,6 +91,16 @@ case class HeaderCarrier(
 }
 
 object HeaderCarrier {
+
+  def headersForUrl(
+    config: Config,
+    url: String,
+    extraHeaders: Seq[(String, String)] = Seq()
+  )(
+    implicit hc: HeaderCarrier
+  ): Seq[(String, String)] =
+    hc.withExtraHeaders(extraHeaders: _*).headersForUrl(config)(url)
+
   case class Config(
     internalHostPatterns    : Seq[Regex]     = Seq.empty,
     headersAllowlist        : Seq[String]    = Seq.empty,

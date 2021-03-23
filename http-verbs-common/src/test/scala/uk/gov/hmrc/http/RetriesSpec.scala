@@ -364,7 +364,7 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
     System.setProperty("akka.jvm-shutdown-hooks", "off")
     protected def configuration: Config =
       ConfigFactory.parseString("http-verbs.retries.ssl-engine-closed-already.enabled = true")
-        .withFallback(ConfigFactory.load("reference.conf"))
+        .withFallback(ConfigFactory.load())
     override val hooks: Seq[HttpHook]                              = Nil
     override private[http] lazy val intervals: Seq[FiniteDuration] = List.fill(3)(1.millis)
     override def actorSystem: ActorSystem                          = ActorSystem("test-actor-system")

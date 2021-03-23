@@ -16,14 +16,23 @@
 
 package uk.gov.hmrc.http.hooks
 
+import java.net.URL
+
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHook {
-  def apply(url: String, verb: String, body: Option[HookData], responseF: Future[HttpResponse])(
+  def apply(
+    verb: String,
+    url: URL,
+    headers  : Seq[(String, String)],
+    body: Option[HookData],
+    responseF: Future[HttpResponse]
+  )(
     implicit hc: HeaderCarrier,
-    ec: ExecutionContext)
+    ec: ExecutionContext
+  )
 }
 
 sealed trait HookData

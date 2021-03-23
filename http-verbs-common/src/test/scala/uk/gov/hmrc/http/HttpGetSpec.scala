@@ -140,8 +140,11 @@ class HttpGetSpec
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testGet.testHook1).apply(is(url), is("GET"), is(None), respArgCaptor1.capture())(any(), any())
-      verify(testGet.testHook2).apply(is(url), is("GET"), is(None), respArgCaptor2.capture())(any(), any())
+      val config = HeaderCarrier.Config.fromConfig(testGet.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
+        verify(testGet.testHook1).apply(is("GET"), is(url"$url"), is(headers), is(None), respArgCaptor1.capture())(any(), any())
+      verify(testGet.testHook2).apply(is("GET"), is(url"$url"), is(headers), is(None), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)

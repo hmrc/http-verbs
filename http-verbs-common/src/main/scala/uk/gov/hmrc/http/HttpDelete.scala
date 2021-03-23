@@ -34,9 +34,9 @@ trait HttpDelete
 
   override def DELETE[O](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(DELETE_VERB, url) {
-      val allHeaders = hc.withExtraHeaders(headers: _*).headersForUrl(config = hcConfig)(url)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
       val httpResponse = retry(DELETE_VERB, url)(doDelete(url, allHeaders))
-      executeHooks(url, DELETE_VERB, None, httpResponse)
+      executeHooks(DELETE_VERB, url"$url", allHeaders, None, httpResponse)
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
     }
 }

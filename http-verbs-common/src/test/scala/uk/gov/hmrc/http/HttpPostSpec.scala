@@ -79,7 +79,7 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
 
     var lastUrl: Option[String] = None
 
-    override val configuration: Config              = ConfigFactory.load("reference.conf")
+    override val configuration: Config              = ConfigFactory.load()
 
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
 
@@ -180,17 +180,20 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
     "Invoke any hooks provided" in {
       val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
-      val testPatch           = new StubbedHttpPost(dummyResponseFuture)
+      val testPost           = new StubbedHttpPost(dummyResponseFuture)
 
-      testPatch.POST[TestRequestClass, HttpResponse](url, testObject)
+      testPost.POST[TestRequestClass, HttpResponse](url, testObject)
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testPatch.testHook1).apply(is(url), is("POST"), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
-      verify(testPatch.testHook2).apply(is(url), is("POST"), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
+      val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
+        verify(testPost.testHook1).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
+      verify(testPost.testHook2).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
@@ -223,8 +226,11 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testPost.testHook1).apply(is(url), is("POST"), is(Some(HookData.FromMap(Map()))), respArgCaptor1.capture())(any(), any())
-      verify(testPost.testHook2).apply(is(url), is("POST"), is(Some(HookData.FromMap(Map()))), respArgCaptor2.capture())(any(), any())
+      val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
+      verify(testPost.testHook1).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromMap(Map()))), respArgCaptor1.capture())(any(), any())
+      verify(testPost.testHook2).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromMap(Map()))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
@@ -261,10 +267,13 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
+      val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
       verify(testPost.testHook1)
-        .apply(is(url), is("POST"), is(Some(HookData.FromString(testRequestBody))), respArgCaptor1.capture())(any(), any())
+        .apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor1.capture())(any(), any())
       verify(testPost.testHook2)
-        .apply(is(url), is("POST"), is(Some(HookData.FromString(testRequestBody))), respArgCaptor2.capture())(any(), any())
+        .apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
@@ -297,8 +306,11 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testPost.testHook1).apply(is(url), is("POST"), is(None), respArgCaptor1.capture())(any(), any())
-      verify(testPost.testHook2).apply(is(url), is("POST"), is(None), respArgCaptor2.capture())(any(), any())
+      val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
+      verify(testPost.testHook1).apply(is("POST"), is(url"$url"), is(headers), is(None), respArgCaptor1.capture())(any(), any())
+      verify(testPost.testHook2).apply(is("POST"), is(url"$url"), is(headers), is(None), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)

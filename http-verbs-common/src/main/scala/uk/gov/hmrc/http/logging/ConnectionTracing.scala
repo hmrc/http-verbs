@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http.logging
 
 import org.slf4j.{Logger, LoggerFactory}
-import uk.gov.hmrc.http.{HttpException, Upstream4xxResponse}
+import uk.gov.hmrc.http.{HttpException, UpstreamErrorResponse}
 
 import scala.concurrent._
 import scala.util.{Failure, Success, Try}
@@ -38,8 +38,8 @@ trait ConnectionTracing {
     case Success(_) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
     case Failure(ex: HttpException) if ex.responseCode == 404 =>
       connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
-    case Failure(Upstream4xxResponse(message, upstreamResponseCode, _, _)) if upstreamResponseCode == 404 =>
-      connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed $message"))
+    case Failure(ex: UpstreamErrorResponse) if ex.statusCode == 404 =>
+      connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.message}"))
     case Failure(ex) => connectionLogger.warn(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
   }
 
