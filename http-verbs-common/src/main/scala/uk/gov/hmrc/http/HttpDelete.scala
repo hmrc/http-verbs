@@ -30,10 +30,13 @@ trait HttpDelete
     with HttpHooks
     with Retries {
 
+  private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
+
   override def DELETE[O](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
     withTracing(DELETE_VERB, url) {
-      val httpResponse = retry(DELETE_VERB, url)(doDelete(url, headers))
-      executeHooks(url, DELETE_VERB, None, httpResponse)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
+      val httpResponse = retry(DELETE_VERB, url)(doDelete(url, allHeaders))
+      executeHooks(DELETE_VERB, url"$url", allHeaders, None, httpResponse)
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
     }
 }

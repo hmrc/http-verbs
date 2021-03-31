@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.play.http.ws.default
 
-import uk.gov.hmrc.http.{CoreGet, GetHttpTransport, HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{CoreGet, GetHttpTransport, HttpResponse}
 import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,9 +25,10 @@ trait WSGet extends CoreGet with GetHttpTransport with WSRequestBuilder with WSE
 
   override def doGet(
     url: String,
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
+    headers: Seq[(String, String)]
+  )(
+    implicit ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers), "GET")
       .map(WSHttpResponse.apply)
 }

@@ -36,7 +36,7 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
 
   import ExecutionContext.Implicits.global
 
-  class StubbedHttpDelete(doDeleteResult: Future[HttpResponse], doDeleteWithHeaderResult: Future[HttpResponse]) extends HttpDelete with DeleteHttpTransport with ConnectionTracingCapturing {
+  class StubbedHttpDelete(doDeleteResult: Future[HttpResponse]) extends HttpDelete with DeleteHttpTransport with ConnectionTracingCapturing {
     val testHook1: HttpHook                         = mock[HttpHook]
     val testHook2: HttpHook                         = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
@@ -48,8 +48,7 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
     override def doDelete(
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doDeleteResult
   }
 
@@ -64,7 +63,7 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
     override def doDelete(
       url: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
@@ -76,13 +75,12 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
 
     "return plain responses" in {
       val response   = HttpResponse(200, testBody)
-      val testDelete = new StubbedHttpDelete(Future.successful(response), Future.successful(response))
+      val testDelete = new StubbedHttpDelete(Future.successful(response))
       testDelete.DELETE[HttpResponse](url, Seq("foo" -> "bar")).futureValue shouldBe response
     }
 
     "return objects deserialised from JSON" in {
-      val testDelete = new StubbedHttpDelete(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")),
-        Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
+      val testDelete = new StubbedHttpDelete(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
       testDelete
         .DELETE[TestClass](url, Seq("foo" -> "bar"))
         .futureValue(Timeout(Span(2, Seconds)), Interval(Span(15, Millis))) shouldBe TestClass("t", 10)
@@ -126,22 +124,25 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
       testDelete.lastUrl shouldBe expected
     }
 
-    behave like anErrorMappingHttpCall("DELETE", (url, responseF) => new StubbedHttpDelete(responseF, responseF).DELETE[HttpResponse](url, Seq("foo" -> "bar")))
-    behave like aTracingHttpCall("DELETE", "DELETE", new StubbedHttpDelete(defaultHttpResponse, defaultHttpResponse)) { _.DELETE[HttpResponse](url, Seq("foo" -> "bar")) }
+    behave like anErrorMappingHttpCall("DELETE", (url, responseF) => new StubbedHttpDelete(responseF).DELETE[HttpResponse](url, Seq("foo" -> "bar")))
+    behave like aTracingHttpCall("DELETE", "DELETE", new StubbedHttpDelete(defaultHttpResponse)) { _.DELETE[HttpResponse](url, Seq("foo" -> "bar")) }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
-      val dummyHeader         = Future.successful(dummyResponse)
-      val testDelete          = new StubbedHttpDelete(dummyResponseFuture, dummyHeader)
+      val testDelete          = new StubbedHttpDelete(dummyResponseFuture)
 
       testDelete.DELETE[HttpResponse](url, Seq("header" -> "foo")).futureValue
 
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testDelete.testHook1).apply(is(url), is("DELETE"), is(None), respArgCaptor1.capture())(any(), any())
-      verify(testDelete.testHook2).apply(is(url), is("DELETE"), is(None), respArgCaptor2.capture())(any(), any())
+
+      val config = HeaderCarrier.Config.fromConfig(testDelete.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url, Seq("header" -> "foo"))
+
+      verify(testDelete.testHook1).apply(is("DELETE"), is(url"$url"), is(headers) , is(None), respArgCaptor1.capture())(any(), any())
+      verify(testDelete.testHook2).apply(is("DELETE"), is(url"$url"), is(headers), is(None), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)

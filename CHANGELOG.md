@@ -8,6 +8,8 @@
 | HeaderNames package change                                   | Minor      | [Scalafix available](https://github.com/hmrc/scalafix-rules/blob/master/http-verbs-13/rules/src/main/scala/fix/HttpVerbs13RenamePackages.scala) |
 | URLs can now be supplied as `java.net.URL`                   | Minor      | Optional change |
 | Removed deprecated values from `SessionKeys`                 | Minor      | Use auth client retrievals |
+| All sent request headers explicitly passed to HttpHook       | Minor      | Distinction between sent headers and HeaderCarrier is useful|
+| Transport layer explicitly passed all headers (e.g doPost)   | Minor      | All headers can be obtained from HeaderCarrier.headersForUrl |
 
 To run a scalafix rule on your project, please refer to [the usage docs](https://github.com/hmrc/scalafix-rules#usage).
 

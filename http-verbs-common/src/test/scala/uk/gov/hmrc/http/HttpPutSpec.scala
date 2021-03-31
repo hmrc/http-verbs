@@ -48,8 +48,7 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       url: String,
       body: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] =
+        implicit ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
 
     override def doPut[A](
@@ -57,7 +56,6 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doPutResult
   }
@@ -73,8 +71,7 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       url: String,
       body: String,
       headers: Seq[(String, String)])(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext): Future[HttpResponse] = {
+        implicit ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
     }
@@ -84,7 +81,6 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
@@ -169,8 +165,11 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
-      verify(testPut.testHook1).apply(is(url), is("PUT"), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
-      verify(testPut.testHook2).apply(is(url), is("PUT"), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
+      val config = HeaderCarrier.Config.fromConfig(testPut.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
+      verify(testPut.testHook1).apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
+      verify(testPut.testHook2).apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
@@ -209,10 +208,13 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
+      val config = HeaderCarrier.Config.fromConfig(testPut.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url)
+
       verify(testPut.testHook1)
-        .apply(is(url), is("PUT"), is(Some(HookData.FromString(testRequestBody))), respArgCaptor1.capture())(any(), any())
+        .apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor1.capture())(any(), any())
       verify(testPut.testHook2)
-        .apply(is(url), is("PUT"), is(Some(HookData.FromString(testRequestBody))), respArgCaptor2.capture())(any(), any())
+        .apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)

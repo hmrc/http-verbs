@@ -49,7 +49,6 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] =
       doPatchResult
   }
@@ -67,7 +66,6 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       body: A,
       headers: Seq[(String, String)])(
         implicit rds: Writes[A],
-        hc: HeaderCarrier,
         ec: ExecutionContext): Future[HttpResponse] = {
       lastUrl = Some(url)
       defaultHttpResponse
@@ -148,10 +146,13 @@ class HttpPatchSpec extends AnyWordSpecLike with Matchers with CommonHttpBehavio
       val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
       val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
 
+      val config = HeaderCarrier.Config.fromConfig(testPatch.configuration)
+      val headers = HeaderCarrier.headersForUrl(config, url, Seq("header" -> "foo"))
+
       verify(testPatch.testHook1)
-        .apply(is(url), is("PATCH"), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
+        .apply(is("PATCH"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
       verify(testPatch.testHook2)
-        .apply(is(url), is("PATCH"), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
+        .apply(is("PATCH"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)

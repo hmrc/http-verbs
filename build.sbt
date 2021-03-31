@@ -53,7 +53,7 @@ def sharedSources = Seq(
   Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
   Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
   Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
-  Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources",
+  Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources"
 )
 
 def copySources(module: Project) = Seq(

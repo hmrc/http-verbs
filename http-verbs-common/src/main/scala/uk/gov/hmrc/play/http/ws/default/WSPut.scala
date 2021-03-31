@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play.http.ws.default
 
 import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.http.{CorePut, HeaderCarrier, HttpResponse, PutHttpTransport}
+import uk.gov.hmrc.http.{CorePut, HttpResponse, PutHttpTransport}
 import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,18 +27,21 @@ trait WSPut extends CorePut with PutHttpTransport with WSRequestBuilder with WSE
   override def doPut[A](
     url: String,
     body: A,
-    headers: Seq[(String, String)])(
+    headers: Seq[(String, String)]
+  )(
       implicit rds: Writes[A],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[HttpResponse] =
+      ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(Json.toJson(body)), "PUT")
       .map(WSHttpResponse.apply)
 
   override def doPutString(
     url: String,
     body: String,
-    headers: Seq[(String, String)])(
-      implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] =
+    headers: Seq[(String, String)]
+  )(
+      implicit ec: ExecutionContext
+  ): Future[HttpResponse] =
     execute(buildRequest(url, headers).withBody(body), "PUT")
       .map(WSHttpResponse.apply)
 }
