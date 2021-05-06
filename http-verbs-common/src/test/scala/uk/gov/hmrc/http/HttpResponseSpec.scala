@@ -18,7 +18,6 @@ package uk.gov.hmrc.http
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.{JsString, Json}
 
 /**
   * Created by jonathan on 25/07/16.
