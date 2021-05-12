@@ -29,7 +29,7 @@ See [CHANGELOG](https://github.com/hmrc/http-verbs/blob/master/CHANGELOG.md) for
 In your SBT build add:
 
 ```scala
-resolvers += Resolver.bintrayRepo("hmrc", "releases")
+resolvers += MavenRepository("HMRC-open-artefacts-maven2", "https://open.artefacts.tax.service.gov.uk/maven2")
 
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs-play-xx" % "x.x.x"
 ```

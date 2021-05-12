@@ -90,7 +90,7 @@ The behaviour of the predefined implicits are not quite the same as the deprecat
 * You will have to explicitly state the type of the response - it will not resolve to `HttpResponse` if none is specified. (i.e. `GET(url)` will now be `GET[HttpResponse](url)`). It is deemed better to be explicit since the type will dictate how errors are handled.
 * The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. To get the behaviour similar to previous (see Exceptions for differences), use:
 ```scala
-implicit val legacyRawReads = HttpReads.Implicits.throwOnFailure(HttpReads.Implicits.readEitherOf(HttpReads.Implicits.readRaw)
+implicit val legacyRawReads = HttpReads.Implicits.throwOnFailure(HttpReads.Implicits.readEitherOf(HttpReads.Implicits.readRaw))
 ```
 * `HttpReads[Option[A]]` only returns None for 404, and will try to parse other responses. Previously, 204 was also treated as None, consider representing this with Unit instead.
 * The `HttpReads[A]` where `A` is defined by a `play.api.libs.json.Reads[A]` works in the same way as before, i.e. throws exceptions for non-2xx response codes (`UpstreamErrorResponse`), and json parsing errors (`JsValidationException`). Since the http-verbs API operates within `Future`, this is probably the simplest response type, since Future offers recovery, and if not handled, will propagate to the caller. However the HttpReads can be combined with other HttpReads to return the errors in different ways. E.g.

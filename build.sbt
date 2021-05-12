@@ -1,21 +1,17 @@
 import sbt.Keys.crossScalaVersions
 import sbt._
 
-val name = "http-verbs"
-
-val scala2_12 = "2.12.12"
-
-// Disable multiple project tests running at the same time: https://stackoverflow.com/questions/11899723/how-to-turn-off-parallel-execution-of-tests-for-multi-project-builds
-// TODO: restrict parallelExecution to tests only (the obvious way to do this using Test scope does not seem to work correctly)
-parallelExecution in Global := false
+// Disable multiple project tests running at the same time
+// https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
+Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val silencerVersion = "1.7.1"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
   majorVersion := 13,
-  scalaVersion := scala2_12,
-  makePublicallyAvailableOnBintray := true,
+  scalaVersion := "2.12.12",
+  isPublicArtefact := true,
   scalacOptions ++= Seq("-feature"),
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
@@ -24,11 +20,9 @@ lazy val commonSettings = Seq(
 )
 
 lazy val library = (project in file("."))
-  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
   .settings(
     commonSettings,
-    publish := {},
-    publishAndDistribute := {},
+    publish / skip := true,
     crossScalaVersions := Seq.empty
   )
   .aggregate(
@@ -44,7 +38,6 @@ lazy val library = (project in file("."))
 
 // empty artefact, exists to ensure eviction of previous http-verbs jar which has now moved into http-verbs-play-xx
 lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings
   )
@@ -64,11 +57,11 @@ def copySources(module: Project) = Seq(
 )
 
 lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-26"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     sharedSources,
-    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+    libraryDependencies ++=
+      AppDependencies.coreCompileCommon ++
       AppDependencies.coreCompilePlay26 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay26,
@@ -77,12 +70,12 @@ lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-2
   .dependsOn(httpVerbs)
 
 lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-27"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     sharedSources,
     copySources(httpVerbsPlay26),
-    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+    libraryDependencies ++=
+      AppDependencies.coreCompileCommon ++
       AppDependencies.coreCompilePlay27 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay27,
@@ -91,11 +84,11 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
   .dependsOn(httpVerbs)
 
 lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     sharedSources,
-    libraryDependencies ++= AppDependencies.coreCompileCommon ++
+    libraryDependencies ++=
+      AppDependencies.coreCompileCommon ++
       AppDependencies.coreCompilePlay28 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay28,
@@ -104,14 +97,12 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
   .dependsOn(httpVerbs)
 
 lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verbs-test-common"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     libraryDependencies ++= AppDependencies.testCompileCommon,
   )
 
 lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-verbs-test-play-26"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
@@ -120,7 +111,6 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
   .dependsOn(httpVerbsPlay26)
 
 lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-verbs-test-play-27"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
@@ -129,7 +119,6 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
   .dependsOn(httpVerbsPlay27)
 
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
-  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
     Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,

@@ -208,7 +208,7 @@ object UpstreamErrorResponse {
   }
 
   object WithStatusCode {
-    def unapply(e: UpstreamErrorResponse): Option[(Int, UpstreamErrorResponse)] =
-      Some((e.statusCode, e))
+    def unapply(e: UpstreamErrorResponse): Option[Int] =
+      Some(e.statusCode)
   }
 }
