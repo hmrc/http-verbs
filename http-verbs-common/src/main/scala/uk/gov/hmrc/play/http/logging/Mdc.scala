@@ -28,11 +28,19 @@ object Mdc {
 
   def withMdc[A](block: => Future[A], mdcData: Map[String, String])(implicit ec: ExecutionContext): Future[A] =
     block.map { a =>
-      mdcData.foreach {
-        case (k, v) => MDC.put(k, v)
-      }
+      putMdc(mdcData)
       a
-    }(ec)
+    }.recover {
+      case t =>
+        putMdc(mdcData)
+        throw t
+    }
+
+  private def putMdc(mdc: Map[String, String]): Unit = {
+    mdc.foreach {
+      case (k, v) => MDC.put(k, v)
+    }
+  }
 
   /** Restores MDC data to the continuation of a block, which may be discarding MDC data (e.g. uses a different execution context)
     */

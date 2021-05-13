@@ -20,7 +20,7 @@ import org.slf4j.MDC
 
 import scala.concurrent.ExecutionContext
 
-class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String, String]) 
+class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String, String])
   extends ExecutionContext {
 
   def execute(runnable: Runnable) {
