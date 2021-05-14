@@ -36,16 +36,21 @@ trait Retries {
   private val logger = LoggerFactory.getLogger("application")
 
   def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] = {
-    def loop(remainingIntervals: Seq[FiniteDuration])(mdcData: Map[String, String])(block: => Future[A]): Future[A] =
+    def loop(remainingIntervals: Seq[FiniteDuration]): Future[A] = {
       // scheduling will loose MDC data. Here we explicitly ensure it is available on block.
-      Mdc.withMdc(block, mdcData)
+      block
         .recoverWith {
           case ex @ `sslEngineClosedMatcher`() if remainingIntervals.nonEmpty =>
             val delay = remainingIntervals.head
             logger.warn(s"Retrying $verb $url in $delay due to '${ex.getMessage}' error")
-            after(delay, actorSystem.scheduler)(loop(remainingIntervals.tail)(mdcData)(block))
+              val mdcData = Mdc.mdcData
+              after(delay, actorSystem.scheduler){
+                Mdc.putMdc(mdcData)
+                loop(remainingIntervals.tail)
+              }
         }
-    loop(intervals)(Mdc.mdcData)(block)
+      }
+    loop(intervals)
   }
 
   private[http] lazy val intervals: Seq[FiniteDuration] =

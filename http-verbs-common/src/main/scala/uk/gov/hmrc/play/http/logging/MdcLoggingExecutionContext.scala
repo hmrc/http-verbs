@@ -20,6 +20,7 @@ import org.slf4j.MDC
 
 import scala.concurrent.ExecutionContext
 
+@deprecated("MdcLoggingExecutionContext no longer required, please inject Play's default EC instead", "15.6.0")
 class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String, String])
   extends ExecutionContext {
 
