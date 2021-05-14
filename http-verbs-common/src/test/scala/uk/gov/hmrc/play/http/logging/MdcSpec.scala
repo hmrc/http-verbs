@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.logging
+package uk.gov.hmrc.play.http.logging
 
 import akka.dispatch.ExecutorServiceDelegate
 import org.scalatest.BeforeAndAfter
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.MDC
-import uk.gov.hmrc.play.http.logging.Mdc
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-class MdcSpec extends AnyWordSpecLike with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfter with IntegrationPatience {
+class MdcSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with ScalaFutures
+     with BeforeAndAfter {
 
   before {
     MDC.clear()
@@ -58,9 +60,9 @@ class MdcSpec extends AnyWordSpecLike with Matchers with MockitoSugar with Scala
       implicit val mdcEc: ExecutionContext = mdcPropagatingExecutionContext()
 
       (for {
-        _ <- Future.successful(org.slf4j.MDC.put("k", "v"))
-        _ <- Mdc.preservingMdc(runActionWhichLosesMdc())
-      } yield
+         _ <- Future.successful(org.slf4j.MDC.put("k", "v"))
+         _ <- Mdc.preservingMdc(runActionWhichLosesMdc())
+       } yield
         Option(MDC.get("k"))
       ).futureValue shouldBe Some("v")
     }
@@ -72,16 +74,15 @@ class MdcSpec extends AnyWordSpecLike with Matchers with MockitoSugar with Scala
          _ <- Future.successful(org.slf4j.MDC.put("k", "v"))
          _ <- Mdc.preservingMdc(runActionWhichLosesMdc(fail = true))
        } yield ()
-      )
-      .recover { case _ =>
+      ).recover { case _ =>
         Option(MDC.get("k"))
       }.futureValue shouldBe Some("v")
     }
   }
 
   private def runActionWhichLosesMdc(fail: Boolean = false): Future[Any] = {
-    val as = akka.actor.ActorSystem("different-as")
-    akka.pattern.after(1.second, as.scheduler)(Future(())(as.dispatcher))(as.dispatcher)
+    val as = akka.actor.ActorSystem("as")
+    akka.pattern.after(10.millis, as.scheduler)(Future(())(as.dispatcher))(as.dispatcher)
       .map(a => if (fail) sys.error("expected test exception") else a)(as.dispatcher)
   }
 
@@ -105,17 +106,16 @@ class MDCPropagatingExecutorService(val executor: ExecutorService) extends Execu
         try {
           command.run()
         } finally {
+          // this means any Mdc updates on the ec will not be propagated once it steps out
           setMDC(oldMdcData)
         }
       }
     })
   }
 
-  private def setMDC(context: java.util.Map[String, String]): Unit = {
-    if (context == null) {
+  private def setMDC(context: java.util.Map[String, String]): Unit =
+    if (context == null)
       MDC.clear()
-    } else {
+    else
       MDC.setContextMap(context)
-    }
-  }
 }

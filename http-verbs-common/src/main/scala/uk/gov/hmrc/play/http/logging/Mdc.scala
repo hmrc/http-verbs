@@ -30,17 +30,16 @@ object Mdc {
     block.map { a =>
       putMdc(mdcData)
       a
-    }.recover {
+    }.recoverWith {
       case t =>
         putMdc(mdcData)
-        throw t
+        Future.failed(t)
     }
 
-  private def putMdc(mdc: Map[String, String]): Unit = {
+  def putMdc(mdc: Map[String, String]): Unit =
     mdc.foreach {
       case (k, v) => MDC.put(k, v)
     }
-  }
 
   /** Restores MDC data to the continuation of a block, which may be discarding MDC data (e.g. uses a different execution context)
     */

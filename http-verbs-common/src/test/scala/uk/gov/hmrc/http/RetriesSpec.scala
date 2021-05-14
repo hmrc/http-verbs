@@ -17,6 +17,7 @@
 package uk.gov.hmrc.http
 
 import java.time.Instant
+import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
@@ -29,6 +30,7 @@ import org.slf4j.MDC
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
+import uk.gov.hmrc.play.http.logging.Mdc
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -181,26 +183,28 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
       }
 
       val mdcData = Map("key1" -> "value1")
-      mdcData.foreach { case (k, v) => MDC.put("key1", "value1") }
-      val mdcEc = new uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext(implicitly[ExecutionContext], mdcData)
+
+      implicit val mdcEc = ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
 
       val expectedResponse = HttpResponse(404, "")
 
       val resultF =
-        retries.retry("GET", "url") {
-          // assert mdc available to block execution
-          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+        for {
+          _   <- Future.successful(Mdc.putMdc(mdcData))
+          res <- retries.retry("GET", "url") {
+                  // assert mdc available to block execution
+                  Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
 
-          retries.failFewTimesAndThenSucceed(
-            success   = Future.successful(expectedResponse),
-            exception = new SSLException("SSLEngine closed already")
-          )
-        }(mdcEc)
-        .map { res =>
+                  retries.failFewTimesAndThenSucceed(
+                    success   = Future.successful(expectedResponse),
+                    exception = new SSLException("SSLEngine closed already")
+                  )
+                }
+        } yield {
           // assert mdc available to continuation
           Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
           res
-        }(mdcEc)
+        }
 
       whenReady(resultF) { response =>
         response shouldBe expectedResponse
@@ -372,14 +376,15 @@ class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with S
 
   trait SucceedNthCall {
     var failureCounter: Int = 0
-    val maxFailures: Int    = Random.nextInt(3)
-    def failFewTimesAndThenSucceed[A, B](success: Future[A], exception: Exception): Future[A] =
+    val maxFailures: Int    = 1 + Random.nextInt(2)
+    def failFewTimesAndThenSucceed[A, B](success: Future[A], exception: Exception): Future[A] = {
+      println(s"failFewTimesAndThenSucceed = $failureCounter, $maxFailures")
       if (failureCounter < maxFailures) {
         failureCounter += 1
         Future.failed(exception)
-      } else {
+      } else
         success
-      }
+    }
   }
 
   trait TestHttpPost extends HttpPost {
