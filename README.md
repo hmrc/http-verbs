@@ -8,17 +8,13 @@ http-verbs is a Scala library providing an interface to make asynchronous HTTP c
 
 It encapsulates some common concerns for calling other HTTP services on the HMRC Tax Platform, including:
 
-* Logging
-* Header Carrier
 * Http Transport
 * Core Http function interfaces
-* executing hooks
-* mapping errors
-* Auditing
 * Logging
 * Propagation of common headers
-* Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be automatically propagated to the caller
+* Executing hooks, for example Auditing
 * Request & Response de-serializations
+* Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be automatically propagated to the caller
 
 ## Migration
 
@@ -98,7 +94,7 @@ For all other headers, provide them to the VERB function:
 client.GET(url = url"https://internalhost/api", headers = Seq("AdditionHeader" -> "AdditionalValue"))(hc)
 ```
 
-## Test Helpers
+## Testing
 
 The ResponseMatchers class provides some useful logic for testing http-related code.
 
@@ -107,6 +103,10 @@ In your SBT build add the following in your test dependencies:
 ```scala
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs-test-play-xx" % "x.x.x" % Test
 ```
+
+We also recommend that Wiremock is used for testing http-verbs code, with extensive assertions on the URL, Headers, and Body fields for both requests and responses. This will test most things, doesn't involve "mocking what you don't own", and ensures that changes to this library will be caught.
+
+The only notable exception to this advice is when testing code that will interact with external-hosts. In your tests, you should set the host to `127.0.0.1` or similar, as `localhost` will get identified as an internal-host. The behaviour of propagating the headers differs based on this.
 
 
 ## License ##

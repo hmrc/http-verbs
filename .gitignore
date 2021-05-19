@@ -35,6 +35,7 @@ target
 .metals/
 .vscode/
 metals.sbt
+.bsp/
 
 nohup.out
 rebel.xml
