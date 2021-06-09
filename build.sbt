@@ -79,7 +79,7 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
       AppDependencies.coreCompilePlay27 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay27,
-    Test    / fork := true // akka is not unloaded properly, which can affect other tests
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .dependsOn(httpVerbs)
 
@@ -92,7 +92,7 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
       AppDependencies.coreCompilePlay28 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay28,
-    Test    / fork := true // akka is not unloaded properly, which can affect other tests
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .dependsOn(httpVerbs)
 

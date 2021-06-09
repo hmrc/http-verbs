@@ -62,8 +62,9 @@ object AppDependencies {
 
   // Dependencies for http-verbs-test modules
   val testCompileCommon = Seq(
-    "org.scalatest"        %% "scalatest"    % "3.2.3",
-    "com.vladsch.flexmark" %  "flexmark-all" % "0.35.10"
+    "org.scalatest"          %% "scalatest"    % "3.2.3",
+    "com.github.tomakehurst" %  "wiremock"     % "1.58",
+    "com.vladsch.flexmark"   %  "flexmark-all" % "0.35.10"
   )
 
   val testCompilePlay26 = Seq(
