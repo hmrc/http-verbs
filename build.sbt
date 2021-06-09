@@ -42,19 +42,21 @@ lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
     commonSettings
   )
 
-def sharedSources = Seq(
-  Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
-  Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
-  Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
-  Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources"
+def shareSources(location: String) = Seq(
+  Compile / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/main/scala",
+  Compile / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/main/resources",
+  Test    / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/test/scala",
+  Test    / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/test/resources"
 )
-
 def copySources(module: Project) = Seq(
   Compile / scalaSource       := (module / Compile / scalaSource      ).value,
   Compile / resourceDirectory := (module / Compile / resourceDirectory).value,
   Test    / scalaSource       := (module / Test    / scalaSource      ).value,
   Test    / resourceDirectory := (module / Test    / resourceDirectory).value
 )
+
+lazy val sharedSources =
+  shareSources("http-verbs-common")
 
 lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-26"))
   .settings(
@@ -96,16 +98,13 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
   )
   .dependsOn(httpVerbs)
 
-lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verbs-test-common"))
-  .settings(
-    commonSettings,
-    libraryDependencies ++= AppDependencies.testCompileCommon,
-  )
+lazy val sharedTestSources =
+  shareSources("http-verbs-test-common")
 
 lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-verbs-test-play-26"))
   .settings(
     commonSettings,
-    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    sharedTestSources,
     libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay26
   )
   .dependsOn(httpVerbsPlay26)
@@ -113,7 +112,7 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
 lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-verbs-test-play-27"))
   .settings(
     commonSettings,
-    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    sharedTestSources,
     libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay27
   )
   .dependsOn(httpVerbsPlay27)
@@ -121,7 +120,7 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
     commonSettings,
-    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
+    sharedTestSources,
     libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay28
   )
   .dependsOn(httpVerbsPlay28)

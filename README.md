@@ -33,7 +33,7 @@ Where `play-xx` is `play-26`, `play-27` or `play-28` depending on your version o
 
 ## Usage
 
-Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-common/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
+Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-test-common/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
 
 ### URLs
 

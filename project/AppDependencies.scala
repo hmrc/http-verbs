@@ -64,7 +64,8 @@ object AppDependencies {
   val testCompileCommon = Seq(
     "org.scalatest"          %% "scalatest"    % "3.2.3",
     "com.github.tomakehurst" %  "wiremock"     % "1.58",
-    "com.vladsch.flexmark"   %  "flexmark-all" % "0.35.10"
+    "com.vladsch.flexmark"   %  "flexmark-all" % "0.35.10",
+    "org.slf4j"              %  "slf4j-simple" % "1.7.30" % Test
   )
 
   val testCompilePlay26 = Seq(

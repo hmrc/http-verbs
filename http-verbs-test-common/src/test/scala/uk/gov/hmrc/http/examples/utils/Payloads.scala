@@ -22,15 +22,15 @@ import scala.io.Source
 
 object XmlPayloads {
   val bankHolidays: String =
-    Source.fromFile(getClass.getResource("/bankHolidays.xml").toURI, "UTF-8").getLines.mkString
+    Source.fromFile(getClass.getResource("/payloads/bankHolidays.xml").toURI, "UTF-8").getLines.mkString
 }
 
 object JsonPayloads {
   val bankHolidays: String =
-    Source.fromFile(getClass.getResource("/bankHolidays.json").toURI, "UTF-8").getLines.mkString
+    Source.fromFile(getClass.getResource("/payloads/bankHolidays.json").toURI, "UTF-8").getLines.mkString
 
   val userId: String =
-    Source.fromFile(getClass.getResource("/userId.json").toURI, "UTF-8").getLines.mkString
+    Source.fromFile(getClass.getResource("/payloads/userId.json").toURI, "UTF-8").getLines.mkString
 }
 
 case class BankHolidays(
