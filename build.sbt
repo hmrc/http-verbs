@@ -5,12 +5,12 @@ import sbt._
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
-val silencerVersion = "1.7.1"
+val silencerVersion = "1.7.5"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
   majorVersion := 13,
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.12.14",
   isPublicArtefact := true,
   scalacOptions ++= Seq("-feature"),
   libraryDependencies ++= Seq(
@@ -105,7 +105,7 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
-    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay26
+    libraryDependencies ++= AppDependencies.testCompilePlay26
   )
   .dependsOn(httpVerbsPlay26)
 
@@ -113,7 +113,7 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
-    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay27
+    libraryDependencies ++= AppDependencies.testCompilePlay27
   )
   .dependsOn(httpVerbsPlay27)
 
@@ -121,6 +121,6 @@ lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
-    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay28
+    libraryDependencies ++= AppDependencies.testCompilePlay28
   )
   .dependsOn(httpVerbsPlay28)

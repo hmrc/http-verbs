@@ -19,8 +19,7 @@ package uk.gov.hmrc.http.test
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import org.scalatest.{BeforeAndAfterAll, Suite}
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 import org.slf4j.{Logger, LoggerFactory}
 
 trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
@@ -28,26 +27,28 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  lazy val stubHost      : String         = "localhost" // this has to match the configuration in `internalServiceHostPatterns`
+  lazy val wireMockHost  : String         = "localhost" // this has to match the configuration in `internalServiceHostPatterns`
   // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
   // it up front (rather than query the running server), and allow overriding.
-  lazy val stubPort      : Int            = PortFinder.findFreePort(portRange = 6001 to 7000)
-  lazy val wireMockServer: WireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
+  lazy val wireMockPort  : Int            = PortFinder.findFreePort(portRange = 6001 to 7000)
+  lazy val wireMockServer: WireMockServer = new WireMockServer(wireMockConfig().port(wireMockPort))
+  lazy val wireMockUrl   : String         = s"http://$wireMockHost:$wireMockPort"
 
-  lazy val stubUrl = s"http://$stubHost:$stubPort"
+  /** If true (default) it will clear the wireMock settings before each test */
+  lazy val resetWireMockMappings: Boolean = true
 
   def startWireMock(): Unit =
     if (!wireMockServer.isRunning) {
       wireMockServer.start()
       // this initialises static access to `WireMock` rather than calling functions on the wireMockServer instance itself
-      WireMock.configureFor(stubHost, wireMockServer.port())
-      logger.info(s"Started WireMock server on host: $stubHost, port: ${wireMockServer.port()}")
+      WireMock.configureFor(wireMockHost, wireMockServer.port())
+      logger.info(s"Started WireMock server on host: $wireMockHost, port: ${wireMockServer.port()}")
     }
 
   def stopWireMock(): Unit =
     if (wireMockServer.isRunning) {
       wireMockServer.stop()
-      logger.info(s"Stopped WireMock server on host: $stubHost, port: $stubPort")
+      logger.info(s"Stopped WireMock server on host: $wireMockHost, port: $wireMockPort")
     }
 
   override protected def beforeAll(): Unit = {
@@ -57,7 +58,8 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    WireMock.reset()
+    if (resetWireMockMappings)
+      wireMockServer.resetMappings()
   }
 
   override protected def afterAll(): Unit = {

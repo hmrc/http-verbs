@@ -45,7 +45,7 @@ class SupportSpec
 
       // auth header is forwarded on for internal calls
       httpClient.POST[String, HttpResponse](
-        url     = url"$stubUrl/create-user",
+        url     = url"$wireMockUrl/create-user",
         body    = "body",
         headers = Seq.empty
       ).futureValue.status shouldBe 200
@@ -68,7 +68,7 @@ class SupportSpec
 
       // auth header is *not* forwarded on for external calls
       httpClient.POST[String, HttpResponse](
-        url     = url"$externalStubUrl/create-user",
+        url     = url"$externalWireMockUrl/create-user",
         body    = "body",
         headers = Seq.empty
       ).futureValue.status shouldBe 200
@@ -80,7 +80,7 @@ class SupportSpec
 
       // auth header can be forwarded explicitly
       httpClient.POST[String, HttpResponse](
-        url     = url"$externalStubUrl/create-user",
+        url     = url"$externalWireMockUrl/create-user",
         body    = "body",
         headers = hc.headers(Seq(hc.names.authorisation))
       ).futureValue.status shouldBe 200

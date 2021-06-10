@@ -60,26 +60,35 @@ object AppDependencies {
     "com.typesafe.play" %% "play-test" % play28Version % Test
   )
 
+  private def scalaTestVerson(playVersion: String): String =
+    if      (playVersion == play26Version) "3.0.8" // scalatestplus-play "3.1.3"
+    else if (playVersion == play27Version) "3.0.8" // scalatestplus-play "4.0.3"
+    else                                   "3.1.1" // scalatestplus-play "5.1.0"
+
   // Dependencies for http-verbs-test modules
-  val testCompileCommon = Seq(
-    "org.scalatest"          %% "scalatest"    % "3.2.3",
+  def testCompileCommon(playVersion: String) = Seq(
+    "org.scalatest"          %% "scalatest"    % scalaTestVerson(playVersion), // version provided transitively is chosen for compatibility with scalatestplus-play
     "com.github.tomakehurst" %  "wiremock"     % "1.58",
-    "com.vladsch.flexmark"   %  "flexmark-all" % "0.35.10",
-    "org.slf4j"              %  "slf4j-simple" % "1.7.30" % Test
+    "org.scalatest"          %% "scalatest"    % "3.2.3"   % Test,
+    "com.vladsch.flexmark"   %  "flexmark-all" % "0.35.10" % Test,
+    "org.slf4j"              %  "slf4j-simple" % "1.7.30"  % Test
   )
 
-  val testCompilePlay26 = Seq(
-    "com.typesafe.play" %% "play-ws"   % play26Version,
-    "com.typesafe.play" %% "play-json" % "2.6.14"
-  )
+  val testCompilePlay26 =
+    testCompileCommon(play26Version) ++ Seq(
+      "com.typesafe.play" %% "play-ws"   % play26Version,
+      "com.typesafe.play" %% "play-json" % "2.6.14"
+    )
 
-  val testCompilePlay27 = Seq(
-    "com.typesafe.play" %% "play-ws"   % play27Version,
-    "com.typesafe.play" %% "play-json" % "2.7.4"
-  )
+  val testCompilePlay27 =
+    testCompileCommon(play27Version) ++ Seq(
+      "com.typesafe.play" %% "play-ws"   % play27Version,
+      "com.typesafe.play" %% "play-json" % "2.7.4"
+    )
 
-  val testCompilePlay28 = Seq(
-    "com.typesafe.play" %% "play-ws"   % play28Version,
-    "com.typesafe.play" %% "play-json" % "2.8.1"
-  )
+  val testCompilePlay28 =
+    testCompileCommon(play28Version) ++ Seq(
+      "com.typesafe.play" %% "play-ws"   % play28Version,
+      "com.typesafe.play" %% "play-json" % "2.8.1"
+    )
 }

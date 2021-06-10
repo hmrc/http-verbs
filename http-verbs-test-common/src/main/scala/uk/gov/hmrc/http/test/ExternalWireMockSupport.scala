@@ -19,8 +19,7 @@ package uk.gov.hmrc.http.test
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import org.scalatest.{BeforeAndAfterAll, Suite}
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 import org.slf4j.{Logger, LoggerFactory}
 
 trait ExternalWireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
@@ -28,29 +27,31 @@ trait ExternalWireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach 
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-   // since only "localhost" is registered in `internalServiceHostPatterns` as an internal host,
-   // this allows us to use wireMock to test differences when calling hosts considered external.
-  lazy val externalStubHost      : String         = "127.0.0.1"
+   // "127.0.0.1" allows us to test locally, but is considered an external host by http-verbs since only "localhost" is
+   // registered in `internalServiceHostPatterns` as an internal host.
+  lazy val externalWireMockHost  : String         = "127.0.0.1"
   // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
   // it up front (rather than query the running server), and allow overriding.
-  lazy val externalStubPort      : Int            = PortFinder.findFreePort(portRange = 6001 to 7000)
-  lazy val externalWireMockServer: WireMockServer = new WireMockServer(wireMockConfig().port(externalStubPort))
+  lazy val externalWireMockPort  : Int            = PortFinder.findFreePort(portRange = 6001 to 7000)
+  lazy val externalWireMockServer: WireMockServer = new WireMockServer(wireMockConfig().port(externalWireMockPort))
+  lazy val externalWireMockUrl   : String         = s"http://$externalWireMockHost:$externalWireMockPort"
 
-  lazy val externalStubUrl = s"http://$externalStubHost:$externalStubPort"
+  /** If true (default) it will clear the wireMock settings before each test */
+  lazy val resetExternalWireMockMappings: Boolean = true
 
   def startExternalWireMock(): Unit =
     if (!externalWireMockServer.isRunning) {
       externalWireMockServer.start()
       // Note, if we use `ExternalWireMockSupport` in addition to `WireMockSupport`, then we can't use WireMock statically
       // since it's ambiguous.
-      WireMock.configureFor(externalStubHost, externalWireMockServer.port())
-      logger.info(s"Started external WireMock server on host: $externalStubHost, port: ${externalWireMockServer.port()}")
+      WireMock.configureFor(externalWireMockHost, externalWireMockServer.port())
+      logger.info(s"Started external WireMock server on host: $externalWireMockHost, port: ${externalWireMockServer.port()}")
     }
 
   def stopExternalWireMock(): Unit =
     if (externalWireMockServer.isRunning) {
       externalWireMockServer.stop()
-      logger.info(s"Stopped external WireMock server on host: $externalStubHost, port: $externalStubPort")
+      logger.info(s"Stopped external WireMock server on host: $externalWireMockHost, port: $externalWireMockPort")
     }
 
   override protected def beforeAll(): Unit = {
@@ -60,7 +61,8 @@ trait ExternalWireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach 
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    WireMock.reset()
+    if (resetExternalWireMockMappings)
+      externalWireMockServer.resetMappings()
   }
 
   override protected def afterAll(): Unit = {
