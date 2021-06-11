@@ -96,17 +96,47 @@ client.GET(url = url"https://internalhost/api", headers = Seq("AdditionHeader" -
 
 ## Testing
 
-The ResponseMatchers class provides some useful logic for testing http-related code.
-
 In your SBT build add the following in your test dependencies:
 
 ```scala
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs-test-play-xx" % "x.x.x" % Test
 ```
 
-We also recommend that Wiremock is used for testing http-verbs code, with extensive assertions on the URL, Headers, and Body fields for both requests and responses. This will test most things, doesn't involve "mocking what you don't own", and ensures that changes to this library will be caught.
+We recommend that [Wiremock](http://wiremock.org/) is used for testing http-verbs code, with extensive assertions on the URL, Headers, and Body fields for both requests and responses. This will test most things, doesn't involve "mocking what you don't own", and ensures that changes to this library will be caught.
 
-The only notable exception to this advice is when testing code that will interact with external-hosts. In your tests, you should set the host to `127.0.0.1` or similar, as `localhost` will get identified as an internal-host. The behaviour of propagating the headers differs based on this.
+The `WireMockSupport` trait helps set up WireMock for your tests. It provides `wireMockHost`, `wireMockPort` and `wireMockUrl` which can be used to configure your client appropriately.
+
+e.g. with an application:
+```scala
+class MyConnectorSpec extends WireMockSupport with GuiceOneAppPerSuite {
+  override def fakeApplication(): Application =
+    new GuiceApplicationBuilder()
+      .configure(
+        "connector.host" -> wireMockHost,
+        "connector.port" -> wireMockPort
+      ).build()
+
+  private val connector = app.injector.instanceOf[MyConnector]
+}
+```
+
+The `HttpClientSupport` trait can provide an instance of HttpClient as an alternative to instanciating the application:
+```scala
+class MyConnectorSpec extends WireMockSupport with HttpClientSupport {
+  private val connector = new MyConnector(
+      httpClient,
+      Configuration("connector.url" -> wireMockUrl)
+  )
+}
+```
+
+The `ExternalWireMockSupport` trait is an alternative to `WireMockSupport` which uses `127.0.0.1` instead of `localhost` for the hostname which is treated as an external host for header forwarding rules. This should be used for tests of connectors which call endpoints external to the platform. The variable `externalWireMockHost` (or `externalWireMockUrl`) should be used to provide the hostname in configuration.
+
+Both `WireMockSupport` and `ExternalWireMockSupport` can be used together for integration tests if required.
+
+
+The `ResponseMatchers` trait provides some useful logic for testing responses.
+
 
 
 ## License ##

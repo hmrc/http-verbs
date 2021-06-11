@@ -27,12 +27,29 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  lazy val wireMockHost  : String         = "localhost" // this has to match the configuration in `internalServiceHostPatterns`
-  // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
-  // it up front (rather than query the running server), and allow overriding.
-  lazy val wireMockPort  : Int            = PortFinder.findFreePort(portRange = 6001 to 7000)
-  lazy val wireMockServer: WireMockServer = new WireMockServer(wireMockConfig().port(wireMockPort))
-  lazy val wireMockUrl   : String         = s"http://$wireMockHost:$wireMockPort"
+  lazy val wireMockHost: String  =
+    // this has to match the configuration in `internalServiceHostPatterns`
+    "localhost"
+  lazy val wireMockPort: Int =
+    // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
+    // it up front (rather than query the running server), and allow overriding.
+    PortFinder.findFreePort(portRange = 6001 to 7000)
+
+  lazy val wireMockRootDirectory: String =
+    // wiremock doesn't look in the classpath, it uses src/test/resources by default.
+    // since play projects use the non-standard `test/resources` we should attempt to identify the path
+    java.lang.ClassLoader.getSystemClassLoader.asInstanceOf[java.net.URLClassLoader]
+      .getURLs.head.getPath
+
+  lazy val wireMockServer: WireMockServer =
+    new WireMockServer(
+      wireMockConfig()
+        .port(wireMockPort)
+        .withRootDirectory(wireMockRootDirectory)
+    )
+
+  lazy val wireMockUrl: String =
+    s"http://$wireMockHost:$wireMockPort"
 
   /** If true (default) it will clear the wireMock settings before each test */
   lazy val resetWireMockMappings: Boolean = true
@@ -42,7 +59,7 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
       wireMockServer.start()
       // this initialises static access to `WireMock` rather than calling functions on the wireMockServer instance itself
       WireMock.configureFor(wireMockHost, wireMockServer.port())
-      logger.info(s"Started WireMock server on host: $wireMockHost, port: ${wireMockServer.port()}")
+      logger.info(s"Started WireMock server on host: $wireMockHost, port: ${wireMockServer.port()}, rootDirectory: $wireMockRootDirectory")
     }
 
   def stopWireMock(): Unit =

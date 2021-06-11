@@ -27,14 +27,31 @@ trait ExternalWireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach 
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-   // "127.0.0.1" allows us to test locally, but is considered an external host by http-verbs since only "localhost" is
-   // registered in `internalServiceHostPatterns` as an internal host.
-  lazy val externalWireMockHost  : String         = "127.0.0.1"
-  // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
-  // it up front (rather than query the running server), and allow overriding.
-  lazy val externalWireMockPort  : Int            = PortFinder.findFreePort(portRange = 6001 to 7000)
-  lazy val externalWireMockServer: WireMockServer = new WireMockServer(wireMockConfig().port(externalWireMockPort))
-  lazy val externalWireMockUrl   : String         = s"http://$externalWireMockHost:$externalWireMockPort"
+  lazy val externalWireMockHost: String =
+    // "127.0.0.1" allows us to test locally, but is considered an external host by http-verbs since only "localhost" is
+    // registered in `internalServiceHostPatterns` as an internal host.
+    "127.0.0.1"
+
+  lazy val externalWireMockPort: Int =
+    // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
+    // it up front (rather than query the running server), and allow overriding.
+    PortFinder.findFreePort(portRange = 6001 to 7000)
+
+  lazy val externalWireMockRootDirectory: String =
+    // wiremock doesn't look in the classpath, it uses src/test/resources by default.
+    // since play projects use the non-standard `test/resources` we should attempt to identify the path
+    java.lang.ClassLoader.getSystemClassLoader.asInstanceOf[java.net.URLClassLoader]
+      .getURLs.head.getPath
+
+  lazy val externalWireMockServer: WireMockServer =
+    new WireMockServer(
+      wireMockConfig()
+        .port(externalWireMockPort)
+        .withRootDirectory(externalWireMockRootDirectory)
+    )
+
+  lazy val externalWireMockUrl: String =
+    s"http://$externalWireMockHost:$externalWireMockPort"
 
   /** If true (default) it will clear the wireMock settings before each test */
   lazy val resetExternalWireMockMappings: Boolean = true
@@ -45,7 +62,7 @@ trait ExternalWireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach 
       // Note, if we use `ExternalWireMockSupport` in addition to `WireMockSupport`, then we can't use WireMock statically
       // since it's ambiguous.
       WireMock.configureFor(externalWireMockHost, externalWireMockServer.port())
-      logger.info(s"Started external WireMock server on host: $externalWireMockHost, port: ${externalWireMockServer.port()}")
+      logger.info(s"Started external WireMock server on host: $externalWireMockHost, port: ${externalWireMockServer.port()}, rootDirectory: $externalWireMockRootDirectory")
     }
 
   def stopExternalWireMock(): Unit =
