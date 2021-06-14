@@ -135,7 +135,7 @@ The `ExternalWireMockSupport` trait is an alternative to `WireMockSupport` which
 Both `WireMockSupport` and `ExternalWireMockSupport` can be used together for integration tests if required.
 
 
-The `ResponseMatchers` trait provides some useful logic for testing responses.
+The `ResponseMatchers` trait provides some useful helpers for testing responses.
 
 
 

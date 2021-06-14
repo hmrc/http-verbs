@@ -40,8 +40,8 @@ trait ExternalWireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach 
   lazy val externalWireMockRootDirectory: String =
     // wiremock doesn't look in the classpath, it uses src/test/resources by default.
     // since play projects use the non-standard `test/resources` we should attempt to identify the path
-    java.lang.ClassLoader.getSystemClassLoader.asInstanceOf[java.net.URLClassLoader]
-      .getURLs.head.getPath
+    // note, it may require `Test / fork := true` in sbt (or just override explicitly)
+    System.getProperty("java.class.path").split(":").head
 
   lazy val externalWireMockServer: WireMockServer =
     new WireMockServer(

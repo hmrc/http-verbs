@@ -23,30 +23,73 @@ import com.typesafe.config.ConfigFactory
 import org.apache.commons.codec.binary.Base64
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import play.api.libs.json.{Reads, Writes}
+import org.scalatest.wordspec.AnyWordSpec
+import play.api.libs.json.{Json, Reads, Writes, __}
+import play.api.libs.functional.syntax._
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.examples.utils._
 import uk.gov.hmrc.http.test.{HttpClientSupport, WireMockSupport}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 class Examples
-  extends AnyWordSpecLike
+  extends AnyWordSpec
+     with Matchers
      with ScalaFutures
      with IntegrationPatience
      with HttpClientSupport
-     with WireMockSupport
-     with Matchers {
+     with WireMockSupport {
 
   class CustomException(message: String) extends Exception(message)
 
-  private implicit val userWrites: Writes[User] = User.writes
-  private implicit val userIdentifierWrites: Reads[UserIdentifier] = UserIdentifier.reads
-  private implicit val bankHolidaysReads: Reads[BankHolidays] = BankHolidays.reads
+  case class BankHoliday(
+    title: String,
+    date : LocalDate
+  )
+
+  object BankHoliday {
+    val reads: Reads[BankHoliday] =
+      ( (__ \ "title").read[String]
+      ~ (__ \ "date" ).read[LocalDate]
+      )(BankHoliday.apply _)
+  }
+
+  case class BankHolidays(
+    events: Seq[BankHoliday]
+  )
+
+
+  object BankHolidays {
+    val reads: Reads[BankHolidays] = {
+      implicit val bhr: Reads[BankHoliday] = BankHoliday.reads
+      (__ \ "events").read[Seq[BankHoliday]].map(BankHolidays.apply)
+    }
+  }
+
+  case class User(
+    email   : String,
+    fullName: String
+  )
+
+  object User {
+    val writes: Writes[User] =
+      ( (__ \ "email"   ).write[String]
+      ~ (__ \ "fullName").write[String]
+      )(unlift(User.unapply))
+  }
+
+  case class UserIdentifier(id: String)
+
+  object UserIdentifier {
+    val reads = (__ \ "id").read[String].map(UserIdentifier.apply)
+  }
+
+  private implicit val uw : Writes[User]          = User.writes
+  private implicit val uir: Reads[UserIdentifier] = UserIdentifier.reads
+  private implicit val bhr: Reads[BankHolidays]   = BankHolidays.reads
 
   "A verb" should {
     "allow the user to set additional headers" in {
@@ -54,7 +97,7 @@ class Examples
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
       httpClient.GET[BankHolidays](
@@ -75,7 +118,7 @@ class Examples
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
       httpClient.GET[BankHolidays](url"$wireMockUrl/bank-holidays.json").futureValue
@@ -144,7 +187,7 @@ class Examples
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
       httpClient.GET[BankHolidays](s"$wireMockUrl/bank-holidays.json").futureValue
@@ -159,7 +202,7 @@ class Examples
     "read some json and return a case class" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
       val bankHolidays: BankHolidays = httpClient.GET[BankHolidays](url"$wireMockUrl/bank-holidays.json").futureValue
@@ -169,12 +212,12 @@ class Examples
     "read some json and return a raw http response" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
       val response: HttpResponse = httpClient.GET[HttpResponse](url"$wireMockUrl/bank-holidays.json").futureValue
       response.status shouldBe 200
-      response.body shouldBe JsonPayloads.bankHolidays
+      Json.parse(response.body) shouldBe Json.parse(Source.fromResource("__files/bankHolidays.json").mkString)
     }
 
     "be able to handle a 404 without throwing an exception" in {
@@ -236,7 +279,7 @@ class Examples
     "read the response body of the POST into a case class" in {
       stubFor(
         post(urlEqualTo("/create-user"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.userId))
+          .willReturn(aResponse().withStatus(200).withBodyFile("userId.json"))
       )
 
       val user = User("me@mail.com", "John Smith")
@@ -268,7 +311,7 @@ class Examples
     "Return some data when getting a 200 back" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.xml"))
-          .willReturn(aResponse().withStatus(200).withBody(XmlPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.xml"))
       )
 
       val bankHolidays = httpClient.GET[HttpResponse](url"$wireMockUrl/bank-holidays.xml")
@@ -306,7 +349,7 @@ class Examples
     "Return some data when getting a 200 back" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
       val bankHolidays = httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/bank-holidays.json").futureValue

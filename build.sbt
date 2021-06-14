@@ -105,7 +105,8 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
-    libraryDependencies ++= AppDependencies.testCompilePlay26
+    libraryDependencies ++= AppDependencies.testCompilePlay26,
+    Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay26)
 
@@ -113,7 +114,8 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
-    libraryDependencies ++= AppDependencies.testCompilePlay27
+    libraryDependencies ++= AppDependencies.testCompilePlay27,
+    Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay27)
 
@@ -121,6 +123,7 @@ lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
-    libraryDependencies ++= AppDependencies.testCompilePlay28
+    libraryDependencies ++= AppDependencies.testCompilePlay28,
+    Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay28)

@@ -30,6 +30,7 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
   lazy val wireMockHost: String  =
     // this has to match the configuration in `internalServiceHostPatterns`
     "localhost"
+
   lazy val wireMockPort: Int =
     // we lookup a port ourselves rather than using `wireMockConfig().dynamicPort()` since it's simpler to provide
     // it up front (rather than query the running server), and allow overriding.
@@ -38,8 +39,8 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
   lazy val wireMockRootDirectory: String =
     // wiremock doesn't look in the classpath, it uses src/test/resources by default.
     // since play projects use the non-standard `test/resources` we should attempt to identify the path
-    java.lang.ClassLoader.getSystemClassLoader.asInstanceOf[java.net.URLClassLoader]
-      .getURLs.head.getPath
+    // note, it may require `Test / fork := true` in sbt (or just override explicitly)
+    System.getProperty("java.class.path").split(":").head
 
   lazy val wireMockServer: WireMockServer =
     new WireMockServer(

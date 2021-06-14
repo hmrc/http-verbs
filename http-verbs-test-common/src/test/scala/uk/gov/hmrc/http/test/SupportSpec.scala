@@ -19,20 +19,20 @@ package uk.gov.hmrc.http.test
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.wordspec.AnyWordSpec
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SupportSpec
-  extends AnyWordSpecLike
+  extends AnyWordSpec
+     with Matchers
      with ScalaFutures
      with IntegrationPatience
      with HttpClientSupport
      with WireMockSupport
-     with ExternalWireMockSupport
-     with Matchers {
+     with ExternalWireMockSupport {
 
   "WireMockSupport" should {
     "allow the user to simulate internal calls" in {
