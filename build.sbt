@@ -5,12 +5,12 @@ import sbt._
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
-val silencerVersion = "1.7.1"
+val silencerVersion = "1.7.5"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
   majorVersion := 13,
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.12.14",
   isPublicArtefact := true,
   scalacOptions ++= Seq("-feature"),
   libraryDependencies ++= Seq(
@@ -42,19 +42,21 @@ lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
     commonSettings
   )
 
-def sharedSources = Seq(
-  Compile / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/main/scala",
-  Compile / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/main/resources",
-  Test    / unmanagedSourceDirectories   += baseDirectory.value / "../http-verbs-common/src/test/scala",
-  Test    / unmanagedResourceDirectories += baseDirectory.value / "../http-verbs-common/src/test/resources"
+def shareSources(location: String) = Seq(
+  Compile / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/main/scala",
+  Compile / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/main/resources",
+  Test    / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/test/scala",
+  Test    / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/test/resources"
 )
-
 def copySources(module: Project) = Seq(
   Compile / scalaSource       := (module / Compile / scalaSource      ).value,
   Compile / resourceDirectory := (module / Compile / resourceDirectory).value,
   Test    / scalaSource       := (module / Test    / scalaSource      ).value,
   Test    / resourceDirectory := (module / Test    / resourceDirectory).value
 )
+
+lazy val sharedSources =
+  shareSources("http-verbs-common")
 
 lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-26"))
   .settings(
@@ -79,7 +81,7 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
       AppDependencies.coreCompilePlay27 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay27,
-    Test    / fork := true // akka is not unloaded properly, which can affect other tests
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .dependsOn(httpVerbs)
 
@@ -92,36 +94,36 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
       AppDependencies.coreCompilePlay28 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay28,
-    Test    / fork := true // akka is not unloaded properly, which can affect other tests
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .dependsOn(httpVerbs)
 
-lazy val httpVerbsTestCommon = Project("http-verbs-test-common", file("http-verbs-test-common"))
-  .settings(
-    commonSettings,
-    libraryDependencies ++= AppDependencies.testCompileCommon,
-  )
+lazy val sharedTestSources =
+  shareSources("http-verbs-test-common")
 
 lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-verbs-test-play-26"))
   .settings(
     commonSettings,
-    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
-    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay26
+    sharedTestSources,
+    libraryDependencies ++= AppDependencies.testCompilePlay26,
+    Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay26)
 
 lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-verbs-test-play-27"))
   .settings(
     commonSettings,
-    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
-    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay27
+    sharedTestSources,
+    libraryDependencies ++= AppDependencies.testCompilePlay27,
+    Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay27)
 
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
     commonSettings,
-    Compile / scalaSource := (httpVerbsTestCommon / Compile / scalaSource).value,
-    libraryDependencies ++= AppDependencies.testCompileCommon ++ AppDependencies.testCompilePlay28
+    sharedTestSources,
+    libraryDependencies ++= AppDependencies.testCompilePlay28,
+    Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay28)

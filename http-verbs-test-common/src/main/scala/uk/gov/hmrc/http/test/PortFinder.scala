@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.examples.utils
+package uk.gov.hmrc.http.test
 
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.wordspec.AnyWordSpecLike
+import java.net.ServerSocket
 
+import scala.util.Try
 
-trait WiremockTestServer extends AnyWordSpecLike with BeforeAndAfterEach {
+object PortFinder {
 
-  val wireMockServer = new WireMockServer(20001)
+  def findFreePort(portRange: Range, excluded: Int*): Int =
+    portRange
+      .find(port => !excluded.contains(port) && isFree(port))
+      .getOrElse(throw new Exception("No free port"))
 
-  override protected def beforeEach(): Unit = {
-    wireMockServer.start()
-    WireMock.configureFor("localhost", 20001)
-  }
-
-  override protected def afterEach(): Unit = {
-    wireMockServer.stop()
+  private def isFree(port: Int): Boolean = {
+    val triedSocket = Try {
+      val serverSocket = new ServerSocket(port)
+      Try(serverSocket.close())
+      serverSocket
+    }
+    triedSocket.isSuccess
   }
 }

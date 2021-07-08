@@ -14,72 +14,82 @@
  * limitations under the License.
  */
 
-/*
- * Copyright 2020 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package uk.gov.hmrc.http.examples
 
-import akka.actor.ActorSystem
-import com.github.tomakehurst.wiremock.client.WireMock._
-import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.commons.codec.binary.Base64
 import java.time.LocalDate
+
+import com.github.tomakehurst.wiremock.client.WireMock._
+import com.typesafe.config.ConfigFactory
+import org.apache.commons.codec.binary.Base64
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{Reads, Writes}
-import play.api.libs.ws.WSClient
-import uk.gov.hmrc.http.examples.utils._
+import org.scalatest.wordspec.AnyWordSpec
+import play.api.libs.json.{Json, Reads, Writes, __}
+import play.api.libs.functional.syntax._
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.play.http.ws.WSHttp
+import uk.gov.hmrc.http.test.{HttpClientSupport, WireMockSupport}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 class Examples
-  extends AnyWordSpecLike
+  extends AnyWordSpec
+     with Matchers
      with ScalaFutures
      with IntegrationPatience
-     with WiremockTestServer
-     with Matchers {
+     with HttpClientSupport
+     with WireMockSupport {
 
   class CustomException(message: String) extends Exception(message)
 
-  type HttpClient = HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut
+  case class BankHoliday(
+    title: String,
+    date : LocalDate
+  )
 
-  private lazy val app: Application = new GuiceApplicationBuilder().build()
+  object BankHoliday {
+    val reads: Reads[BankHoliday] =
+      ( (__ \ "title").read[String]
+      ~ (__ \ "date" ).read[LocalDate]
+      )(BankHoliday.apply _)
+  }
 
-  private def mkClient(config: Config) =
-    new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
-      override def wsClient: WSClient                 = app.injector.instanceOf[WSClient]
-      override protected def configuration: Config    = config
-      override val hooks: Seq[HttpHook]               = Seq.empty
-      override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
+  case class BankHolidays(
+    events: Seq[BankHoliday]
+  )
+
+
+  object BankHolidays {
+    val reads: Reads[BankHolidays] = {
+      implicit val bhr: Reads[BankHoliday] = BankHoliday.reads
+      (__ \ "events").read[Seq[BankHoliday]].map(BankHolidays.apply)
     }
+  }
 
-  private lazy val client: HttpClient = mkClient(config = ConfigFactory.load())
+  case class User(
+    email   : String,
+    fullName: String
+  )
 
-  private implicit val userWrites: Writes[User] = User.writes
-  private implicit val userIdentifierWrites: Reads[UserIdentifier] = UserIdentifier.reads
-  private implicit val bankHolidaysReads: Reads[BankHolidays] = BankHolidays.reads
+  object User {
+    val writes: Writes[User] =
+      ( (__ \ "email"   ).write[String]
+      ~ (__ \ "fullName").write[String]
+      )(unlift(User.unapply))
+  }
+
+  case class UserIdentifier(id: String)
+
+  object UserIdentifier {
+    val reads = (__ \ "id").read[String].map(UserIdentifier.apply)
+  }
+
+  private implicit val uw : Writes[User]          = User.writes
+  private implicit val uir: Reads[UserIdentifier] = UserIdentifier.reads
+  private implicit val bhr: Reads[BankHolidays]   = BankHolidays.reads
 
   "A verb" should {
     "allow the user to set additional headers" in {
@@ -87,16 +97,17 @@ class Examples
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      client.GET[BankHolidays](
-        url         = url"http://localhost:20001/bank-holidays.json",
+      httpClient.GET[BankHolidays](
+        url         = url"$wireMockUrl/bank-holidays.json",
         headers     = Seq("some-header" -> "header value")
       ).futureValue
 
       verify(getRequestedFor(urlEqualTo("/bank-holidays.json"))
-        .withHeader("some-header", equalTo("header value")))
+        .withHeader("some-header", equalTo("header value"))
+      )
     }
 
     "allow the user to set an authorization header using the header carrier for internal hosts" in {
@@ -107,10 +118,10 @@ class Examples
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      client.GET[BankHolidays](url"http://localhost:20001/bank-holidays.json").futureValue
+      httpClient.GET[BankHolidays](url"$wireMockUrl/bank-holidays.json").futureValue
 
       verify(
         getRequestedFor(urlEqualTo("/bank-holidays.json"))
@@ -126,11 +137,13 @@ class Examples
           .willReturn(aResponse().withStatus(200))
       )
 
-      client.POST[User, HttpResponse](
-        url     = url"http://localhost:20001/create-user",
-        body    = User("me@mail.com", "John Smith"),
-        headers = Seq("Authorization" -> "Basic dXNlcjoxMjM=")
-      ).futureValue
+      val response: HttpResponse =
+        httpClient.POST[User, HttpResponse](
+          url     = url"$wireMockUrl/create-user",
+          body    = User("me@mail.com", "John Smith"),
+          headers = Seq("Authorization" -> "Basic dXNlcjoxMjM=")
+        ).futureValue
+      response.status shouldBe 200
 
       verify(
         postRequestedFor(urlEqualTo("/create-user"))
@@ -142,11 +155,12 @@ class Examples
       implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization("Basic dXNlcjoxMjM=")))
 
       // for demonstration, we're initialising a client which considers `localhost` as an external host
-      val client: HttpClient = mkClient(config =
-        ConfigFactory.parseString(
-          """|internalServiceHostPatterns = []
-             |""".stripMargin
-        ).withFallback(ConfigFactory.load())
+      val httpClient: HttpClient = mkHttpClient(
+        config =
+          ConfigFactory.parseString(
+            """|internalServiceHostPatterns = []
+               |""".stripMargin
+          ).withFallback(ConfigFactory.load())
       )
 
       stubFor(
@@ -154,11 +168,13 @@ class Examples
           .willReturn(aResponse().withStatus(200))
       )
 
-      client.POST[User, HttpResponse](
-        url     = url"http://localhost:20001/create-user",
-        body    = User("me@mail.com", "John Smith"),
-        headers = hc.headers(Seq(hc.names.authorisation))
-      ).futureValue
+      val response: HttpResponse =
+        httpClient.POST[User, HttpResponse](
+          url     = url"$wireMockUrl/create-user",
+          body    = User("me@mail.com", "John Smith"),
+          headers = hc.headers(Seq(hc.names.authorisation))
+        ).futureValue
+      response.status shouldBe 200
 
       verify(
         postRequestedFor(urlEqualTo("/create-user"))
@@ -171,12 +187,10 @@ class Examples
 
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      client.GET[BankHolidays](
-        url         = "http://localhost:20001/bank-holidays.json"
-      ).futureValue
+      httpClient.GET[BankHolidays](s"$wireMockUrl/bank-holidays.json").futureValue
 
       verify(getRequestedFor(urlEqualTo("/bank-holidays.json")))
     }
@@ -188,22 +202,22 @@ class Examples
     "read some json and return a case class" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      val bankHolidays: BankHolidays = client.GET[BankHolidays](url"http://localhost:20001/bank-holidays.json").futureValue
+      val bankHolidays: BankHolidays = httpClient.GET[BankHolidays](url"$wireMockUrl/bank-holidays.json").futureValue
       bankHolidays.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
     "read some json and return a raw http response" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      val response: HttpResponse = client.GET[HttpResponse](url"http://localhost:20001/bank-holidays.json").futureValue
+      val response: HttpResponse = httpClient.GET[HttpResponse](url"$wireMockUrl/bank-holidays.json").futureValue
       response.status shouldBe 200
-      response.body shouldBe JsonPayloads.bankHolidays
+      Json.parse(response.body) shouldBe Json.parse(Source.fromResource("__files/bankHolidays.json").mkString)
     }
 
     "be able to handle a 404 without throwing an exception" in {
@@ -213,7 +227,7 @@ class Examples
       )
 
       // By adding an Option to your case class, the 404 is translated into None
-      val bankHolidays: Option[BankHolidays] = client.GET[Option[BankHolidays]](url"http://localhost:20001/404.json").futureValue
+      val bankHolidays: Option[BankHolidays] = httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/404.json").futureValue
       bankHolidays shouldBe None
     }
 
@@ -225,7 +239,7 @@ class Examples
           .willReturn(aResponse().withStatus(401))
       )
 
-      client.GET[Option[BankHolidays]](url"http://localhost:20001/401.json")
+      httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/401.json")
         .recover {
           case Upstream4xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 4xx errors
         }.futureValue
@@ -239,7 +253,7 @@ class Examples
           .willReturn(aResponse().withStatus(500))
       )
 
-      client.GET[Option[BankHolidays]](url"http://localhost:20001/500.json")
+      httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/500.json")
         .recover {
           case Upstream5xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 5xx errors
         }.futureValue
@@ -258,20 +272,20 @@ class Examples
       val user = User("me@mail.com", "John Smith")
 
       // Use HttpResponse when the API always returns an empty body
-      val response: HttpResponse = client.POST[User, HttpResponse](url"http://localhost:20001/create-user", user).futureValue
+      val response: HttpResponse = httpClient.POST[User, HttpResponse](url"$wireMockUrl/create-user", user).futureValue
       response.status shouldBe 204
     }
 
     "read the response body of the POST into a case class" in {
       stubFor(
         post(urlEqualTo("/create-user"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.userId))
+          .willReturn(aResponse().withStatus(200).withBodyFile("userId.json"))
       )
 
       val user = User("me@mail.com", "John Smith")
 
       // Use a case class when the API returns a json body
-      val userId: UserIdentifier = client.POST[User, UserIdentifier](url"http://localhost:20001/create-user", user).futureValue
+      val userId: UserIdentifier = httpClient.POST[User, UserIdentifier](url"$wireMockUrl/create-user", user).futureValue
       userId.id shouldBe "123"
     }
   }
@@ -297,10 +311,10 @@ class Examples
     "Return some data when getting a 200 back" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.xml"))
-          .willReturn(aResponse().withStatus(200).withBody(XmlPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.xml"))
       )
 
-      val bankHolidays = client.GET[HttpResponse](url"http://localhost:20001/bank-holidays.xml")
+      val bankHolidays = httpClient.GET[HttpResponse](url"$wireMockUrl/bank-holidays.xml")
         .map(responseHandler).futureValue
 
       bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
@@ -312,7 +326,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody("Not XML"))
       )
 
-      client.GET[HttpResponse](url"http://localhost:20001/bank-holidays.xml").map(responseHandler)
+      httpClient.GET[HttpResponse](url"$wireMockUrl/bank-holidays.xml").map(responseHandler)
         .failed.futureValue shouldBe a [CustomException]
     }
   }
@@ -335,10 +349,10 @@ class Examples
     "Return some data when getting a 200 back" in {
       stubFor(
         get(urlEqualTo("/bank-holidays.json"))
-          .willReturn(aResponse().withStatus(200).withBody(JsonPayloads.bankHolidays))
+          .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      val bankHolidays = client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").futureValue
+      val bankHolidays = httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/bank-holidays.json").futureValue
       bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
     }
 
@@ -348,7 +362,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBody("Not JSON"))
       )
 
-      client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
+      httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
     }
 
     "Return None when getting a 404 back" in {
@@ -357,7 +371,7 @@ class Examples
           .willReturn(aResponse().withStatus(404))
       )
 
-      val bankHolidays = client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").futureValue
+      val bankHolidays = httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/bank-holidays.json").futureValue
       bankHolidays shouldBe None
     }
 
@@ -367,7 +381,7 @@ class Examples
           .willReturn(aResponse().withStatus(418))
       )
 
-      client.GET[Option[BankHolidays]](url"http://localhost:20001/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
+      httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/bank-holidays.json").failed.futureValue shouldBe a [CustomException]
     }
   }
 }
