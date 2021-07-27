@@ -31,7 +31,7 @@ trait WSRequest extends WSRequestBuilder {
       .foldLeft(wsClient.url(url).withHttpHeaders(headers: _*))(_ withProxyServer _)
 }
 
-@deprecated("WSProxy is not required. Behaviour has been inlined into WSRequest", "5.8.0")
+@deprecated("WSProxy is not required. Behaviour has been inlined into WSRequest", "13.9.0")
 trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
@@ -43,10 +43,9 @@ trait WSProxy extends WSRequest {
     }
 }
 
-// - Provide a ProxyWireMockSupport for testing? requires removing "localhost" from nonProxyHosts and running a mock?
 object WSProxyConfiguration {
 
-  @deprecated("Use buildWsProxyServer instead. See docs for differences.", "5.8.0")
+  @deprecated("Use buildWsProxyServer instead. See docs for differences.", "13.9.0")
   def apply(configPrefix: String, configuration: Configuration): Option[WSProxyServer] = {
     val proxyRequired =
       configuration.getOptional[Boolean](s"$configPrefix.proxyRequiredForThisEnvironment").getOrElse(true)
@@ -64,26 +63,17 @@ object WSProxyConfiguration {
     else None
   }
 
-  /** Replaces `apply`. The differences are:
-    * - configPrefix is fixed to "bootstrap.http.proxy".. For typical usage, this means that configuration "proxy."
-    *   changes to "bootstrap.http.proxy.".
-    * - "proxy.proxyRequiredForThisEnvironment" has been replaced with "bootstrap.http.proxy.enabled", but note, it
-    *   defaults to false (rather than true).
-    * - nonProxyHosts can be configured by "bootstrap.http.proxy.nonProxyHosts". It defaults to not apply the proxy to
-    *   internal calls (platform and localhost).
-    * Given the addition of nonProxyHosts, the reason for "bootstrap.http.proxy.enabled" is to avoid configuring the proxy.
-    */
   def buildWsProxyServer(configuration: Configuration): Option[WSProxyServer] =
-    if (configuration.get[Boolean]("bootstrap.http.proxy.enabled")) {
+    if (configuration.get[Boolean]("proxy.enabled")) {
       import scala.collection.JavaConverters.iterableAsScalaIterableConverter
       Some(
         DefaultWSProxyServer(
-          protocol      = Some(configuration.get[String]("bootstrap.http.proxy.protocol")), // this defaults to https, do we need it to be required in configuration?
-          host          = configuration.get[String]("bootstrap.http.proxy.host"),
-          port          = configuration.get[Int]("bootstrap.http.proxy.port"),
-          principal     = configuration.getOptional[String]("bootstrap.http.proxy.username"),
-          password      = configuration.getOptional[String]("bootstrap.http.proxy.password"),
-          nonProxyHosts = Some(configuration.underlying.getStringList("bootstrap.http.proxy.nonProxyHosts").asScala.toSeq)
+          protocol      = Some(configuration.get[String]("proxy.protocol")),
+          host          = configuration.get[String]("proxy.host"),
+          port          = configuration.get[Int]("proxy.port"),
+          principal     = configuration.getOptional[String]("proxy.username"),
+          password      = configuration.getOptional[String]("proxy.password"),
+          nonProxyHosts = Some(configuration.underlying.getStringList("proxy.nonProxyHosts").asScala.toSeq)
         )
       )
     }

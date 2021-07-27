@@ -1,3 +1,45 @@
+## Version 13.9.0
+
+| Change | Complexity | Fix  |
+|--------------------------------------------------------------|------------|-----------------------------------------------|
+| WSProxy changes  | Minor  | Optional change |
+
+### WSProxy
+`WSProxy` has been deprecated, the behaviour is avilable on `WSRequest`.
+`WSProxyConfiguration.apply` has been deprecated, use `WSProxyConfiguration.buildWsProxyServer` instead.
+
+There are some differences with `WSProxyConfiguration.buildWsProxyServer`:
+  * configPrefix is fixed to `proxy`.
+  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `proxy.enabled`, but note, it
+      defaults to false (rather than true).
+  * nonProxyHosts can be configured by `proxy.nonProxyHosts`. It defaults to not apply the proxy to
+  * internal calls (platform and localhost).
+    Given the addition of nonProxyHosts, the reason for `proxy.enabled` is to avoid configuring the proxy.
+
+What this means:
+  You will **not** require two HttpClient implementations for using a proxy. A single HttpClient will be sufficient. When enabled by `proxy.enabled`, you can configure which hosts the proxy applies to with `proxy.nonProxyHosts`. By default this excludes `localhost`.
+
+
+```scala
+@Singleton
+class DefaultHttpClient @Inject()(
+  config: Configuration,
+  override val wsClient: WSClient,
+  override protected val actorSystem: ActorSystem
+) extends uk.gov.hmrc.http.HttpClient
+     with WSHttp {
+
+  override lazy val configuration: Config = config.underlying
+
+  override val hooks: Seq[HttpHook] = Seq.empty
+
+  override def wsProxyServer: Option[WSProxyServer] =
+    WSProxyConfiguration.buildWsProxyServer(config)
+}
+```
+
+
+
 ## Version 13.0.0
 
 | Change | Complexity | Fix  |
