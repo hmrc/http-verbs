@@ -21,14 +21,17 @@ import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayW
 
 trait WSRequest extends WSRequestBuilder {
 
+  def wsProxyServer: Option[WSProxyServer] = None
+
   override def buildRequest[A](
     url    : String,
     headers: Seq[(String, String)]
   ): PlayWSRequest =
-    wsClient.url(url)
-      .withHttpHeaders(headers: _*)
+    wsProxyServer
+      .foldLeft(wsClient.url(url).withHttpHeaders(headers: _*))(_ withProxyServer _)
 }
 
+@deprecated("Trait has been inlined into WSRequest", "5.8.0")
 trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
@@ -40,6 +43,16 @@ trait WSProxy extends WSRequest {
     }
 }
 
+// TODO deprecate this
+// - package should be uk.gov.hmrc.http...
+// - It has an `apply` function which doesn't return an instance of `WSProxyConfiguration`
+// - error messages hide the fully qualified name of the key
+// - proxyRequiredForThisEnvironment should default to false (and have a better name)
+// - `configPrefix` shouldn't be parameterised, then we can move defaults to reference.conf
+// - `configPrefix` should be `bootstrap.http.proxy`?
+// - Needs `nonProxyHosts` (can't reuse `internalServiceHostPatterns` since is regex format...)
+// - Provide a ProxyWireMockSupport for testing? requires removing "localhost" from nonProxyHosts and running a mock?
+// TODO @deprecated("Use ... instead", "5.8.0")
 object WSProxyConfiguration {
 
   def apply(configPrefix: String, configuration: Configuration): Option[WSProxyServer] = {
@@ -51,16 +64,11 @@ object WSProxyConfiguration {
 
   private def parseProxyConfiguration(configPrefix: String, configuration: Configuration) =
     DefaultWSProxyServer(
-      protocol = configuration
-        .getOptional[String](s"$configPrefix.protocol")
-        .orElse(throw ProxyConfigurationException("protocol")),
-      host =
-        configuration.getOptional[String](s"$configPrefix.host").getOrElse(throw ProxyConfigurationException("host")),
-      port      = configuration.getOptional[Int](s"$configPrefix.port").getOrElse(throw ProxyConfigurationException("port")),
+      protocol  = Some(configuration.get[String](s"$configPrefix.protocol")), // this defaults to https, do we need it to be required in configuration?
+      host      = configuration.get[String](s"$configPrefix.host"),
+      port      = configuration.get[Int](s"$configPrefix.port"),
       principal = configuration.getOptional[String](s"$configPrefix.username"),
-      password  = configuration.getOptional[String](s"$configPrefix.password")
+      password  = configuration.getOptional[String](s"$configPrefix.password")/*,
+      nonProxyHosts = Some(Seq("*.service", "*.mdtp", "localhost")) // TODO move to reference.conf*/
     )
-
-  case class ProxyConfigurationException(key: String)
-      extends RuntimeException(s"Missing proxy configuration - key '$key' not found")
 }
