@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.play.http.ws
 
+import com.typesafe.config.Config
+import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest, WSClient}
 import play.api.Configuration
-import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest}
+import com.typesafe.config.ConfigFactory
 
 trait WSRequest extends WSRequestBuilder {
 
@@ -25,13 +27,12 @@ trait WSRequest extends WSRequestBuilder {
     url    : String,
     headers: Seq[(String, String)]
   ): PlayWSRequest =
-    wsClient.url(url)
-      .withHttpHeaders(headers: _*)
+    wsProxyServer
+      .foldLeft(wsClient.url(url).withHttpHeaders(headers: _*))(_ withProxyServer _)
 }
 
+@deprecated("Use HttpClient.withProxy instead", "13.9.0")
 trait WSProxy extends WSRequest {
-
-  def wsProxyServer: Option[WSProxyServer]
 
   override def buildRequest[A](url: String, headers: Seq[(String, String)]): PlayWSRequest =
     wsProxyServer match {

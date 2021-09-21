@@ -25,20 +25,57 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws.WSHttp
 import play.api.libs.ws.ahc.{AhcWSClientConfig, AhcWSClientConfigFactory}
+import play.api.libs.ws.WSProxyServer
 
 trait HttpClientSupport {
-  def mkHttpClient(config: Config = ConfigFactory.load(), ahcWsCconfig: AhcWSClientConfig = AhcWSClientConfig()) =
-    new HttpClient with WSHttp {
-      private implicit val as: ActorSystem = ActorSystem("test-actor-system")
-
-      @silent("deprecated")
-      private implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
-
-      override def wsClient: WSClient                 = play.api.libs.ws.ahc.AhcWSClient(AhcWSClientConfigFactory.forConfig(config))
-      override protected def configuration: Config    = config
-      override val hooks: Seq[HttpHook]               = Seq.empty
-      override protected def actorSystem: ActorSystem = as
-    }
+  def mkHttpClient(
+    config      : Config            = ConfigFactory.load(),
+    ahcWsCconfig: AhcWSClientConfig = AhcWSClientConfig()
+  ) =
+    new StandaloneHttpClient(config, ahcWsCconfig, wsProxyServer = None)
 
   lazy val httpClient: HttpClient = mkHttpClient()
+}
+
+private[test] class StandaloneHttpClient(
+  config                    : Config,
+  ahcWsConfig               : AhcWSClientConfig,
+  override val wsProxyServer: Option[WSProxyServer]
+) extends HttpClient with WSHttp {
+
+  private implicit val as: ActorSystem = ActorSystem("test-actor-system")
+
+  @silent("deprecated")
+  private implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
+
+  override def wsClient: WSClient                 = play.api.libs.ws.ahc.AhcWSClient(AhcWSClientConfigFactory.forConfig(config))
+  override protected def configuration: Config    = config
+  override val hooks: Seq[HttpHook]               = Seq.empty
+  override protected def actorSystem: ActorSystem = as
+
+  override def withUserAgent(userAgent: String): HttpClient = {
+    import scala.collection.JavaConverters._
+    new StandaloneHttpClient(
+      config = ConfigFactory.parseMap(Map("appName" -> userAgent).asJava).withFallback(config),
+      ahcWsConfig,
+      wsProxyServer
+    )
+  }
+
+  override def withProxy(): HttpClient =
+    this
+    // TODO is there any reason why we'd not want to silently ignore the proxy for tests?
+    /*new StandaloneHttpClient(
+      config,
+      ahcWsConfig,
+      wsProxyServer = Some(
+          DefaultWSProxyServer(
+            protocol  = Some(config.get[String]("proxy.protocol")),
+            host      = config.get[String]("proxy.host"),
+            port      = config.get[Int]("proxy.port"),
+            principal = config.getOptional[String]("proxy.username"),
+            password  = config.getOptional[String]("proxy.password")
+          )
+        )
+    )*/
 }

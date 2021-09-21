@@ -16,4 +16,11 @@
 
 package uk.gov.hmrc.http
 
-trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch
+trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch {
+  // TODO require implementations to not break clients e.g. implementations of ProxyHttpClient...
+  def withUserAgent(userAgent: String): HttpClient =
+    sys.error("Your implementation of HttpClient does not implement `withUserAgent`. Consider if you can use uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient") // TODO reference to bootstrap :(
+
+  def withProxy(): HttpClient =
+    sys.error("Your implementation of HttpClient does not implement `withProxy`. Consider if you can use uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient") // TODO reference to bootstrap :(
+}
