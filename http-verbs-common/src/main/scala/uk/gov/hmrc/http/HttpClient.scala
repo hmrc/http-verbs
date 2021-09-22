@@ -16,6 +16,12 @@
 
 package uk.gov.hmrc.http
 
+import akka.actor.ActorSystem
+import com.typesafe.config.{Config, ConfigFactory}
+import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSProxyServer}
+import uk.gov.hmrc.http.hooks.HttpHook
+import uk.gov.hmrc.play.http.ws._
+
 trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch {
   // TODO require implementations to not break clients e.g. implementations of ProxyHttpClient...
   def withUserAgent(userAgent: String): HttpClient =
@@ -23,4 +29,51 @@ trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with
 
   def withProxy(): HttpClient =
     sys.error("Your implementation of HttpClient does not implement `withProxy`. Consider if you can use uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient") // TODO reference to bootstrap :(
+}
+
+class HttpClientImpl (
+  override val configuration: Config,
+  override val hooks        : Seq[HttpHook],
+  override val wsClient     : WSClient,
+  override val actorSystem  : ActorSystem
+) extends HttpClient
+     with WSHttp {
+
+  import scala.collection.JavaConverters._
+
+  override def withUserAgent(userAgent: String): HttpClientImpl =
+    new HttpClientImpl(
+      configuration = ConfigFactory.parseMap(Map("appName" -> userAgent).asJava)
+                        .withFallback(configuration),
+      hooks,
+      wsClient,
+      actorSystem
+    )
+
+  override def withProxy(): HttpClientImpl =
+    new HttpClientImpl(
+      configuration,
+      hooks,
+      wsClient,
+      actorSystem
+    ) {
+      override val wsProxyServer: Option[WSProxyServer] =
+        if (configuration.getBoolean("proxy.proxyRequiredForThisEnvironment")) { // keep this check to avoid needing the following configuration for development? rename to `proxy.enabled`?
+          Some(
+            DefaultWSProxyServer(
+              protocol  = Some(configuration.getString("proxy.protocol")),
+              host      = configuration.getString("proxy.host"),
+              port      = configuration.getInt("proxy.port"),
+              principal = getOptionalString("proxy.username"),
+              password  = getOptionalString("proxy.password"),
+              // following exists to be development friendly (necessary with `proxy.proxyRequiredForThisEnvironment`?)
+              nonProxyHosts = Some(Seq("localhost"))
+              //nonProxyHosts = Some(configuration.underlying.getStringList("proxy.nonProxyHosts").asScala.toSeq)
+            )
+          )
+        } else None
+
+      private def getOptionalString(key: String): Option[String] =
+        if (configuration.hasPath(key)) Some(configuration.getString(key)) else None
+    }
 }
