@@ -14,40 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http.ws
-
-import java.net.ServerSocket
-
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
+package uk.gov.hmrc.http.test
 
 import scala.util.Try
 
-trait WireMockEndpoints {
-
-  val host: String = "localhost"
-
-  val endpointPort: Int              = PortTester.findPort()
-  val endpointMock                   = new WireMock(host, endpointPort)
-  val endpointServer: WireMockServer = new WireMockServer(wireMockConfig().port(endpointPort))
-
-  val proxyPort: Int              = PortTester.findPort(endpointPort)
-  val proxyMock: WireMock         = new WireMock(host, proxyPort)
-  val proxyServer: WireMockServer = new WireMockServer(wireMockConfig().port(proxyPort))
-
-  def withServers(test: => Unit) {
-    endpointServer.start()
-    proxyServer.start()
-
-    try {
-      test
-    } finally {
-      Try(endpointServer.stop())
-      Try(proxyServer.stop())
-    }
-  }
-}
+import java.net.ServerSocket
 
 object PortTester {
 

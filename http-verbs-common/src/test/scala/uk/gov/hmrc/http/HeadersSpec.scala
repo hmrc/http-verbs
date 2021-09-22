@@ -31,7 +31,8 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import play.api.{Application, Play}
 import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.play.http.ws.{PortTester, WSHttp}
+import uk.gov.hmrc.play.http.ws.WSHttp
+import uk.gov.hmrc.http.test.PortTester
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._

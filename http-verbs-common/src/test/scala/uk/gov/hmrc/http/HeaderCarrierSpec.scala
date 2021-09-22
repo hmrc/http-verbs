@@ -31,18 +31,18 @@ class HeaderCarrierSpec
 
   "headersForUrl" should {
 
-   val internalUrls = List(
-     "http://test.public.service/bar",
-     "http://test.public.mdtp/bar",
-     "http://localhost:1234/bar"
-   )
-   val externalUrl  = "http://test.me"
-
-   def mkConfig(s: String = ""): HeaderCarrier.Config =
-     HeaderCarrier.Config.fromConfig(
-       ConfigFactory.parseString(s)
-         .withFallback(ConfigFactory.load())
+     val internalUrls = List(
+       "http://test.public.service/bar",
+       "http://test.public.mdtp/bar",
+       "http://localhost:1234/bar"
      )
+     val externalUrl  = "http://test.me"
+
+     def mkConfig(s: String = ""): HeaderCarrier.Config =
+       HeaderCarrier.Config.fromConfig(
+         ConfigFactory.parseString(s)
+           .withFallback(ConfigFactory.load())
+       )
 
     "should contain the values passed in by header-carrier for internal urls" in {
       val hc = HeaderCarrier(
