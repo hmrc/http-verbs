@@ -20,19 +20,14 @@ import akka.actor.ActorSystem
 import com.github.ghik.silencer.silent
 import com.github.tomakehurst.wiremock._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
-import play.api.{Application, Play}
-import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.play.http.ws.WSHttp
-import uk.gov.hmrc.http.test.PortTester
+import uk.gov.hmrc.http.test.WireMockSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -40,28 +35,11 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 class HeadersSpec
   extends AnyWordSpecLike
      with Matchers
-     with BeforeAndAfterAll
-     with BeforeAndAfterEach
+     with WireMockSupport
      with ScalaFutures
      with IntegrationPatience {
 
   private lazy val app: Application = new GuiceApplicationBuilder().build()
-  private val server                = new WireMockServer(wireMockConfig().port(PortTester.findPort()))
-
-  override def beforeAll(): Unit = {
-    Play.start(app)
-    server.start()
-  }
-
-  override def afterAll(): Unit = {
-    server.stop()
-    Play.stop(app)
-  }
-
-  override def beforeEach(): Unit = {
-    server.stop()
-    server.start()
-  }
 
   @silent("deprecated")
   private implicit val hc: HeaderCarrier = HeaderCarrier(
@@ -71,24 +49,28 @@ class HeadersSpec
     requestId     = Some(RequestId("request-id"))
   ).withExtraHeaders("extra-header" -> "my-extra-header")
 
-  private lazy val client = new HttpGet with HttpPost with HttpDelete with HttpPatch with HttpPut with WSHttp {
-    override def wsClient: WSClient                 = app.injector.instanceOf[WSClient]
-    override protected def configuration: Config    = app.configuration.underlying
-    override val hooks: Seq[HttpHook]               = Seq.empty
-    override protected def actorSystem: ActorSystem = ActorSystem("test-actor-system")
-  }
+  private lazy val httpClient =
+    new HttpClientImpl(
+      configuration = app.configuration.underlying,
+      hooks         = Seq.empty,
+      wsClient      = app.injector.instanceOf[WSClient],
+      actorSystem   = ActorSystem("test-actor-system")
+    )
 
   "a post request" when {
     "with an arbitrary body" should {
       "contain headers from the header carrier" in {
-        server.stubFor(
+        wireMockServer.stubFor(
           post(urlEqualTo("/arbitrary"))
             .willReturn(aResponse().withStatus(200))
         )
 
-        client.POST[JsValue, HttpResponse](s"http://localhost:${server.port()}/arbitrary", Json.obj()).futureValue
+        httpClient.POST[JsValue, HttpResponse](
+          url  = s"$wireMockUrl/arbitrary",
+          body = Json.obj()
+        ).futureValue
 
-        server.verify(
+        wireMockServer.verify(
           postRequestedFor(urlEqualTo("/arbitrary"))
             .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -99,18 +81,18 @@ class HeadersSpec
       }
 
       "allow a user to set an extra header in the POST" in {
-        server.stubFor(
+        wireMockServer.stubFor(
           post(urlEqualTo("/arbitrary"))
             .willReturn(aResponse().withStatus(200))
         )
 
-        client.POST[JsValue, HttpResponse](
-          url     = s"http://localhost:${server.port()}/arbitrary",
+        httpClient.POST[JsValue, HttpResponse](
+          url     = s"$wireMockUrl/arbitrary",
           body    = Json.obj(),
           headers = Seq("extra-header-2" -> "my-extra-header-2")
         ).futureValue
 
-        server.verify(
+        wireMockServer.verify(
           postRequestedFor(urlEqualTo("/arbitrary"))
             .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -124,17 +106,17 @@ class HeadersSpec
 
     "with a string body" should {
       "contain headers from the header carrier" in {
-        server.stubFor(
+        wireMockServer.stubFor(
           post(urlEqualTo("/string"))
             .willReturn(aResponse().withStatus(200))
         )
 
-        client.POSTString[HttpResponse](
-          url  = s"http://localhost:${server.port()}/string",
+        httpClient.POSTString[HttpResponse](
+          url  = s"$wireMockUrl/string",
           body = "foo"
         ).futureValue
 
-        server.verify(
+        wireMockServer.verify(
           postRequestedFor(urlEqualTo("/string"))
             .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -145,18 +127,18 @@ class HeadersSpec
       }
 
       "allow a user to set an extra header in the POST" in {
-        server.stubFor(
+        wireMockServer.stubFor(
           post(urlEqualTo("/string"))
             .willReturn(aResponse().withStatus(200))
         )
 
-        client.POSTString[HttpResponse](
-          url     = s"http://localhost:${server.port()}/string",
+        httpClient.POSTString[HttpResponse](
+          url     = s"$wireMockUrl/string",
           body    = "foo",
           headers = Seq("extra-header-2" -> "my-extra-header-2")
         ).futureValue
 
-        server.verify(
+        wireMockServer.verify(
           postRequestedFor(urlEqualTo("/string"))
             .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -170,14 +152,16 @@ class HeadersSpec
 
     "with an empty body" should {
       "add a content length header if none is present" in {
-        server.stubFor(
+        wireMockServer.stubFor(
           post(urlEqualTo("/empty"))
             .willReturn(aResponse().withStatus(200))
         )
 
-        client.POSTEmpty[HttpResponse](s"http://localhost:${server.port()}/empty").futureValue
+        httpClient
+          .POSTEmpty[HttpResponse](s"$wireMockUrl/empty")
+          .futureValue
 
-        server.verify(
+        wireMockServer.verify(
           postRequestedFor(urlEqualTo("/empty"))
             .withHeader(HeaderNames.authorisation, equalTo("authorization"))
             .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -192,16 +176,16 @@ class HeadersSpec
 
   "a get request" should {
     "contain headers from the header carrier" in {
-      server.stubFor(
+      wireMockServer.stubFor(
         get(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200))
       )
 
-      client
-        .GET[HttpResponse](s"http://localhost:${server.port()}/")
+      httpClient
+        .GET[HttpResponse](s"$wireMockUrl/")
         .futureValue
 
-      server.verify(
+      wireMockServer.verify(
         getRequestedFor(urlEqualTo("/"))
           .withHeader(HeaderNames.authorisation, equalTo("authorization"))
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -214,17 +198,17 @@ class HeadersSpec
 
   "a delete request" should {
     "contain headers from the header carrier" in {
-      server.stubFor(
+      wireMockServer.stubFor(
         delete(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200))
       )
 
-      client.DELETE[HttpResponse](
-        url     = s"http://localhost:${server.port()}/",
+      httpClient.DELETE[HttpResponse](
+        url     = s"$wireMockUrl/",
         headers = Seq("header" -> "foo")
       ).futureValue
 
-      server.verify(
+      wireMockServer.verify(
         deleteRequestedFor(urlEqualTo("/"))
           .withHeader(HeaderNames.authorisation, equalTo("authorization"))
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -238,20 +222,20 @@ class HeadersSpec
 
   "a patch request" should {
     "contain headers from the header carrier" in {
-      server.stubFor(
+      wireMockServer.stubFor(
         patch(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200))
       )
 
-      client
+      httpClient
         .PATCH[JsValue, HttpResponse](
-          url     = s"http://localhost:${server.port()}/",
+          url     = s"$wireMockUrl/",
           body    = Json.obj(),
           headers = Seq("header" -> "foo")
         )
         .futureValue
 
-      server.verify(
+      wireMockServer.verify(
         patchRequestedFor(urlEqualTo("/"))
           .withHeader(HeaderNames.authorisation, equalTo("authorization"))
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))
@@ -265,17 +249,17 @@ class HeadersSpec
 
   "a put request" should {
     "contain headers from the header carrier" in {
-      server.stubFor(
+      wireMockServer.stubFor(
         put(urlEqualTo("/"))
           .willReturn(aResponse().withStatus(200))
       )
 
-      client.PUT[JsValue, HttpResponse](
-        url  = s"http://localhost:${server.port()}/",
+      httpClient.PUT[JsValue, HttpResponse](
+        url  = s"$wireMockUrl/",
         body = Json.obj()
       ).futureValue
 
-      server.verify(
+      wireMockServer.verify(
         putRequestedFor(urlEqualTo("/"))
           .withHeader(HeaderNames.authorisation, equalTo("authorization"))
           .withHeader(HeaderNames.xForwardedFor, equalTo("forwarded-for"))

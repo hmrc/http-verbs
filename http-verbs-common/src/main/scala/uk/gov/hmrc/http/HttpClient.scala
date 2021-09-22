@@ -41,6 +41,8 @@ class HttpClientImpl (
 
   import scala.collection.JavaConverters._
 
+  // TODO HttpClientImpl should be final - any extension/overrides will be lost
+  // as soon as `withUserAgent` or `withProxy` are called..
   override def withUserAgent(userAgent: String): HttpClientImpl =
     new HttpClientImpl(
       configuration = ConfigFactory.parseMap(Map("appName" -> userAgent).asJava)

@@ -20,10 +20,12 @@ import scala.util.Try
 
 import java.net.ServerSocket
 
-object PortTester {
+object PortFinder {
 
-  def findPort(excluded: Int*): Int =
-    (6000 to 7000).find(port => !excluded.contains(port) && isFree(port)).getOrElse(throw new Exception("No free port"))
+  def findFreePort(portRange: Range, excluded: Int*): Int =
+    portRange
+      .find(port => !excluded.contains(port) && isFree(port))
+      .getOrElse(throw new Exception("No free port"))
 
   private def isFree(port: Int): Boolean = {
     val triedSocket = Try {
