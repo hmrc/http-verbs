@@ -18,17 +18,28 @@ package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import play.api.libs.ws.{WSClient, WSProxyServer}
+import play.api.libs.ws.{WSClient, WSProxyServer, WSRequest => PlayWSRequest}
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
 
-trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch {
+trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch with RequestBuilder
+
+trait RequestBuilder extends WSRequest {
   // implementations required to not break clients (which won't be using the new functions) e.g. implementations of ProxyHttpClient...
   def withUserAgent(userAgent: String): HttpClient =
-    sys.error("Your implementation of HttpClient does not implement `withUserAgent`. Consider if you can use uk.gov.hmrc.http.bootstrap.http.DefaultHttpClient") // TODO reference to bootstrap :(
+    withPlayWSRequest { req =>
+      req.withHttpHeaders("User-Agent" -> userAgent)
+    }
 
-  def withProxy: HttpClient =
-    sys.error("Your implementation of HttpClient does not implement `withProxy`. Consider if you can use uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient") // TODO reference to bootstrap :(
+  def withProxy: HttpClient = {
+    val optProxyServer = WSProxyConfiguration.buildWsProxyServer(configuration)
+    withPlayWSRequest { req =>
+      optProxyServer.foldLeft(req)(_ withProxyServer _)
+    }
+  }
+
+  def withPlayWSRequest(transform: PlayWSRequest => PlayWSRequest): HttpClient =
+    sys.error("Your implementation of HttpClient does not implement `withBuildRequest`. Consider if you can use uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient") // TODO reference to bootstrap :(
 }
 
 class HttpClientImpl (
@@ -43,23 +54,17 @@ class HttpClientImpl (
 
   // TODO HttpClientImpl should be final - any extension/overrides will be lost
   // as soon as `withUserAgent` or `withProxy` are called..
-  override def withUserAgent(userAgent: String): HttpClientImpl =
-    new HttpClientImpl(
-      configuration = ConfigFactory.parseMap(Map("appName" -> userAgent).asJava)
-                        .withFallback(configuration),
-      hooks,
-      wsClient,
-      actorSystem
-    )
-
-  override def withProxy: HttpClientImpl =
+  override def withPlayWSRequest(transform: PlayWSRequest => PlayWSRequest): HttpClientImpl =
     new HttpClientImpl(
       configuration,
       hooks,
       wsClient,
       actorSystem
     ) {
-      override val wsProxyServer: Option[WSProxyServer] =
-        WSProxyConfiguration.buildWsProxyServer(configuration)
+      override def buildRequest[A](
+        url    : String,
+        headers: Seq[(String, String)]
+      ): PlayWSRequest =
+        transform(super.buildRequest(url, headers))
     }
 }
