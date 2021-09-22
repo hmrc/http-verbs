@@ -51,10 +51,11 @@ class HeadersSpec
 
   private lazy val httpClient =
     new HttpClientImpl(
-      configuration = app.configuration.underlying,
-      hooks         = Seq.empty,
-      wsClient      = app.injector.instanceOf[WSClient],
-      actorSystem   = ActorSystem("test-actor-system")
+      configuration    = app.configuration.underlying,
+      hooks            = Seq.empty,
+      wsClient         = app.injector.instanceOf[WSClient],
+      actorSystem      = ActorSystem("test-actor-system"),
+      transformRequest = identity
     )
 
   "a post request" when {

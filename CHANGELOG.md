@@ -5,10 +5,13 @@
 |--------------------------------------------------------------|------------|-----------------------------------------------|
 | WSProxy changes  | Minor  | Optional change |
 | `withUserAgent` added | Minor | Optional change |
+| `withTransformRequest` added | Minor | Optional change |
+
+For the following changes, it is expected that you will be using the `uk.gov.hmrc.HttpClientImpl` implementation of `HttpClient` (which should be provided by bootstrap-play). They may not be supported on custom implementations of `HttpClient`.
 
 ### WSProxy
 
-`WSProxy` has been deprecated, the behaviour is available on `WSRequest`.
+`WSProxy` has been deprecated, the behaviour is available on `HttpClient`.
 
 What this means:
   * You will **not** require two HttpClient implementations to use a proxy. Instead you can call `withProxy` on the same single HttpClient.
@@ -26,11 +29,7 @@ httpClient.withProxy.GET(url)
 
 There are some differences with `WSProxyConfiguration.buildWsProxyServer` (which is used by `httpClient.withProxy`):
   * configPrefix is fixed to `proxy`.
-  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `proxy.enabled`, but note, it
-      defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
-
-
-
+  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
 
 ### withUserAgent
 
@@ -40,6 +39,13 @@ The useragent defaults to `appName` from configuration. This can be overridden f
 httpClient.withUserAgent("new-user-agent").GET(url)
 ```
 
+### withTransformRequest
+
+You can modify a request before it is executed with `withTransformRequest`. It is preferrable to use this rather than extending HttpClient to override `def buildRequest(url: String, headers: Seq[(String, String)]): play.api.libs.ws.WSRequest`.
+
+```scala
+httpClient.withTransformRequest(_.withRequestTimeout(60.seconds)).GET(url)
+```
 
 ## Version 13.0.0
 

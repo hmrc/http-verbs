@@ -33,10 +33,11 @@ trait HttpClientSupport {
     implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
 
     new HttpClientImpl(
-      configuration = config,
-      hooks         = Seq.empty,
-      wsClient      = AhcWSClient(AhcWSClientConfigFactory.forConfig(config)),
-      actorSystem   = as
+      configuration    = config,
+      hooks            = Seq.empty,
+      wsClient         = AhcWSClient(AhcWSClientConfigFactory.forConfig(config)),
+      actorSystem      = as,
+      transformRequest = identity
     )
   }
 

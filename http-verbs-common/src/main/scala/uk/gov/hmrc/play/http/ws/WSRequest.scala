@@ -22,12 +22,16 @@ import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayW
 
 trait WSRequest extends WSRequestBuilder {
 
-  override def buildRequest[A](
+  protected def transformRequest: PlayWSRequest => PlayWSRequest = identity
+
+  override def buildRequest(
     url    : String,
     headers: Seq[(String, String)]
   ): PlayWSRequest =
-    wsClient.url(url)
-      .withHttpHeaders(headers: _*)
+    transformRequest(
+      wsClient.url(url)
+        .withHttpHeaders(headers: _*)
+    )
 }
 
 @deprecated("WSProxy is not required. Use HttpClient.withProxy instead", "13.9.0")
@@ -35,7 +39,7 @@ trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]
 
-  override def buildRequest[A](url: String, headers: Seq[(String, String)]): PlayWSRequest =
+  override def buildRequest(url: String, headers: Seq[(String, String)]): PlayWSRequest =
     wsProxyServer match {
       case Some(proxy) => super.buildRequest(url, headers).withProxyServer(proxy)
       case None        => super.buildRequest(url, headers)

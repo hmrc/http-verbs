@@ -38,18 +38,19 @@ class HttpClientImplSpec
      with ScalaFutures
      with IntegrationPatience {
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
+  private implicit val hc: HeaderCarrier =
+    HeaderCarrier(extraHeaders = Seq("x-test" -> "test-val"))
 
   WsTestClient.withClient { wsClient =>
-
     "HttpClientImpl.withUserAgent" should {
       val httpClient =
         new HttpClientImpl(
-          configuration = ConfigFactory.parseString("appName=myApp")
-                           .withFallback(ConfigFactory.load()),
-          hooks         = Seq.empty,
-          wsClient      = wsClient,
-          actorSystem   = ActorSystem("test-actor-system")
+          configuration    = ConfigFactory.parseString("appName=myApp")
+                              .withFallback(ConfigFactory.load()),
+          hooks            = Seq.empty,
+          wsClient         = wsClient,
+          actorSystem      = ActorSystem("test-actor-system"),
+          transformRequest = identity
         )
 
       "change user-agent" in {
@@ -68,6 +69,7 @@ class HttpClientImplSpec
         wireMockServer.verify(
           getRequestedFor(urlEqualTo("/"))
             .withHeader("user-agent", equalTo(userAgent))
+            .withHeader("x-test", equalTo("test-val"))
         )
       }
     }
@@ -81,19 +83,20 @@ class HttpClientImplSpec
 
       val httpClient =
         new HttpClientImpl(
-          configuration = ConfigFactory
-                            .parseString(
-                              s"""|proxy.enabled=true
-                                  |proxy.protocol=$proxyProtocol
-                                  |proxy.host=$proxyHost
-                                  |proxy.port=$proxyPort
-                                  |proxy.username=$proxyUsername
-                                  |proxy.password=$proxyPassword
-                                  |""".stripMargin
-                            ).withFallback(ConfigFactory.load()),
-          hooks         = Seq.empty,
-          wsClient      = wsClient,
-          actorSystem   = ActorSystem("test-actor-system")
+          configuration    = ConfigFactory
+                               .parseString(
+                                 s"""|proxy.enabled=true
+                                     |proxy.protocol=$proxyProtocol
+                                     |proxy.host=$proxyHost
+                                     |proxy.port=$proxyPort
+                                     |proxy.username=$proxyUsername
+                                     |proxy.password=$proxyPassword
+                                     |""".stripMargin
+                               ).withFallback(ConfigFactory.load()),
+          hooks            = Seq.empty,
+          wsClient         = wsClient,
+          actorSystem      = ActorSystem("test-actor-system"),
+          transformRequest = identity
         )
 
       "apply proxy" in {

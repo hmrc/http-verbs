@@ -27,5 +27,6 @@ trait WSRequestBuilder extends Request {
 
   protected def wsClient: WSClient
 
-  protected def buildRequest[A](url: String, headers: Seq[(String, String)]): PlayWSRequest
+  // TODO move to package uk.gov.hmrc.ws, then can restore `protected`
+  /*protected*/ def buildRequest(url: String, headers: Seq[(String, String)]): PlayWSRequest
 }
