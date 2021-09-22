@@ -17,15 +17,13 @@
 package uk.gov.hmrc.play.http.ws
 
 import com.typesafe.config.Config
-import play.api.libs.ws.{WSClient, WSProxyServer, WSRequest => PlayWSRequest}
+import play.api.libs.ws.{WSClient, WSRequest => PlayWSRequest}
 import uk.gov.hmrc.http.Request
 
 
 trait WSRequestBuilder extends Request {
 
   protected def configuration: Config
-
-  protected def wsProxyServer: Option[WSProxyServer] = None
 
   protected def wsClient: WSClient
 

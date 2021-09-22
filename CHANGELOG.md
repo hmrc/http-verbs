@@ -1,3 +1,46 @@
+
+## Version 13.9.0
+
+| Change | Complexity | Fix  |
+|--------------------------------------------------------------|------------|-----------------------------------------------|
+| WSProxy changes  | Minor  | Optional change |
+| `withUserAgent` added | Minor | Optional change |
+
+### WSProxy
+
+`WSProxy` has been deprecated, the behaviour is available on `WSRequest`.
+
+What this means:
+  * You will **not** require two HttpClient implementations to use a proxy. Instead you can call `withProxy` on the same single HttpClient.
+  * It will still need enabling with `proxy.enabled` in configuration, which by default is false, for development. See `WSProxyConfiguration` for configuration changes below.
+
+```scala
+// without proxy
+httpClient.GET(url)
+
+// with proxy (and `proxy.enabled=true` in configuration)
+httpClient.withProxy.GET(url)
+```
+
+`WSProxyConfiguration.apply` has been deprecated, use `WSProxyConfiguration.buildWsProxyServer` instead.
+
+There are some differences with `WSProxyConfiguration.buildWsProxyServer` (which is used by `httpClient.withProxy`):
+  * configPrefix is fixed to `proxy`.
+  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `proxy.enabled`, but note, it
+      defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
+
+
+
+
+### withUserAgent
+
+The useragent defaults to `appName` from configuration. This can be overridden for a single endpoint with the `withUserAgent` function.
+
+```scala
+httpClient.withUserAgent("new-user-agent").GET(url)
+```
+
+
 ## Version 13.0.0
 
 | Change | Complexity | Fix  |

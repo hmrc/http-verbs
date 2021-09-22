@@ -17,11 +17,12 @@
 package uk.gov.hmrc.play.http.ws
 
 import com.typesafe.config.Config
-import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest, WSClient}
 import play.api.Configuration
-import com.typesafe.config.ConfigFactory
+import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest}
 
 trait WSRequest extends WSRequestBuilder {
+
+  protected def wsProxyServer: Option[WSProxyServer] = None
 
   override def buildRequest[A](
     url    : String,
@@ -31,7 +32,7 @@ trait WSRequest extends WSRequestBuilder {
       .foldLeft(wsClient.url(url).withHttpHeaders(headers: _*))(_ withProxyServer _)
 }
 
-@deprecated("Use HttpClient.withProxy instead", "13.9.0")
+@deprecated("WSProxy is not required. Use HttpClient.withProxy instead", "13.9.0")
 trait WSProxy extends WSRequest {
 
   override def buildRequest[A](url: String, headers: Seq[(String, String)]): PlayWSRequest =
@@ -43,25 +44,38 @@ trait WSProxy extends WSRequest {
 
 object WSProxyConfiguration {
 
+  @deprecated("Use buildWsProxyServer instead. See docs for differences.", "13.9.0")
   def apply(configPrefix: String, configuration: Configuration): Option[WSProxyServer] = {
     val proxyRequired =
       configuration.getOptional[Boolean](s"$configPrefix.proxyRequiredForThisEnvironment").getOrElse(true)
 
-    if (proxyRequired) Some(parseProxyConfiguration(configPrefix, configuration)) else None
+    if (proxyRequired)
+      Some(
+        DefaultWSProxyServer(
+          protocol  = Some(configuration.get[String](s"$configPrefix.protocol")),
+          host      = configuration.get[String](s"$configPrefix.host"),
+          port      = configuration.get[Int](s"$configPrefix.port"),
+          principal = configuration.getOptional[String](s"$configPrefix.username"),
+          password  = configuration.getOptional[String](s"$configPrefix.password")
+        )
+      )
+    else None
   }
 
-  private def parseProxyConfiguration(configPrefix: String, configuration: Configuration) =
-    DefaultWSProxyServer(
-      protocol = configuration
-        .getOptional[String](s"$configPrefix.protocol")
-        .orElse(throw ProxyConfigurationException("protocol")),
-      host =
-        configuration.getOptional[String](s"$configPrefix.host").getOrElse(throw ProxyConfigurationException("host")),
-      port      = configuration.getOptional[Int](s"$configPrefix.port").getOrElse(throw ProxyConfigurationException("port")),
-      principal = configuration.getOptional[String](s"$configPrefix.username"),
-      password  = configuration.getOptional[String](s"$configPrefix.password")
-    )
+  def buildWsProxyServer(configuration: Config): Option[WSProxyServer] = {
+    def getOptionalString(key: String): Option[String] =
+      if (configuration.hasPath(key)) Some(configuration.getString(key)) else None
 
-  case class ProxyConfigurationException(key: String)
-      extends RuntimeException(s"Missing proxy configuration - key '$key' not found")
+    if (configuration.getBoolean("proxy.enabled"))
+      Some(
+        DefaultWSProxyServer(
+          protocol  = Some(configuration.getString("proxy.protocol")),
+          host      = configuration.getString("proxy.host"),
+          port      = configuration.getInt("proxy.port"),
+          principal = getOptionalString("proxy.username"),
+          password  = getOptionalString("proxy.password")
+        )
+      )
+    else None
+  }
 }

@@ -20,8 +20,8 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{Config, ConfigFactory}
-import uk.gov.hmrc.http._
-import play.api.libs.ws.ahc.AhcWSClientConfigFactory
+import uk.gov.hmrc.http.{HttpClient, HttpClientImpl}
+import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 
 trait HttpClientSupport {
   def mkHttpClient(
@@ -35,7 +35,7 @@ trait HttpClientSupport {
     new HttpClientImpl(
       configuration = config,
       hooks         = Seq.empty,
-      wsClient      = play.api.libs.ws.ahc.AhcWSClient(AhcWSClientConfigFactory.forConfig(config)),
+      wsClient      = AhcWSClient(AhcWSClientConfigFactory.forConfig(config)),
       actorSystem   = as
     )
   }
