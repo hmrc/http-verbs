@@ -24,8 +24,11 @@ import org.scalatest.OptionValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import play.api.libs.ws.WSProxyServer
 import play.api.test.WsTestClient
-import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.http.test.{PortFinder, WireMockSupport}
+
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -77,9 +80,11 @@ class HttpClientImplSpec
     "HttpClientImpl.withProxy" should {
       val proxyProtocol = "http"
       val proxyHost     = "proxy.com"
-      val proxyPort     = 1000
+      val proxyPort     = PortFinder.findFreePort(portRange = 6001 to 7000, excluded = wireMockPort)
       val proxyUsername = "u1"
       val proxyPassword = "p1"
+
+      val proxyRef = new AtomicReference[Option[WSProxyServer]]
 
       val httpClient =
         new HttpClientImpl(
@@ -100,12 +105,13 @@ class HttpClientImplSpec
         )
 
       "apply proxy" in {
-        val proxyServer =
-          httpClient
-            .withProxy
-            .buildRequest(s"$wireMockUrl/", headers = Seq.empty)
-            .proxyServer
-            .value
+        httpClient
+          .withProxy
+          .withTransformRequest { req => proxyRef.set(req.proxyServer); req }
+          .GET[HttpResponse](s"$wireMockUrl/")
+          .failed.futureValue // it will fail since no proxy is running
+
+        val proxyServer = proxyRef.get.value
 
         proxyServer.protocol  shouldBe Some(proxyProtocol)
         proxyServer.host      shouldBe proxyHost
