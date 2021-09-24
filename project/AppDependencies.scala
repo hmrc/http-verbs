@@ -4,7 +4,7 @@ object AppDependencies {
 
   val play26Version = "2.6.25"
   val play27Version = "2.7.9"
-  val play28Version = "2.8.7"
+  val play28Version = "2.8.8"
 
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
   def coreCompileCommon(scalaVersion: String) = Seq(

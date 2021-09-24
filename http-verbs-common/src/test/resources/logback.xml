@@ -3,12 +3,13 @@
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <pattern>%date [%level] [%logger] [%thread] %message%n</pattern>
+      <pattern>%date %highlight([%level]) [%logger] [%thread] %message%n</pattern>
     </encoder>
   </appender>
 
   <logger name="uk.gov" level="DEBUG"/>
   <logger name="application" level="DEBUG"/>
+  <logger name="connector" level="DEBUG"/>
 
   <root level="INFO">
     <appender-ref ref="STDOUT"/>

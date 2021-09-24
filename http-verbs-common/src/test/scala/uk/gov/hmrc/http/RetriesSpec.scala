@@ -28,7 +28,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.scalatest.MockitoSugar
 import org.slf4j.MDC
-import play.api.libs.json.{JsValue, Json, Writes}
+import _root_.play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
 import uk.gov.hmrc.play.http.logging.Mdc

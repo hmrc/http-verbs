@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.http
 
-import play.api.libs.json.{JsValue, JsError, JsResult, JsSuccess, Reads => JsonReads}
+import _root_.play.api.libs.json.{JsValue, JsError, JsResult, JsSuccess, Reads => JsonReads}
 import scala.util.Try
 
 trait HttpReadsInstances

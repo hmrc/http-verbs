@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.play.http.ws
+package uk.gov.hmrc.http.test
 
-import play.api.libs.ws.{WSClient, WSRequest => PlayWSRequest}
-import uk.gov.hmrc.http.Request
+import scala.util.Try
 
-trait WSRequestBuilder extends Request {
+import java.net.ServerSocket
 
-  protected def wsClient: WSClient
+object PortFinder {
 
-  protected def buildRequest(url: String, headers: Seq[(String, String)]): PlayWSRequest
+  def findFreePort(portRange: Range, excluded: Int*): Int =
+    portRange
+      .find(port => !excluded.contains(port) && isFree(port))
+      .getOrElse(throw new Exception("No free port"))
+
+  private def isFree(port: Int): Boolean = {
+    val triedSocket = Try {
+      val serverSocket = new ServerSocket(port)
+      Try(serverSocket.close())
+      serverSocket
+    }
+    triedSocket.isSuccess
+  }
 }

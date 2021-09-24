@@ -55,7 +55,7 @@ trait Retries {
         .recoverWith {
           case ex: Exception if condition.lift(ex).getOrElse(false) && remainingIntervals.nonEmpty =>
             val delay = remainingIntervals.head
-            logger.warn(s"Retrying $label in $delay due to '${ex.getMessage}' error")
+            logger.warn(s"Retrying $label in $delay due to error: ${ex.getMessage}")
             val mdcData = Mdc.mdcData
             after(delay, actorSystem.scheduler){
               Mdc.putMdc(mdcData)

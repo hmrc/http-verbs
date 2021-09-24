@@ -21,7 +21,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.TryValues
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.{__, Json, JsError, JsResult, JsSuccess}
+import _root_.play.api.libs.json.{__, Json, JsError, JsResult, JsSuccess}
 import scala.util.{Failure, Success, Try}
 
 import uk.gov.hmrc.http.HttpReads.Implicits._

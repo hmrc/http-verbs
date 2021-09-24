@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.play.http
 
+import play.api.http.{HeaderNames => PlayHeaderNames}
 import play.api.mvc.{Cookies, Headers, RequestHeader, Session}
 import uk.gov.hmrc.http._
-import play.api.http.{HeaderNames => PlayHeaderNames}
 
 import scala.util.Try
 

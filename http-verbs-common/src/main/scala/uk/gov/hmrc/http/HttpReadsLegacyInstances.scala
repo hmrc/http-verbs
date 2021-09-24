@@ -17,8 +17,7 @@
 package uk.gov.hmrc.http
 
 import com.github.ghik.silencer.silent
-import play.api.libs.json
-import play.api.libs.json.{JsNull, JsValue}
+import _root_.play.api.libs.json.{JsNull, JsValue, Reads}
 
 
 trait HttpReadsLegacyInstances extends HttpReadsLegacyOption with HttpReadsLegacyJson
@@ -45,13 +44,13 @@ trait HttpReadsLegacyOption extends HttpErrorFunctions {
 
 trait HttpReadsLegacyJson extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  implicit def readFromJson[O](implicit rds: json.Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
+  implicit def readFromJson[O](implicit rds: Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
     def read(method: String, url: String, response: HttpResponse) =
       readJson(method, url, handleResponse(method, url)(response).json)
   }
 
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: json.Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
     def read(method: String, url: String, response: HttpResponse) = response.status match {
       case 204 | 404 => Seq.empty
       case _ =>
@@ -59,7 +58,7 @@ trait HttpReadsLegacyJson extends HttpErrorFunctions {
     }
   }
 
-  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: json.Reads[A], mf: Manifest[A]) =
+  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: Reads[A], mf: Manifest[A]) =
     jsValue
       .validate[A]
       .fold(
