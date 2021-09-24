@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http
 
 import com.github.ghik.silencer.silent
-import play.api.libs.json.{JsValue, Json}
+import _root_.play.api.libs.json.{JsValue, Json}
 
 /**
   * The ws.Response class is very hard to dummy up as it wraps a concrete instance of

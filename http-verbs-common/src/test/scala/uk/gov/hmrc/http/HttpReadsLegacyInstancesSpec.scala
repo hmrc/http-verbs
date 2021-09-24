@@ -21,7 +21,7 @@ import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.Json
+import _root_.play.api.libs.json.Json
 
 @silent("deprecated")
 class HttpReadsLegacyInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {

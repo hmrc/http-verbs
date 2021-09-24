@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.http
 
-import play.api.libs.json.{Json, Writes}
+import _root_.play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.HttpVerbs.{POST => POST_VERB}
 import uk.gov.hmrc.http.hooks.{HookData, HttpHooks}
 import uk.gov.hmrc.http.logging.ConnectionTracing

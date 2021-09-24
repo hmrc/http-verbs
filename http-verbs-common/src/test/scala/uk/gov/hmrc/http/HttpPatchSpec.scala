@@ -23,7 +23,7 @@ import org.mockito.captor.ArgCaptor
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.{Json, Writes}
+import _root_.play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
 
 import scala.concurrent.{ExecutionContext, Future}
