@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http
+package uk.gov.hmrc.play.http
 
 import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock._
@@ -26,6 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.libs.ws.WSProxyServer
 import play.api.test.WsTestClient
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.http.test.{PortFinder, WireMockSupport}
 
 import java.util.concurrent.atomic.AtomicReference

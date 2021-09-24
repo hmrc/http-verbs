@@ -16,17 +16,19 @@
 
 package uk.gov.hmrc.http
 
-import akka.actor.ActorSystem
-import com.typesafe.config.Config
-import play.api.libs.ws.{WSClient, WSRequest => PlayWSRequest}
-import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.play.http.ws._
+import play.api.libs.ws.{WSRequest => PlayWSRequest}
+import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 
-trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch with WSRequestBuilder {
+trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch {
+
+  // we could remove the dependency on PlayWsRequest (which should be in the play package only)
+  // by using `type Request`, which HttpClientImpl can fix to PlayWsRequest,
+  // however it would require all implementations to fix it (breaking clients)
+  // the default implementations here all depend on concrete PlayWSRequest...
 
   private def replaceHeader(req: PlayWSRequest, header: (String, String)): PlayWSRequest = {
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
-      hdrs.toList.flatMap { case (k, vs) => vs.map(v => k -> v) }
+      hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
     val hdrsWithoutKey = req.headers.filterKeys(!_.equalsIgnoreCase(header._1)) // replace existing header
     req.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*)
   }
@@ -47,24 +49,4 @@ trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with
   // e.g. implementations of ProxyHttpClient, and the deprecated DefaultHttpClient in bootstrap.
   def withTransformRequest(transform: PlayWSRequest => PlayWSRequest): HttpClient =
     sys.error("Your implementation of HttpClient does not implement `withTransformRequest`. You can use uk.gov.hmrc.http.HttpClientImpl")
-}
-
-// class is final, since any overrides would be lost in the result of `withPlayWSRequest`
-final class HttpClientImpl (
-  override val configuration   : Config,
-  override val hooks           : Seq[HttpHook],
-  override val wsClient        : WSClient,
-  override val actorSystem     : ActorSystem,
-  override val transformRequest: PlayWSRequest => PlayWSRequest
-) extends HttpClient
-     with WSHttp {
-
-  override def withTransformRequest(transformRequest: PlayWSRequest => PlayWSRequest): HttpClientImpl =
-    new HttpClientImpl(
-      this.configuration,
-      this.hooks,
-      this.wsClient,
-      this.actorSystem,
-      this.transformRequest.andThen(transformRequest)
-    )
 }

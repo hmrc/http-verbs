@@ -28,6 +28,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.play.http.HttpClientImpl
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
