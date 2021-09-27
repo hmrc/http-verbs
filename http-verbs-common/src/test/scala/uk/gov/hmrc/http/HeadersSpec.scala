@@ -28,7 +28,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.play.http.HttpClientImpl
+import uk.gov.hmrc.play.http.PlayHttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -51,7 +51,7 @@ class HeadersSpec
   ).withExtraHeaders("extra-header" -> "my-extra-header")
 
   private lazy val httpClient =
-    new HttpClientImpl(
+    new PlayHttpClient(
       configuration    = app.configuration.underlying,
       hooks            = Seq.empty,
       wsClient         = app.injector.instanceOf[WSClient],

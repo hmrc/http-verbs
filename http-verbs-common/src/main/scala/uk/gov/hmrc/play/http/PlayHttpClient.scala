@@ -24,7 +24,7 @@ import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
 
 // class is final, since any overrides would be lost in the result of `withPlayWSRequest`
-final class HttpClientImpl (
+final class PlayHttpClient (
   override val configuration   : Config,
   override val hooks           : Seq[HttpHook],
   override val wsClient        : WSClient,
@@ -33,12 +33,31 @@ final class HttpClientImpl (
 ) extends HttpClient
      with WSHttp {
 
-  override def withTransformRequest(transformRequest: PlayWSRequest => PlayWSRequest): HttpClientImpl =
-    new HttpClientImpl(
+  override def withTransformRequest(transformRequest: PlayWSRequest => PlayWSRequest): PlayHttpClient =
+    new PlayHttpClient(
       this.configuration,
       this.hooks,
       this.wsClient,
       this.actorSystem,
       this.transformRequest.andThen(transformRequest)
     )
+
+  private def replaceHeader(req: PlayWSRequest, header: (String, String)): PlayWSRequest = {
+    def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
+      hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
+    val hdrsWithoutKey = req.headers.filterKeys(!_.equalsIgnoreCase(header._1)) // replace existing header
+    req.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*)
+  }
+
+  override def withUserAgent(userAgent: String): HttpClient =
+    withTransformRequest { req =>
+      replaceHeader(req, "User-Agent" -> userAgent)
+    }
+
+  override def withProxy: HttpClient = {
+    val optProxyServer = WSProxyConfiguration.buildWsProxyServer(configuration)
+    withTransformRequest { req =>
+      optProxyServer.foldLeft(req)(_ withProxyServer _)
+    }
+  }
 }

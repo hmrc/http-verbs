@@ -17,36 +17,16 @@
 package uk.gov.hmrc.http
 
 import play.api.libs.ws.{WSRequest => PlayWSRequest}
-import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 
 trait HttpClient extends HttpGet with HttpPut with HttpPost with HttpDelete with HttpPatch {
-
-  // we could remove the dependency on PlayWsRequest (which should be in the play package only)
-  // by using `type Request`, which HttpClientImpl can fix to PlayWsRequest,
-  // however it would require all implementations to fix it (breaking clients)
-  // the default implementations here all depend on concrete PlayWSRequest...
-
-  private def replaceHeader(req: PlayWSRequest, header: (String, String)): PlayWSRequest = {
-    def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
-      hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
-    val hdrsWithoutKey = req.headers.filterKeys(!_.equalsIgnoreCase(header._1)) // replace existing header
-    req.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*)
-  }
-
-  def withUserAgent(userAgent: String): HttpClient =
-    withTransformRequest { req =>
-      replaceHeader(req, "User-Agent" -> userAgent)
-    }
-
-  def withProxy: HttpClient = {
-    val optProxyServer = WSProxyConfiguration.buildWsProxyServer(configuration)
-    withTransformRequest { req =>
-      optProxyServer.foldLeft(req)(_ withProxyServer _)
-    }
-  }
-
-  // implementation required to not break clients (which won't be using the new functions)
+  // implementations provided to not break clients (which won't be using the new functions)
   // e.g. implementations of ProxyHttpClient, and the deprecated DefaultHttpClient in bootstrap.
+  def withUserAgent(userAgent: String): HttpClient =
+    sys.error("Not implemented by your implementation of HttpClient. You can use uk.gov.hmrc.http.PlayHttpClient")
+
+  def withProxy: HttpClient =
+    sys.error("Not implemented by your implementation of HttpClient. You can use uk.gov.hmrc.http.PlayHttpClient")
+
   def withTransformRequest(transform: PlayWSRequest => PlayWSRequest): HttpClient =
-    sys.error("Your implementation of HttpClient does not implement `withTransformRequest`. You can use uk.gov.hmrc.http.HttpClientImpl")
+    sys.error("Your implementation of HttpClient does not implement `withTransformRequest`. You can use uk.gov.hmrc.http.PlayHttpClient")
 }

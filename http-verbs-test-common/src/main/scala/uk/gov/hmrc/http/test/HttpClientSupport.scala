@@ -21,7 +21,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{Config, ConfigFactory}
 import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.play.http.HttpClientImpl
+import uk.gov.hmrc.play.http.PlayHttpClient
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 
 trait HttpClientSupport {
@@ -33,7 +33,7 @@ trait HttpClientSupport {
     @silent("deprecated")
     implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
 
-    new HttpClientImpl(
+    new PlayHttpClient(
       configuration    = config,
       hooks            = Seq.empty,
       wsClient         = AhcWSClient(AhcWSClientConfigFactory.forConfig(config)),

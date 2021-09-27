@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
-class HttpClientImplSpec
+class PlayHttpClientSpec
   extends AnyWordSpecLike
      with Matchers
      with OptionValues
@@ -46,9 +46,9 @@ class HttpClientImplSpec
     HeaderCarrier(extraHeaders = Seq("x-test" -> "test-val"))
 
   WsTestClient.withClient { wsClient =>
-    "HttpClientImpl.withUserAgent" should {
+    "PlayHttpClient.withUserAgent" should {
       val httpClient =
-        new HttpClientImpl(
+        new PlayHttpClient(
           configuration    = ConfigFactory.parseString("appName=myApp")
                               .withFallback(ConfigFactory.load()),
           hooks            = Seq.empty,
@@ -78,7 +78,7 @@ class HttpClientImplSpec
       }
     }
 
-    "HttpClientImpl.withProxy" should {
+    "PlayHttpClient.withProxy" should {
       val proxyProtocol = "http"
       val proxyHost     = "proxy.com"
       val proxyPort     = PortFinder.findFreePort(portRange = 6001 to 7000, excluded = wireMockPort)
@@ -88,7 +88,7 @@ class HttpClientImplSpec
       val proxyRef = new AtomicReference[Option[WSProxyServer]]
 
       val httpClient =
-        new HttpClientImpl(
+        new PlayHttpClient(
           configuration    = ConfigFactory
                                .parseString(
                                  s"""|proxy.enabled=true

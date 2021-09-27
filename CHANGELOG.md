@@ -7,7 +7,7 @@
 | `withUserAgent` added | Minor | Optional change |
 | `withTransformRequest` added | Minor | Optional change |
 
-For the following changes, it is expected that you will be using the `uk.gov.hmrc.HttpClientImpl` implementation of `HttpClient` (which should be provided by bootstrap-play). They may not be supported on custom implementations of `HttpClient`.
+For the following changes, it is expected that you will be using the `uk.gov.hmrc.PlayHttpClient` implementation of `HttpClient` (which should be provided by bootstrap-play). They may not be supported on custom implementations of `HttpClient`.
 
 ### WSProxy
 
