@@ -54,6 +54,7 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   /** If true (default) it will clear the wireMock settings before each test */
   lazy val resetWireMockMappings: Boolean = true
+  lazy val resetWireMockRequests: Boolean = true
 
   def startWireMock(): Unit =
     if (!wireMockServer.isRunning) {
@@ -78,6 +79,8 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
     super.beforeEach()
     if (resetWireMockMappings)
       wireMockServer.resetMappings()
+    if (resetWireMockRequests)
+      wireMockServer.resetRequests()
   }
 
   override protected def afterAll(): Unit = {

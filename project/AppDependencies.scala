@@ -40,7 +40,7 @@ object AppDependencies {
     "org.scalatestplus"      %% "scalatestplus-mockito"    % "1.0.0-M2"    % Test,
     "org.scalatestplus"      %% "scalatestplus-scalacheck" % "3.1.0.0-RC2" % Test,
     "org.scalacheck"         %% "scalacheck"               % "1.15.2"      % Test,
-    "com.github.tomakehurst" %  "wiremock"                 % "1.58"        % Test,
+    "com.github.tomakehurst" %  "wiremock-jre8"            % "2.26.3"      % Test,
     "ch.qos.logback"         %  "logback-classic"          % "1.2.3"       % Test,
     "ch.qos.logback"         %  "logback-core"             % "1.2.3"       % Test,
     "org.mockito"            %  "mockito-all"              % "1.10.19"     % Test,
@@ -67,11 +67,11 @@ object AppDependencies {
 
   // Dependencies for http-verbs-test modules
   def testCompileCommon(playVersion: String) = Seq(
-    "org.scalatest"          %% "scalatest"    % scalaTestVerson(playVersion), // version provided transitively is chosen for compatibility with scalatestplus-play
-    "com.github.tomakehurst" %  "wiremock"     % "1.58",
-    "org.scalatest"          %% "scalatest"    % "3.2.3"   % Test,
-    "com.vladsch.flexmark"   %  "flexmark-all" % "0.35.10" % Test,
-    "org.slf4j"              %  "slf4j-simple" % "1.7.30"  % Test
+    "org.scalatest"          %% "scalatest"     % scalaTestVerson(playVersion), // version provided transitively is chosen for compatibility with scalatestplus-play
+    "com.github.tomakehurst" %  "wiremock-jre8" % "2.26.3", // last version with jackson dependencies compatible with play
+    "org.scalatest"          %% "scalatest"     % "3.2.3"   % Test,
+    "com.vladsch.flexmark"   %  "flexmark-all"  % "0.35.10" % Test,
+    "org.slf4j"              %  "slf4j-simple"  % "1.7.30"  % Test
   )
 
   val testCompilePlay26 =
