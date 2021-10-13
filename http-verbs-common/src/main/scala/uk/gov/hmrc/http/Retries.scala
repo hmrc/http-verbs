@@ -35,19 +35,32 @@ trait Retries {
 
   private val logger = LoggerFactory.getLogger("application")
 
-  def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] = {
+  def retryOnSslEngineClosed[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
+    retryFor(s"$verb $url") { case ex @ `sslEngineClosedMatcher`() => true }(block)
+
+  @deprecated("Use retryOnSslEngineClosed instead", "14.0.0")
+  def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
+    retryOnSslEngineClosed(verb, url)(block)
+
+  def retryFor[A](
+     label    : String
+  )( condition: PartialFunction[Exception, Boolean]
+  )( block    : => Future[A]
+  )(implicit
+    ec: ExecutionContext
+  ): Future[A] = {
     def loop(remainingIntervals: Seq[FiniteDuration]): Future[A] = {
       // scheduling will loose MDC data. Here we explicitly ensure it is available on block.
       block
         .recoverWith {
-          case ex @ `sslEngineClosedMatcher`() if remainingIntervals.nonEmpty =>
+          case ex: Exception if condition.lift(ex).getOrElse(false) && remainingIntervals.nonEmpty =>
             val delay = remainingIntervals.head
-            logger.warn(s"Retrying $verb $url in $delay due to '${ex.getMessage}' error")
-              val mdcData = Mdc.mdcData
-              after(delay, actorSystem.scheduler){
-                Mdc.putMdc(mdcData)
-                loop(remainingIntervals.tail)
-              }
+            logger.warn(s"Retrying $label in $delay due to '${ex.getMessage}' error")
+            val mdcData = Mdc.mdcData
+            after(delay, actorSystem.scheduler){
+              Mdc.putMdc(mdcData)
+              loop(remainingIntervals.tail)
+            }
         }
       }
     loop(intervals)
