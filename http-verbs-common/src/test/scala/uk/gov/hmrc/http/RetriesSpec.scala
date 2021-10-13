@@ -47,7 +47,7 @@ class RetriesSpec
      with IntegrationPatience {
   import ExecutionContext.Implicits.global
 
-  "Retries" should {
+  "Retries.retryOnSslEngineClosed" should {
     "be disabled by default" in {
       val retries: Retries = new Retries {
         override protected val configuration: Config = ConfigFactory.load()
@@ -56,7 +56,7 @@ class RetriesSpec
 
       @volatile var counter = 0
       val resultF =
-        retries.retry("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "url") {
           Future.failed {
             counter += 1
             new SSLException("SSLEngine closed already")
@@ -89,7 +89,7 @@ class RetriesSpec
 
       @volatile var counter = 0
       val resultF =
-        retries.retry("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "url") {
           Future.successful {
             counter += 1
             counter
@@ -118,7 +118,7 @@ class RetriesSpec
         Future.failed(new SSLException("SSLEngine closed already"))
       }
 
-      val _ = Try(retries.retry("GET", "url")(failingFuture).futureValue)
+      val _ = Try(retries.retryOnSslEngineClosed("GET", "url")(failingFuture).futureValue)
 
       val actualIntervals: List[Long] =
         timestamps.sliding(2).toList.map {
@@ -143,7 +143,7 @@ class RetriesSpec
       }
 
       val resultF =
-        retries.retry("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "url") {
           Future.failed {
             new SSLException("SSLEngine closed already")
           }
@@ -167,7 +167,7 @@ class RetriesSpec
 
       val expectedResponse = HttpResponse(404, "")
       val resultF =
-        retries.retry("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "url") {
           retries.failFewTimesAndThenSucceed(
             success   = Future.successful(expectedResponse),
             exception = new SSLException("SSLEngine closed already")
@@ -198,7 +198,7 @@ class RetriesSpec
       val resultF =
         for {
           _   <- Future.successful(Mdc.putMdc(mdcData))
-          res <- retries.retry("GET", "url") {
+          res <- retries.retryOnSslEngineClosed("GET", "url") {
                   // assert mdc available to block execution
                   Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
 
