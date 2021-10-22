@@ -65,7 +65,7 @@ class HttpClient2Spec
 
   "api" when {
     "with json" should {
-      "provide body with transformRequest" in {
+      "provide body" in {
         implicit val hc = HeaderCarrier()
 
         stubFor(
@@ -76,29 +76,7 @@ class HttpClient2Spec
         val res: Future[ResDomain] =
           httpClient2
             .put(url"$wireMockUrl/")
-            .transformRequest(_.withBody(toJson(ReqDomain("req"))))
-            .execute(fromJson[ResDomain])
-
-        res.futureValue shouldBe ResDomain("res")
-
-        verify(
-          putRequestedFor(urlEqualTo("/"))
-            .withRequestBody(equalTo("\"req\""))
-            .withHeader("User-Agent", equalTo("myapp"))
-        )
-      }
-
-      "provide body to put" in {
-        implicit val hc = HeaderCarrier()
-
-        stubFor(
-          WireMock.put(urlEqualTo("/"))
-            .willReturn(aResponse().withBody("\"res\"").withStatus(200))
-        )
-
-        val res: Future[ResDomain] =
-          httpClient2
-            .put(url"$wireMockUrl/", toJson(ReqDomain("req")))
+            .withBody(toJson(ReqDomain("req")))
             .execute(fromJson[ResDomain])
 
         res.futureValue shouldBe ResDomain("res")
@@ -120,7 +98,8 @@ class HttpClient2Spec
 
         val res: Future[ResDomain] =
           httpClient2
-            .put(url"$wireMockUrl/", toJson(ReqDomain("req")))
+            .put(url"$wireMockUrl/")
+            .withBody(toJson(ReqDomain("req")))
             .replaceHeader("User-Agent" -> "ua2")
             .execute(fromJson[ResDomain])
 
@@ -149,7 +128,7 @@ class HttpClient2Spec
         val res: Future[Source[ByteString, _]] =
           httpClient2
             .put(url"$wireMockUrl/")
-            .transformRequest(_.withBody(srcStream))
+            .withBody(srcStream)
             .stream(fromStream)
 
         res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe "\"res\""
@@ -184,7 +163,8 @@ class HttpClient2Spec
           retries.retryFor("get reqdomain"){ case UpstreamErrorResponse.WithStatusCode(502) => true }{
             count.incrementAndGet
             httpClient2
-              .put(url"$wireMockUrl/", toJson(ReqDomain("req")))
+              .put(url"$wireMockUrl/")
+              .withBody(toJson(ReqDomain("req")))
               .execute(fromJson[ResDomain])
           }
 
