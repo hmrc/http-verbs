@@ -53,29 +53,32 @@ Extension methods are provided to make common patterns easier to apply.
 */
 
 trait HttpClient2 {
-  def get(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
+  protected def mkRequestBuilder(url: URL, method: String)(implicit hc: HeaderCarrier): RequestBuilder
 
-  def post(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
+  def get(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "GET")
 
-  def post[B: BodyWritable](url: URL, body: B)(implicit hc: HeaderCarrier): RequestBuilder
+  def post(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "POST")
 
-  def put(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
+  def put(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "PUT")
 
-  def put[B: BodyWritable](url: URL, body: B)(implicit hc: HeaderCarrier): RequestBuilder
+  def delete(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "DELETE")
 
-  def delete(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
+  def patch(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "PATCH")
 
-  def patch(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
+  def head(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "HEAD")
 
-  def patch[B: BodyWritable](url: URL, body: B)(implicit hc: HeaderCarrier): RequestBuilder
-
-  def head(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
-
-  def options(url: URL)(implicit hc: HeaderCarrier): RequestBuilder
+  def options(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
+    mkRequestBuilder(url, "OPTIONS")
 }
 
 trait RequestBuilder {
-  def transformRequest(transform: WSRequest => WSRequest): RequestBuilder
+  def transform(transform: WSRequest => WSRequest): RequestBuilder
 
   def execute[A](
     transform: WSRequest => WSResponse => Future[A]
@@ -113,41 +116,7 @@ class HttpClient2Impl(
   private lazy val hcConfig =
     HeaderCarrier.Config.fromConfig(config.underlying)
 
-  override def get(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "GET")
-
-  override def post(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "POST")
-
-  // TODO or just let clients call `.withBody(body)` themselves (this is the expectation for adding headers)
-  override def post[B: BodyWritable](url: URL, body: B)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "POST")
-      .withBody(body)
-
-  override def put(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "PUT")
-
-  override def put[B: BodyWritable](url: URL, body: B)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "PUT")
-      .withBody(body)
-
-  override def delete(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "DELETE")
-
-  override def patch(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "PATCH")
-
-  override def patch[B: BodyWritable](url: URL, body: B)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "PATCH")
-      .withBody(body)
-
-  override def head(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "HEAD")
-
-  override def options(url: URL)(implicit hc: HeaderCarrier): RequestBuilderImpl =
-    mkRequestBuilder(url, "OPTIONS")
-
-  private def mkRequestBuilder(
+  override protected def mkRequestBuilder(
     url   : URL,
     method: String
   )(implicit
@@ -181,37 +150,37 @@ final class RequestBuilderImpl(
      with Retries
      with ConnectionTracing {
 
-  // for Retries (TODO make it use Configuration too)
+  // for Retries
   override val configuration: Config = config.underlying
 
-  override def transformRequest(transform: WSRequest => WSRequest): RequestBuilderImpl =
+  override def transform(transform: WSRequest => WSRequest): RequestBuilderImpl =
     new RequestBuilderImpl(actorSystem, config, optProxyServer, hooks)(transform(request))
 
   // -- Syntactic sugar --
   // TODO any implementation would be expected to implement them all
   // should they be available as extension methods? (less discoverable - require `import httpClient._` to enable)
-  // they all depend on `transformRequest` - but also configuration (and other derived/cached values like proxyServer) could they move into the API interface?
+  // they all depend on `transform` - but also configuration (and other derived/cached values like proxyServer) could they move into the API interface?
   // also the variable RequestBuilder makes this tricky...
 
   override def replaceHeader(header: (String, String)): RequestBuilderImpl = {
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
     val hdrsWithoutKey = request.headers.filterKeys(!_.equalsIgnoreCase(header._1)) // replace existing header
-    transformRequest(_.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*))
+    transform(_.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*))
   }
 
   override def addHeaders(headers: (String, String)*): RequestBuilderImpl =
-    transformRequest(_.addHttpHeaders(headers: _*))
+    transform(_.addHttpHeaders(headers: _*))
 
   override def withProxy: RequestBuilderImpl =
-    transformRequest(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
+    transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 
   override def withBody[B : BodyWritable](body: B): RequestBuilderImpl =
     (if (body == EmptyBody)
       replaceHeader(play.api.http.HeaderNames.CONTENT_LENGTH -> "0") // rejected by Akami without a Content-Length (https://jira.tools.tax.service.gov.uk/browse/APIS-5100)
     else
       this
-    ).transformRequest(_.withBody(body))
+    ).transform(_.withBody(body))
 
   // -- Execution --
 
@@ -229,16 +198,16 @@ final class RequestBuilderImpl(
   ): Future[A] =
     execute(isStream = true)(transformResponse)
 
+  // should the execute function be provided from WSClient? It could make mocking easier?
   private def execute[A](
     isStream: Boolean
   )(
-    transformResponse: WSRequest => WSResponse => Future[A]
+    transformResponse: WSRequest => WSResponse => Future[A] // This isn't mock friendly?
   )(implicit
     ec: ExecutionContext
   ): Future[A] = {
     val startAge  = System.nanoTime() - hc.age
     val responseF =
-      // TODO a way for clients to define custom retries?
       retryOnSslEngineClosed(request.method, request.url)(
         // we do the execution since if clients are responsable for it (e.g. a callback), they may further modify the request outside of auditing etc.
         if (isStream) request.stream() else request.execute()
@@ -254,6 +223,7 @@ final class RequestBuilderImpl(
 
   // mapErrors could be part of the transform function. e.g. transformResponse: WSRequest => Try[WSResponse] => Future
   // but then each transformResponse would probably end up doing the same recovery? Is that a problem?
+  // what if clients what to change it? RequestBuilder is difficult to extend (RequestBuilderImpl)...
   def mapErrors(
     httpMethod: String,
     url       : String,
@@ -292,6 +262,7 @@ final class RequestBuilderImpl(
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
+    // TODO discuss changes with CIP
     val body =
       request.body match {
         case EmptyBody           => None
@@ -303,6 +274,13 @@ final class RequestBuilderImpl(
         case SourceBody(_)       => Some(HookData.FromString("<stream>"))
       }
 
+    println(s"""AUDIT:
+        verb      = ${request.method},
+        url       = ${new URL(request.url)},
+        headers   = ${denormalise(request.headers)},
+        body      = $body,
+        responseF = ${responseF.map(toHttpResponse)}
+        """)
     hooks.foreach(
       _.apply(
         verb      = request.method,

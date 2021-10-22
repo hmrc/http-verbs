@@ -57,7 +57,8 @@ object Example {
 
     val _: Future[ResDomain] =
       httpClient2
-        .put(url"http://localhost:8000/", toJson(ReqDomain()))
+        .put(url"http://localhost:8000/")
+        .withBody(toJson(ReqDomain()))
         .withProxy
         .replaceHeader("User-Agent" -> "ua")
 
@@ -76,7 +77,7 @@ object Example {
         //.put(url"http://localhost:8000/", srcStream)
         .put(url"http://localhost:8000/")
         .withBody(srcStream)
-        .transformRequest(_.withRequestTimeout(10.seconds))
+        .transform(_.withRequestTimeout(10.seconds))
         .stream(fromStream)
   }
 
@@ -92,7 +93,8 @@ object Example {
     val _: Future[ResDomain] =
       retries.retryFor("get reqdomain"){ case UpstreamErrorResponse.WithStatusCode(502) => true }{
         httpClient2
-          .put(url"http://localhost:8000/", toJson(ReqDomain()))
+          .put(url"http://localhost:8000/")
+          .withBody(toJson(ReqDomain()))
           .withProxy
           .replaceHeader("User-Agent" -> "ua")
           .execute(fromJson[ResDomain])
