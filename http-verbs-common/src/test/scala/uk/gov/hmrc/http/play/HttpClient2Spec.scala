@@ -27,7 +27,7 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpReadsInstances, Retries, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
@@ -76,7 +76,7 @@ class HttpClient2Spec
         val res: Future[ResDomain] =
           httpClient2
             .put(url"$wireMockUrl/")
-            .withBody(toJson(ReqDomain("req")))
+            .withBody(Json.toJson(ReqDomain("req")))
             .execute(fromJson[ResDomain])
 
         res.futureValue shouldBe ResDomain("res")
@@ -99,7 +99,7 @@ class HttpClient2Spec
         val res: Future[ResDomain] =
           httpClient2
             .put(url"$wireMockUrl/")
-            .withBody(toJson(ReqDomain("req")))
+            .withBody(Json.toJson(ReqDomain("req")))
             .replaceHeader("User-Agent" -> "ua2")
             .execute(fromJson[ResDomain])
 
@@ -164,7 +164,7 @@ class HttpClient2Spec
             count.incrementAndGet
             httpClient2
               .put(url"$wireMockUrl/")
-              .withBody(toJson(ReqDomain("req")))
+              .withBody(Json.toJson(ReqDomain("req")))
               .execute(fromJson[ResDomain])
           }
 
