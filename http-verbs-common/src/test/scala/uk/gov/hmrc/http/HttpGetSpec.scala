@@ -34,11 +34,10 @@ package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers.{any, eq => is}
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.captor.ArgCaptor
+import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.hooks.HttpHook
@@ -52,15 +51,16 @@ class HttpGetSpec
     with ScalaFutures
     with CommonHttpBehaviour
     with IntegrationPatience
-    with MockitoSugar {
+    with MockitoSugar
+    with ArgumentMatchersSugar {
 
   import ExecutionContext.Implicits.global
 
   class StubbedHttpGet(doGetResult: Future[HttpResponse] = defaultHttpResponse)
     extends HttpGet
       with ConnectionTracingCapturing {
-    val testHook1: HttpHook = mock[HttpHook]
-    val testHook2: HttpHook = mock[HttpHook]
+    val testHook1: HttpHook = mock[HttpHook](withSettings.lenient)
+    val testHook2: HttpHook = mock[HttpHook](withSettings.lenient)
 
     override val configuration: Config = ConfigFactory.load()
 
@@ -137,19 +137,19 @@ class HttpGetSpec
 
       testGet.GET[HttpResponse](url).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testGet.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-        verify(testGet.testHook1).apply(is("GET"), is(url"$url"), is(headers), is(None), respArgCaptor1.capture())(any(), any())
-      verify(testGet.testHook2).apply(is("GET"), is(url"$url"), is(headers), is(None), respArgCaptor2.capture())(any(), any())
+      verify(testGet.testHook1).apply(eqTo("GET"), eqTo(url"$url"), eqTo(headers), eqTo(None), respArgCaptor1)(any, any)
+      verify(testGet.testHook2).apply(eqTo("GET"), eqTo(url"$url"), eqTo(headers), eqTo(None), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 

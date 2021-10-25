@@ -40,13 +40,12 @@ object AppDependencies {
   val coreTestCommon = Seq(
     "commons-codec"          %  "commons-codec"            % "1.15"        % Test,
     "org.scalatest"          %% "scalatest"                % "3.2.3"       % Test,
-    "org.scalatestplus"      %% "scalatestplus-mockito"    % "1.0.0-M2"    % Test,
     "org.scalatestplus"      %% "scalatestplus-scalacheck" % "3.1.0.0-RC2" % Test,
     "org.scalacheck"         %% "scalacheck"               % "1.15.2"      % Test,
+    "org.mockito"            %% "mockito-scala-scalatest"  % "1.16.46"     % Test,
     "com.github.tomakehurst" %  "wiremock-jre8"            % "2.26.3"      % Test,
     "ch.qos.logback"         %  "logback-classic"          % "1.2.3"       % Test,
     "ch.qos.logback"         %  "logback-core"             % "1.2.3"       % Test,
-    "org.mockito"            %  "mockito-all"              % "1.10.19"     % Test,
     "org.webbitserver"       %  "webbit"                   % "0.4.15"      % Test,
     "com.vladsch.flexmark"   %  "flexmark-all"             % "0.35.10"     % Test,
   )

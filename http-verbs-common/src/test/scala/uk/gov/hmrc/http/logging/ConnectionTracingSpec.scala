@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.http.logging
 
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.scalatest.MockitoSugar
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -26,7 +26,12 @@ import uk.gov.hmrc.http._
 
 import scala.util.{Failure, Success}
 
-class ConnectionTracingSpec extends AnyWordSpecLike with Matchers with MockitoSugar with BeforeAndAfterEach {
+class ConnectionTracingSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with MockitoSugar
+     with ArgumentMatchersSugar
+     with BeforeAndAfterEach {
 
   val mockPlayLogger = mock[Logger]
 

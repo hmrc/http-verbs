@@ -18,10 +18,9 @@ package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers.{any, eq => is}
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.captor.ArgCaptor
+import org.mockito.scalatest.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, Writes}
@@ -31,15 +30,19 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
-class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour {
+class HttpPostSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with MockitoSugar
+     with ArgumentMatchersSugar
+     with CommonHttpBehaviour {
   import ExecutionContext.Implicits.global
 
   class StubbedHttpPost(doPostResult: Future[HttpResponse])
-      extends HttpPost
-      with MockitoSugar
-      with ConnectionTracingCapturing {
-    val testHook1: HttpHook                         = mock[HttpHook]
-    val testHook2: HttpHook                         = mock[HttpHook]
+    extends HttpPost
+       with ConnectionTracingCapturing {
+    val testHook1: HttpHook                         = mock[HttpHook](withSettings.lenient)
+    val testHook2: HttpHook                         = mock[HttpHook](withSettings.lenient)
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
@@ -186,19 +189,19 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-        verify(testPost.testHook1).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
-      verify(testPost.testHook2).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testJson))), respArgCaptor1)(any, any)
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testJson))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 
@@ -223,19 +226,19 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
 
       testPost.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPost.testHook1).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromMap(Map()))), respArgCaptor1.capture())(any(), any())
-      verify(testPost.testHook2).apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromMap(Map()))), respArgCaptor2.capture())(any(), any())
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromMap(Map()))), respArgCaptor1)(any, any)
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromMap(Map()))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 
@@ -264,21 +267,21 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
 
       testPost.POSTString[TestClass](url, testRequestBody).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
       verify(testPost.testHook1)
-        .apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor1.capture())(any(), any())
+        .apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor1)(any, any)
       verify(testPost.testHook2)
-        .apply(is("POST"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor2.capture())(any(), any())
+        .apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 
@@ -303,19 +306,19 @@ class HttpPostSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviou
 
       testPost.POSTEmpty[TestClass](url).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPost.testHook1).apply(is("POST"), is(url"$url"), is(headers), is(None), respArgCaptor1.capture())(any(), any())
-      verify(testPost.testHook2).apply(is("POST"), is(url"$url"), is(headers), is(None), respArgCaptor2.capture())(any(), any())
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(None), respArgCaptor1)(any, any)
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), eqTo(headers), eqTo(None), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 

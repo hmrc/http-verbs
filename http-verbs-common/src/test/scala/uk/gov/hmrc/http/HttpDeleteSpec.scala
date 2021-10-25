@@ -18,27 +18,31 @@ package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers.{any, eq => is}
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.captor.ArgCaptor
+import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.http.hooks.HttpHook
 
 import scala.concurrent.{ExecutionContext, Future}
 
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
-class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar with CommonHttpBehaviour {
+class HttpDeleteSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with MockitoSugar
+     with ArgumentMatchersSugar
+     with CommonHttpBehaviour {
 
   import ExecutionContext.Implicits.global
 
   class StubbedHttpDelete(doDeleteResult: Future[HttpResponse]) extends HttpDelete with DeleteHttpTransport with ConnectionTracingCapturing {
-    val testHook1: HttpHook                         = mock[HttpHook]
-    val testHook2: HttpHook                         = mock[HttpHook]
+    val testHook1: HttpHook                         = mock[HttpHook](withSettings.lenient)
+    val testHook2: HttpHook                         = mock[HttpHook](withSettings.lenient)
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
@@ -134,20 +138,20 @@ class HttpDeleteSpec extends AnyWordSpecLike with Matchers with MockitoSugar wit
 
       testDelete.DELETE[HttpResponse](url, Seq("header" -> "foo")).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
 
       val config = HeaderCarrier.Config.fromConfig(testDelete.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url, Seq("header" -> "foo"))
 
-      verify(testDelete.testHook1).apply(is("DELETE"), is(url"$url"), is(headers) , is(None), respArgCaptor1.capture())(any(), any())
-      verify(testDelete.testHook2).apply(is("DELETE"), is(url"$url"), is(headers), is(None), respArgCaptor2.capture())(any(), any())
+      verify(testDelete.testHook1).apply(eqTo("DELETE"), eqTo(url"$url"), eqTo(headers), eqTo(None), respArgCaptor1)(any, any)
+      verify(testDelete.testHook2).apply(eqTo("DELETE"), eqTo(url"$url"), eqTo(headers), eqTo(None), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 }
