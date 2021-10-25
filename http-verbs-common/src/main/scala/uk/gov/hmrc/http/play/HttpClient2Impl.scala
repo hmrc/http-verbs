@@ -177,8 +177,8 @@ class ExecutorImpl(
     executeHooks(isStream, request, responseF)
     responseF.onComplete(logResult(hc, request.method, request.uri.toString, startAge))
     // we don't delegate the response conversion to the client
-    // e.g. execute[WSResponse].transform(...) since the transform functions require access to the request (method and url)
-    // given method and url are only required for error messages, is it overkill? E.g. a stacktrace should identify the function?
+    // (i.e. return Future[WSResponse] to be handled with Future.transform/transformWith(...))
+    // since the transform functions require access to the request (method and url)
     transformResponse(request, responseF)
   }
 
@@ -194,7 +194,11 @@ class ExecutorImpl(
     def toHttpResponse(response: WSResponse) =
       HttpResponse(
         status  = response.status,
-        body    = if (isStream) "<stream>" else response.body, // calling response.body on stream would load all into memory (and cause stream to be read twice..)
+        body    = if (isStream)
+                    // calling response.body on stream would load all into memory (and stream would need to be broadcast to be able
+                    // to read twice - although we could cap it like in uk.gov.hmrc.play.bootstrap.filters.RequestBodyCaptor)
+                    "<stream>"
+                  else response.body,
         headers = response.headers.mapValues(_.toSeq).toMap
       )
 
