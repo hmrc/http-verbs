@@ -19,6 +19,7 @@
 package uk.gov.hmrc.http.play
 
 import akka.actor.ActorSystem
+import akka.util.ByteString
 import com.typesafe.config.Config
 import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
@@ -29,7 +30,8 @@ import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import java.net.URL
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import akka.stream.scaladsl.Source
 
 /* What does HttpVerbs actually provide?
 
@@ -53,10 +55,11 @@ Extension methods are provided to make common patterns easier to apply.
 
 trait Executor {
   def execute[A](
-    request : WSRequest,
-    isStream: Boolean
+    request  : WSRequest,
+    hookDataF: Option[Future[Option[HookData]]],
+    isStream : Boolean
   )(
-    transformResponse: (WSRequest, Future[WSResponse]) => Future[A]
+    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
@@ -90,7 +93,8 @@ class HttpClient2Impl(
       wsClient
         .url(url.toString)
         .withMethod(method)
-        .withHttpHeaders(hc.headersForUrl(hcConfig)(url.toString) : _*)
+        .withHttpHeaders(hc.headersForUrl(hcConfig)(url.toString) : _*),
+      None
     )
 }
 
@@ -101,22 +105,26 @@ final class RequestBuilderImpl(
   optProxyServer: Option[WSProxyServer],
   executor      : Executor
 )(
-  request: WSRequest
+  request  : WSRequest,
+  hookDataF: Option[Future[Option[HookData]]]
 )(implicit
   hc: HeaderCarrier
 ) extends RequestBuilder {
 
   override def transform(transform: WSRequest => WSRequest): RequestBuilderImpl =
-    new RequestBuilderImpl(config, optProxyServer, executor)(transform(request))
+    new RequestBuilderImpl(config, optProxyServer, executor)(transform(request), hookDataF)
 
   // -- Transform helpers --
 
-  override def replaceHeader(header: (String, String)): RequestBuilderImpl = {
+  private def replaceHeaderOnRequest(request: WSRequest, header: (String, String)): WSRequest = {
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
     val hdrsWithoutKey = request.headers.filterKeys(!_.equalsIgnoreCase(header._1)).toMap // replace existing header
-    transform(_.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*))
+    request.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*)
   }
+
+  override def replaceHeader(header: (String, String)): RequestBuilderImpl =
+    transform(replaceHeaderOnRequest(_, header))
 
   override def addHeaders(headers: (String, String)*): RequestBuilderImpl =
     transform(_.addHttpHeaders(headers: _*))
@@ -124,28 +132,59 @@ final class RequestBuilderImpl(
   override def withProxy: RequestBuilderImpl =
     transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 
-  override def withBody[B : BodyWritable](body: B): RequestBuilderImpl =
-    (if (body == EmptyBody)
-      replaceHeader(play.api.http.HeaderNames.CONTENT_LENGTH -> "0") // rejected by Akami without a Content-Length (https://jira.tools.tax.service.gov.uk/browse/APIS-5100)
-    else
-      this
-    ).transform(_.withBody(body))
+  private def withHookData(hookDataF: Future[Option[HookData]]): RequestBuilderImpl =
+    new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
+
+  // withBody should be called rather than transform(_.withBody)
+  // failure to do so will lead to a runtime exception (there's no other way to enforce?)
+  // TODO make this a scaladoc comment (on interface)
+  override def withBody[B : BodyWritable](body: B): RequestBuilderImpl = {
+    val hookDataP = Promise[Option[HookData]]()
+    transform { req =>
+      val req2 = req.withBody(body)
+      req2.body match {
+        case EmptyBody           => hookDataP.success(None)
+                                    replaceHeaderOnRequest(req2, play.api.http.HeaderNames.CONTENT_LENGTH -> "0") // rejected by Akami without a Content-Length (https://jira.tools.tax.service.gov.uk/browse/APIS-5100)
+        case InMemoryBody(bytes) => // if the default BodyWritables have been used - we can trust the content-type here (client's wouldn't have changed the content-type yet)
+                                    // TODO but what if they have used a custom BodyWritable? Also check if the body param is a Map[String, Seq[String]] or Map[String, String]?
+                                    req2.header("Content-Type") match {
+                                      case Some("application/x-www-form-urlencoded") => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
+                                      case _                                         => hookDataP.success(Some(HookData.FromString(bytes.decodeString("UTF-8"))))
+                                    }
+                                    req2
+        case SourceBody(source)  => val src2: Source[ByteString, _] =
+                                      source
+                                        .alsoTo(
+                                          BodyCaptor.sink(
+                                            loggingContext   = s"request for outgoing ${request.method} ${request.url}",
+                                            maxBodyLength    = config.get[Int]("http-verbs.auditing.maxBodyLength"),
+                                            withCapturedBody = body => hookDataP.success(Some(HookData.FromString(body.decodeString("UTF-8"))))
+                                          )
+                                        )
+                                     // preserve content-type (it may have been set with a different body writeable - e.g. play.api.libs.ws.WSBodyWritables.bodyWritableOf_Multipart)
+                                    req2.header("Content-Type") match {
+                                      case Some(contentType) => replaceHeaderOnRequest(req2.withBody(src2), "Content-Type" -> contentType)
+                                      case _                 => req2.withBody(src2)
+                                    }
+      }
+    }.withHookData(hookDataP.future)
+  }
 
   // -- Execution --
 
   override def execute[A](
-    transformResponse: (WSRequest, Future[WSResponse]) => Future[A]
+    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
   )(implicit
     ec: ExecutionContext
   ): Future[A] =
-    executor.execute(request, isStream = false)(transformResponse)
+    executor.execute(request, hookDataF, isStream = false)(transformResponse)
 
   override def stream[A](
-    transformResponse: (WSRequest, Future[WSResponse]) => Future[A]
+    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
   )(implicit
     ec: ExecutionContext
   ): Future[A] =
-    executor.execute(request, isStream = true)(transformResponse)
+    executor.execute(request, hookDataF, isStream = true)(transformResponse)
 }
 
 class ExecutorImpl(
@@ -159,79 +198,118 @@ class ExecutorImpl(
   // for Retries
   override val configuration: Config = config.underlying
 
+  private val maxBodyLength = config.get[Int]("http-verbs.auditing.maxBodyLength")
+
   def execute[A](
-    request : WSRequest,
-    isStream: Boolean
+    request     : WSRequest,
+    optHookDataF: Option[Future[Option[HookData]]],
+    isStream    : Boolean
   )(
-    transformResponse: (WSRequest, Future[WSResponse]) => Future[A]
+    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[A] = {
+    val hookDataF =
+      optHookDataF match {
+        case None if request.body != EmptyBody =>
+          sys.error(s"There is no audit data available. Please ensure you call `withBody` on the RequestBuilder rather than `transform(_.withBody)`")
+        case None    => Future.successful(None)
+        case Some(f) => f
+      }
+
     val startAge  = System.nanoTime() - hc.age
     val responseF =
       retryOnSslEngineClosed(request.method, request.url)(
         // we do the execution since if clients are responsable for it (e.g. a callback), they may further modify the request outside of auditing etc.
         if (isStream) request.stream() else request.execute()
       )
-    executeHooks(isStream, request, responseF)
-    responseF.onComplete(logResult(hc, request.method, request.uri.toString, startAge))
+
+    val (httpResponseF, auditResponseF) = toHttpResponse(isStream, request, responseF)
+    executeHooks(isStream, request, hookDataF, auditResponseF)
+    httpResponseF.onComplete(logResult(hc, request.method, request.uri.toString, startAge))
     // we don't delegate the response conversion to the client
     // (i.e. return Future[WSResponse] to be handled with Future.transform/transformWith(...))
     // since the transform functions require access to the request (method and url)
-    transformResponse(request, responseF)
+    transformResponse(request, httpResponseF)
+  }
+
+  // TODO horrid return type - one HttpResponse is for auditing...
+  private def toHttpResponse(
+    isStream : Boolean,
+    request  : WSRequest,
+    responseF: Future[WSResponse]
+  )(implicit ec: ExecutionContext
+  ): (Future[HttpResponse], Future[HttpResponse]) = {
+    val auditResponseF = Promise[HttpResponse]()
+    val httpResponseF =
+      for {
+        response <- responseF
+      } yield
+        if (isStream) {
+          val source =
+            response.bodyAsSource
+              .alsoTo(
+                BodyCaptor.sink(
+                  loggingContext   = s"response for outgoing ${request.method} ${request.url}",
+                  maxBodyLength    = maxBodyLength,
+                  withCapturedBody = body =>
+                                       auditResponseF.success(
+                                         HttpResponse(
+                                           status  = response.status,
+                                           body    = body.decodeString("UTF-8"),
+                                           headers = response.headers.mapValues(_.toSeq).toMap
+                                         )
+                                       )
+                )
+              )
+          HttpResponse(
+            status       = response.status,
+            bodyAsSource = source,
+            headers      = response.headers.mapValues(_.toSeq).toMap
+          )
+        } else {
+          val httpResponse = HttpResponse(
+              status  = response.status,
+              body    = response.body,
+              headers = response.headers.mapValues(_.toSeq).toMap
+            )
+          auditResponseF.success(httpResponse)
+          httpResponse
+        }
+    (httpResponseF, auditResponseF.future)
   }
 
   private def executeHooks(
     isStream : Boolean,
     request  : WSRequest,
-    responseF: Future[WSResponse]
+    hookDataF: Future[Option[HookData]],
+    auditedResponseF: Future[HttpResponse] // play-auditing expects the body to be a String
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Unit = {
-    // hooks take HttpResponse..
-    def toHttpResponse(response: WSResponse) =
-      HttpResponse(
-        status  = response.status,
-        body    = if (isStream)
-                    // calling response.body on stream would load all into memory (and stream would need to be broadcast to be able
-                    // to read twice - although we could cap it like in uk.gov.hmrc.play.bootstrap.filters.RequestBodyCaptor)
-                    "<stream>"
-                  else response.body,
-        headers = response.headers.mapValues(_.toSeq).toMap
-      )
-
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
-    // TODO discuss changes with CIP
-    val body =
-      request.body match {
-        case EmptyBody           => None
-        case InMemoryBody(bytes) => request.header("Content-Type") match {
-                                      case Some("application/x-www-form-urlencoded") => Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8"))))
-                                      case Some("application/octet-stream")          => Some(HookData.FromString("<binary>"))
-                                      case _                                         => Some(HookData.FromString(bytes.decodeString("UTF-8")))
-                                    }
-        case SourceBody(_)       => Some(HookData.FromString("<stream>"))
-      }
-
-    println(s"""AUDIT:
-        verb      = ${request.method},
-        url       = ${new URL(request.url)},
-        headers   = ${denormalise(request.headers)},
-        body      = $body,
-        responseF = ${responseF.map(toHttpResponse)}
-        """)
-    hooks.foreach(
-      _.apply(
-        verb      = request.method,
-        url       = new URL(request.url),
-        headers   = denormalise(request.headers),
-        body      = body,
-        responseF = responseF.map(toHttpResponse)
+    // what if hookDataF fails?
+    hookDataF.foreach { body =>
+      println(s"""AUDIT:
+          verb      = ${request.method},
+          url       = ${new URL(request.url)},
+          headers   = ${denormalise(request.headers)},
+          body      = $body,
+          responseF = $auditedResponseF}
+          """)
+      hooks.foreach(
+        _.apply(
+          verb      = request.method,
+          url       = new URL(request.url),
+          headers   = denormalise(request.headers),
+          body      = body,
+          responseF = auditedResponseF
+        )
       )
-    )
+    }
   }
 }

@@ -127,7 +127,7 @@ class HttpClient2Spec
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
           headers   = headersCaptor,
-          body      = eqTo(Some(HookData.FromString("<stream>"))),
+          body      = eqTo(Some(HookData.FromString("source"))), // TODO check when this is truncated when too large
           responseF = responseCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
@@ -135,7 +135,7 @@ class HttpClient2Spec
       headersCaptor.value should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe "<stream>"
+      auditedResponse.body   shouldBe "\"res\"" // TODO check when this is truncated when too large
     }
 
     "work with form data" in new Setup {
@@ -184,6 +184,17 @@ class HttpClient2Spec
       val auditedResponse = responseCaptor.value.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe "\"res\""
+    }
+
+    "fail if call withBody on the wsRequest itself" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      a[RuntimeException] should be thrownBy
+        httpClient2
+          .put(url"$wireMockUrl/")
+          .transform(_.withBody(toJson(ReqDomain("req"))))
+          .replaceHeader("User-Agent" -> "ua2")
+          .execute(fromJson[ResDomain])
     }
 
     "allow overriding user-agent" in new Setup {
