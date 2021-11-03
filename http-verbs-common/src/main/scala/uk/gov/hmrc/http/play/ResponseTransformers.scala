@@ -18,7 +18,7 @@ package uk.gov.hmrc.http.play
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import _root_.play.api.libs.ws.{WSRequest, WSResponse}
+import _root_.play.api.libs.ws.WSRequest
 import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HttpResponse, HttpReads}
 
 import java.util.concurrent.TimeoutException
@@ -28,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ResponseTransformers {
   def fromStream(
     request  : WSRequest,
-    responseF: Future[WSResponse]
+    responseF: Future[HttpResponse]
   )(implicit
     ec: ExecutionContext
   ): Future[Source[ByteString, _]] =
@@ -37,28 +37,20 @@ trait ResponseTransformers {
 
   def fromJson[A](
     request: WSRequest,
-    responseF: Future[WSResponse]
+    responseF: Future[HttpResponse]
   )(implicit
     r : HttpReads[A],
     ec: ExecutionContext
   ): Future[A] =
     mapErrors(request, responseF)
-    .map { response =>
-      // reusing existing HttpReads - currently requires HttpResponse
-      val httpResponse = HttpResponse(
-        status  = response.status,
-        body    = response.body,
-        headers = response.headers.mapValues(_.toSeq).toMap
-      )
-      r.read(request.method, request.url, httpResponse)
-    }
+      .map(r.read(request.method, request.url, _))
 
   def mapErrors(
     request  : WSRequest,
-    responseF: Future[WSResponse]
+    responseF: Future[HttpResponse]
   )(implicit
     ec: ExecutionContext
-  ): Future[WSResponse] =
+  ): Future[HttpResponse] =
     responseF.recoverWith {
       case e: TimeoutException => Future.failed(new GatewayTimeoutException(s"${request.method} of '${request.url}' timed out with message '${e.getMessage}'"))
       case e: ConnectException => Future.failed(new BadGatewayException(s"${request.method} of '${request.url}' failed. Caused by: '${e.getMessage}'"))

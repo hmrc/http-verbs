@@ -18,8 +18,8 @@
 // `import uk.gov.hmrc.http._` will then have to make play imports with _root_ `import _root_.play...`
 package uk.gov.hmrc.http.play
 
-import play.api.libs.ws.{BodyWritable, WSRequest, WSResponse}
-import uk.gov.hmrc.http.HeaderCarrier
+import play.api.libs.ws.{BodyWritable, WSRequest}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,13 +53,13 @@ trait RequestBuilder {
   def transform(transform: WSRequest => WSRequest): RequestBuilder
 
   def execute[A](
-    transformResponse: (WSRequest, Future[WSResponse]) => Future[A]
+    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
   )(implicit
     ec: ExecutionContext
   ): Future[A]
 
   def stream[A](
-    transformResponse: (WSRequest, Future[WSResponse]) => Future[A]
+    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
   )(implicit
     ec: ExecutionContext
   ): Future[A]

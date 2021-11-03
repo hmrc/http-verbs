@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.http
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.github.ghik.silencer.silent
 import _root_.play.api.libs.json.{JsValue, Json}
 
@@ -43,6 +45,11 @@ trait HttpResponse {
 
   def json: JsValue =
     Json.parse(body)
+
+  // If we were using wsResponse, we could have a single body function...
+  //def body[T: BodyReadable]: T = super.body[T]
+  def bodyAsSource: Source[ByteString, _] =
+    Source.single(ByteString(body))
 
   def header(key: String): Option[String] =
     headers.get(key).flatMap(_.headOption)
@@ -103,6 +110,22 @@ object HttpResponse {
       override def body      : String                   = Json.prettyPrint(pJson)
       override def allHeaders: Map[String, Seq[String]] = pHeaders
       override def json      : JsValue                  = pJson
+    }
+  }
+
+  def apply(
+    status      : Int,
+    bodyAsSource: Source[ByteString, _],
+    headers     : Map[String, Seq[String]]
+  ): HttpResponse = {
+    val pStatus       = status
+    val pBodyAsSource = bodyAsSource
+    val pHeaders      = headers
+    new HttpResponse {
+      override def status      : Int                      = pStatus
+      override def body        : String                   = sys.error(s"This is a streamed response, please use `bodyAsSource`")
+      override def bodyAsSource: Source[ByteString, _]    = pBodyAsSource
+      override def allHeaders  : Map[String, Seq[String]] = pHeaders
     }
   }
 
