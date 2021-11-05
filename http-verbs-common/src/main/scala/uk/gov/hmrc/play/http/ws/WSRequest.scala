@@ -62,7 +62,7 @@ object WSProxyConfiguration {
   }
 
 
-  def buildWsProxyServer(configuration: Config): Option[WSProxyServer] = { // TODO use Configuration rather than Config throughout?
+  def buildWsProxyServer(configuration: Config): Option[WSProxyServer] = {
     def getOptionalString(key: String): Option[String] =
       if (configuration.hasPath(key)) Some(configuration.getString(key)) else None
 

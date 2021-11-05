@@ -64,7 +64,7 @@ class HttpClient2Spec
         httpClient2
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
-          .execute(fromJson[ResDomain])
+          .execute(withHttpReads[ResDomain])
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -142,7 +142,7 @@ class HttpClient2Spec
       auditedResponse.body   shouldBe responseBody
     }
 
-    "truncate stream payloads if too long" in new Setup {
+    "truncate stream payloads for auditing if too long" in new Setup {
       implicit val hc = HeaderCarrier()
 
       val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
@@ -190,6 +190,51 @@ class HttpClient2Spec
       auditedResponse.body   shouldBe responseBody.take(maxAuditBodyLength)
     }
 
+    "truncate strict payloads for auditing if too long" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+      val responseBody = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody(responseBody).withStatus(200))
+      )
+
+      val res: Future[HttpResponse] =
+        httpClient2
+          .put(url"$wireMockUrl/")
+          .withBody(requestBody)
+          .execute(withHttpReads[HttpResponse])
+
+      res.futureValue.body shouldBe responseBody
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", containing("text/plain")) // play-26 doesn't send charset
+          .withRequestBody(equalTo(requestBody))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("PUT"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromString(requestBody.take(maxAuditBodyLength)))),
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "text/plain")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe responseBody.take(maxAuditBodyLength)
+    }
+
     "work with form data" in new Setup {
       implicit val hc = HeaderCarrier()
 
@@ -208,7 +253,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(fromJson[ResDomain])
+            .execute(withHttpReads[ResDomain])
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -270,7 +315,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(fromJson[ResDomain])
+            .execute(withHttpReads[ResDomain])
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -332,7 +377,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(fromJson[ResDomain])
+            .execute(withHttpReads[ResDomain])
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -395,7 +440,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(fromJson[ResDomain])
+            .execute(withHttpReads[ResDomain])
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -432,9 +477,9 @@ class HttpClient2Spec
       a[RuntimeException] should be thrownBy
         httpClient2
           .put(url"$wireMockUrl/")
-          .transform(_.withBody(toJson(ReqDomain("req"))))
+          .transform(_.withBody(Json.toJson(ReqDomain("req")))
           .replaceHeader("User-Agent" -> "ua2")
-          .execute(fromJson[ResDomain])
+          .execute(withHttpReads[ResDomain])
     }
 
     "allow overriding user-agent" in new Setup {
@@ -450,7 +495,7 @@ class HttpClient2Spec
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
           .replaceHeader("User-Agent" -> "ua2")
-          .execute(fromJson[ResDomain])
+          .execute(withHttpReads[ResDomain])
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -483,8 +528,8 @@ class HttpClient2Spec
           count.incrementAndGet
           httpClient2
             .put(url"$wireMockUrl/")
-            .withBody(Json.toJson(ReqDomain("req")))
-            .execute(fromJson[ResDomain])
+            .withBody((Json.toJson(ReqDomain("req")))
+            .execute(withHttpReads[ResDomain])
         }
 
       res.failed.futureValue shouldBe a[UpstreamErrorResponse]
