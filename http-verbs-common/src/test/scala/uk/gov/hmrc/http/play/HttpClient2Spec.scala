@@ -40,6 +40,7 @@ import uk.gov.hmrc.http.test.WireMockSupport
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Random
 
 class HttpClient2Spec
   extends AnyWordSpecLike
@@ -96,13 +97,16 @@ class HttpClient2Spec
     "work with streams" in new Setup {
       implicit val hc = HeaderCarrier()
 
+      val requestBody  = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
+      val responseBody = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
+
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
-          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+          .willReturn(aResponse().withBody(responseBody).withStatus(200))
       )
 
       val srcStream: Source[ByteString, _] =
-        Source.single(ByteString("source"))
+        Source.single(ByteString(requestBody))
 
       val res: Future[Source[ByteString, _]] =
         httpClient2
@@ -110,12 +114,12 @@ class HttpClient2Spec
           .withBody(srcStream)
           .stream(fromStream)
 
-      res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe "\"res\""
+      res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe responseBody
 
       wireMockServer.verify(
         putRequestedFor(urlEqualTo("/"))
           .withHeader("Content-Type", equalTo("application/octet-stream"))
-          .withRequestBody(equalTo("source"))
+          .withRequestBody(equalTo(requestBody))
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
@@ -127,7 +131,7 @@ class HttpClient2Spec
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
           headers   = headersCaptor,
-          body      = eqTo(Some(HookData.FromString("source"))), // TODO check when this is truncated when too large
+          body      = eqTo(Some(HookData.FromString(requestBody))),
           responseF = responseCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
@@ -135,7 +139,55 @@ class HttpClient2Spec
       headersCaptor.value should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe "\"res\"" // TODO check when this is truncated when too large
+      auditedResponse.body   shouldBe responseBody
+    }
+
+    "truncate stream payloads if too long" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+      val responseBody = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody(responseBody).withStatus(200))
+      )
+
+      val srcStream: Source[ByteString, _] =
+        Source.single(ByteString(requestBody))
+
+      val res: Future[Source[ByteString, _]] =
+        httpClient2
+          .put(url"$wireMockUrl/")
+          .withBody(srcStream)
+          .stream(fromStream)
+
+      res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe responseBody
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", equalTo("application/octet-stream"))
+          .withRequestBody(equalTo(requestBody))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("PUT"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromString(requestBody.take(maxAuditBodyLength)))),
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "application/octet-stream")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe responseBody.take(maxAuditBodyLength)
     }
 
     "work with form data" in new Setup {
@@ -446,11 +498,15 @@ class HttpClient2Spec
 
     val mockHttpHook = mock[HttpHook](withSettings.lenient)
 
+    val maxAuditBodyLength = 30
+
     val httpClient2: HttpClient2 = {
       val config =
         Configuration(
           ConfigFactory.parseString(
-            """appName = myapp"""
+            s"""|appName = myapp
+                |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+                |""".stripMargin
           ).withFallback(ConfigFactory.load())
         )
       new HttpClient2Impl(
