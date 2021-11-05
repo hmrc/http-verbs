@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// TODO putting this in this package means that all clients which do
-// `import uk.gov.hmrc.http._` will then have to make play imports with _root_ `import _root_.play...`
 package uk.gov.hmrc.http.play
 
 import akka.actor.ActorSystem
@@ -33,6 +31,7 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 import java.net.URL
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
+import scala.util.{Failure, Success}
 
 /* What does HttpVerbs actually provide?
 
@@ -147,7 +146,9 @@ final class RequestBuilderImpl(
   }
 
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
-    val hookDataP = Promise[Option[HookData]]()
+    val hookDataP      = Promise[Option[HookData]]()
+    val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
+    val loggingContext = s"outgoing ${request.method} ${request.url} request"
     transform { req =>
       val req2 = req.withBody(body)
       req2.body match {
@@ -158,19 +159,22 @@ final class RequestBuilderImpl(
                                     (body, req2.header("Content-Type")) match {
                                       case (IsMap(m), _                                        ) => hookDataP.success(Some(HookData.FromMap(m)))
                                       case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
-                                      case _                                                     => hookDataP.success(Some(HookData.FromString(bytes.decodeString("UTF-8"))))
+                                      case _                                                     => val auditedBody = BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext).decodeString("UTF-8")
+                                                                                                    hookDataP.success(Some(HookData.FromString(auditedBody)))
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =
                                       source
                                         .alsoTo(
                                           BodyCaptor.sink(
-                                            loggingContext   = s"request for outgoing ${request.method} ${request.url}",
-                                            maxBodyLength    = config.get[Int]("http-verbs.auditing.maxBodyLength"),
+                                            loggingContext   = loggingContext,
+                                            maxBodyLength    = maxBodyLength,
                                             withCapturedBody = body => hookDataP.success(Some(HookData.FromString(body.decodeString("UTF-8"))))
                                           )
-                                        )
-                                     // preserve content-type (it may have been set with a different body writeable - e.g. play.api.libs.ws.WSBodyWritables.bodyWritableOf_Multipart)
+                                        ).recover {
+                                          case e => hookDataP.failure(e); throw e
+                                        }
+                                    // preserve content-type (it may have been set with a different body writeable - e.g. play.api.libs.ws.WSBodyWritables.bodyWritableOf_Multipart)
                                     req2.header("Content-Type") match {
                                       case Some(contentType) => replaceHeaderOnRequest(req2.withBody(src2), "Content-Type" -> contentType)
                                       case _                 => req2.withBody(src2)
@@ -243,7 +247,7 @@ class ExecutorImpl(
     transformResponse(request, httpResponseF)
   }
 
-  // TODO horrid return type - one HttpResponse is for auditing...
+  // unfortunate return type - first HttpResponse is the full response, the second HttpResponse is truncated for auditing...
   private def toHttpResponse(
     isStream : Boolean,
     request  : WSRequest,
@@ -251,6 +255,7 @@ class ExecutorImpl(
   )(implicit ec: ExecutionContext
   ): (Future[HttpResponse], Future[HttpResponse]) = {
     val auditResponseF = Promise[HttpResponse]()
+    val loggingContext = s"outgoing ${request.method} ${request.url} response"
     val httpResponseF =
       for {
         response <- responseF
@@ -260,7 +265,7 @@ class ExecutorImpl(
             response.bodyAsSource
               .alsoTo(
                 BodyCaptor.sink(
-                  loggingContext   = s"response for outgoing ${request.method} ${request.url}",
+                  loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
                   withCapturedBody = body =>
                                        auditResponseF.success(
@@ -272,27 +277,35 @@ class ExecutorImpl(
                                        )
                 )
               )
+              .recover {
+                case e => auditResponseF.failure(e); throw e
+              }
           HttpResponse(
             status       = response.status,
             bodyAsSource = source,
             headers      = response.headers.mapValues(_.toSeq).toMap
           )
         } else {
-          val httpResponse = HttpResponse(
+          auditResponseF.success(
+            HttpResponse(
               status  = response.status,
-              body    = response.body,
+              body    = BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext),
               headers = response.headers.mapValues(_.toSeq).toMap
             )
-          auditResponseF.success(httpResponse)
-          httpResponse
+          )
+          HttpResponse(
+            status  = response.status,
+            body    = response.body,
+            headers = response.headers.mapValues(_.toSeq).toMap
+          )
         }
     (httpResponseF, auditResponseF.future)
   }
 
   private def executeHooks(
-    isStream : Boolean,
-    request  : WSRequest,
-    hookDataF: Future[Option[HookData]],
+    isStream        : Boolean,
+    request         : WSRequest,
+    hookDataF       : Future[Option[HookData]],
     auditedResponseF: Future[HttpResponse] // play-auditing expects the body to be a String
   )(implicit
     hc: HeaderCarrier,
@@ -301,24 +314,21 @@ class ExecutorImpl(
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
-    // what if hookDataF fails?
-    hookDataF.foreach { body =>
-      println(s"""AUDIT:
-          verb      = ${request.method},
-          url       = ${new URL(request.url)},
-          headers   = ${denormalise(request.headers)},
-          body      = $body,
-          responseF = $auditedResponseF}
-          """)
+    def executeHooksWithHookData(hookData: Option[HookData]) =
       hooks.foreach(
         _.apply(
           verb      = request.method,
           url       = new URL(request.url),
           headers   = denormalise(request.headers),
-          body      = body,
+          body      = hookData,
           responseF = auditedResponseF
         )
       )
+
+    hookDataF.onComplete {
+      case Success(hookData) => executeHooksWithHookData(hookData)
+      case Failure(e)        => // this is unlikely, but we want best attempt at auditing
+                                executeHooksWithHookData(None)
     }
   }
 }

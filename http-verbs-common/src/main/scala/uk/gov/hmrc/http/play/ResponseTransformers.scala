@@ -35,7 +35,7 @@ trait ResponseTransformers {
     mapErrors(request, responseF)
       .map(_.bodyAsSource)
 
-  def fromJson[A](
+  def withHttpReads[A](
     request: WSRequest,
     responseF: Future[HttpResponse]
   )(implicit

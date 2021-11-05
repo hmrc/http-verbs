@@ -20,7 +20,7 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.stage._
 import akka.util.ByteString
-import play.api.Logger
+import org.slf4j.LoggerFactory
 
 // based on play.filters.csrf.CSRFAction#BodyHandler
 
@@ -32,8 +32,6 @@ private class BodyCaptorFlow(
   val in             = Inlet[ByteString]("BodyCaptorFlow.in")
   val out            = Outlet[ByteString]("BodyCaptorFlow.out")
   override val shape = FlowShape.of(in, out)
-
-  private val logger = Logger(getClass)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
@@ -56,15 +54,7 @@ private class BodyCaptorFlow(
           }
 
           override def onUpstreamFinish(): Unit = {
-            // TODO how to opt out of auditing payloads?
-            // currently we can only turn of auditing for url (auditDisabledForPattern) - not per method
-            // and we can't turn off auditing of just the payload (and keep the fact the call has been made)
-            // what about auditing request payloads, but not response payloads?
-            if (bodyLength > maxBodyLength)
-              logger.warn(
-                s"txm play auditing: $loggingContext sanity check request body $bodyLength exceeds maxLength $maxBodyLength - do you need to be auditing this payload?"
-              )
-            withCapturedBody(buffer.take(maxBodyLength))
+            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, loggingContext))
             if (isAvailable(out) && buffer == ByteString.empty)
               push(out, buffer)
             completeStage()
@@ -75,10 +65,12 @@ private class BodyCaptorFlow(
 }
 
 object BodyCaptor {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def flow(
     loggingContext  : String,
     maxBodyLength   : Int,
-    withCapturedBody: ByteString => Unit
+    withCapturedBody: ByteString => Unit // provide a callback since a Materialized value would be not be available until the flow has been run
   ): Flow[ByteString, ByteString, akka.NotUsed] =
     Flow.fromGraph(new BodyCaptorFlow(
       loggingContext   = loggingContext,
@@ -89,8 +81,31 @@ object BodyCaptor {
   def sink(
     loggingContext  : String,
     maxBodyLength   : Int,
-    withCapturedBody: ByteString => Unit // TODO can we not just expose as the materialised value?
+    withCapturedBody: ByteString => Unit
   ): Sink[ByteString, akka.NotUsed] =
     flow(loggingContext, maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
+
+  // We raise a warning, but don't provide a mechanism to opt-out of auditing payloads.
+  // Currently we can only turn off auditing for url (`auditDisabledForPattern` configuration) - not per method,
+  // and we can't turn off auditing of just the payload (and keep the fact the call has been made)
+  // TODO Check with CIP whether `RequestBuilder` could have `withoutRequestPayloadAuditing` and `withoutRequestPayloadAuditing`?
+  // Note, this also applies to bootstrap AuditFilter.
+  def bodyUpto(body: String, maxBodyLength: Int, loggingContext: String): String =
+    if (body.length > maxBodyLength) {
+      logger.warn(
+        s"txm play auditing: $loggingContext body ${body.length} exceeds maxLength $maxBodyLength - do you need to be auditing this payload?"
+      )
+      body.take(maxBodyLength)
+    } else
+      body
+
+  def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String): ByteString =
+    if (body.length > maxBodyLength) {
+      logger.warn(
+        s"txm play auditing: $loggingContext body ${body.length} exceeds maxLength $maxBodyLength - do you need to be auditing this payload?"
+      )
+      body.take(maxBodyLength)
+    } else
+      body
 }
