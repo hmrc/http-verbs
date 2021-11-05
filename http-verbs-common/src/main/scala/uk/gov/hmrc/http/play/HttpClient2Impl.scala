@@ -19,6 +19,7 @@
 package uk.gov.hmrc.http.play
 
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.config.Config
 import play.api.Configuration
@@ -31,7 +32,7 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import java.net.URL
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import akka.stream.scaladsl.Source
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 /* What does HttpVerbs actually provide?
 
@@ -135,21 +136,29 @@ final class RequestBuilderImpl(
   private def withHookData(hookDataF: Future[Option[HookData]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
-  // withBody should be called rather than transform(_.withBody)
-  // failure to do so will lead to a runtime exception (there's no other way to enforce?)
-  // TODO make this a scaladoc comment (on interface)
-  override def withBody[B : BodyWritable](body: B): RequestBuilderImpl = {
+  // for erasure
+  private object IsMap {
+    def unapply[B: TypeTag](b: B): Option[Map[String, Seq[String]]] =
+      typeOf[B] match {
+        case _ if typeOf[B] =:= typeOf[Map[String, String]]      => Some(b.asInstanceOf[Map[String, String]].map { case (k, v) => k -> Seq(v) })
+        case _ if typeOf[B] =:= typeOf[Map[String, Seq[String]]] => Some(b.asInstanceOf[Map[String, Seq[String]]])
+        case _                                                   => None
+      }
+  }
+
+  override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
     val hookDataP = Promise[Option[HookData]]()
     transform { req =>
       val req2 = req.withBody(body)
       req2.body match {
         case EmptyBody           => hookDataP.success(None)
                                     replaceHeaderOnRequest(req2, play.api.http.HeaderNames.CONTENT_LENGTH -> "0") // rejected by Akami without a Content-Length (https://jira.tools.tax.service.gov.uk/browse/APIS-5100)
-        case InMemoryBody(bytes) => // if the default BodyWritables have been used - we can trust the content-type here (client's wouldn't have changed the content-type yet)
-                                    // TODO but what if they have used a custom BodyWritable? Also check if the body param is a Map[String, Seq[String]] or Map[String, String]?
-                                    req2.header("Content-Type") match {
-                                      case Some("application/x-www-form-urlencoded") => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
-                                      case _                                         => hookDataP.success(Some(HookData.FromString(bytes.decodeString("UTF-8"))))
+        case InMemoryBody(bytes) => // we can't guarantee that the default BodyWritables have been used - so rather than relying on content-type alone, we identify form data
+                                    // by provided body type (Map) or content-type (e.g. form data as a string)
+                                    (body, req2.header("Content-Type")) match {
+                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(HookData.FromMap(m)))
+                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
+                                      case _                                                     => hookDataP.success(Some(HookData.FromString(bytes.decodeString("UTF-8"))))
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =

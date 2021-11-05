@@ -23,6 +23,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.universe.TypeTag
 
 trait HttpClient2 {
   protected def mkRequestBuilder(url: URL, method: String)(implicit hc: HeaderCarrier): RequestBuilder
@@ -72,5 +73,8 @@ trait RequestBuilder {
 
   def withProxy: RequestBuilder
 
-  def withBody[B : BodyWritable](body: B): RequestBuilder
+  /** `withBody` should be called rather than `transform(_.withBody)`.
+    * Failure to do so will lead to a runtime exception
+    */
+  def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilder
 }

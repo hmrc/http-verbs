@@ -186,6 +186,194 @@ class HttpClient2Spec
       auditedResponse.body   shouldBe "\"res\""
     }
 
+    "work with form data - custom writeable for content-type" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+      )
+
+      import play.api.libs.ws.{BodyWritable, InMemoryBody}
+      implicit val writeableOf_urlEncodedForm: BodyWritable[Map[String, Seq[String]]] = {
+        import java.net.URLEncoder
+        BodyWritable(
+          formData =>
+            InMemoryBody(
+              ByteString.fromString(
+                formData.flatMap(item => item._2.map(c => s"${item._1}=${URLEncoder.encode(c, "UTF-8")}")).mkString("&")
+              )
+            ),
+          "nonstandard/x-www-form-urlencoded"
+        )
+      }
+
+      val body: Map[String, Seq[String]] =
+        Map(
+          "k1" -> Seq("v1", "v2"),
+          "k2" -> Seq("v3")
+        )
+
+      val res: Future[ResDomain] =
+          httpClient2
+            .post(url"$wireMockUrl/")
+            .withBody(body)
+            .execute(fromJson[ResDomain])
+
+      res.futureValue shouldBe ResDomain("res")
+
+      wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", equalTo("nonstandard/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("k1=v1&k1=v2&k2=v3"))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("POST"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromMap(body))),
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "nonstandard/x-www-form-urlencoded")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe "\"res\""
+    }
+
+    "work with form data - custom writeable for map type" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+      )
+
+      import play.api.libs.ws.{BodyWritable, InMemoryBody}
+      implicit val writeableOf_urlEncodedForm: BodyWritable[scala.collection.mutable.Map[String, Seq[String]]] = {
+        import java.net.URLEncoder
+        BodyWritable(
+          formData =>
+            InMemoryBody(
+              ByteString.fromString(
+                formData.flatMap(item => item._2.map(c => s"${item._1}=${URLEncoder.encode(c, "UTF-8")}")).mkString("&")
+              )
+            ),
+          "application/x-www-form-urlencoded"
+        )
+      }
+
+      val body: scala.collection.mutable.Map[String, Seq[String]] =
+        scala.collection.mutable.Map(
+          "k1" -> Seq("v1", "v2"),
+          "k2" -> Seq("v3")
+        )
+
+      val res: Future[ResDomain] =
+          httpClient2
+            .post(url"$wireMockUrl/")
+            .withBody(body)
+            .execute(fromJson[ResDomain])
+
+      res.futureValue shouldBe ResDomain("res")
+
+      wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("k1=v1&k1=v2&k2=v3"))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("POST"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromMap(body.toMap))),
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "application/x-www-form-urlencoded")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe "\"res\""
+    }
+
+    /* Note, using non-form-encoding and a non immutable Map implementation will not be escaped properly
+    "work with any form data" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+      )
+
+      import play.api.libs.ws.{BodyWritable, InMemoryBody}
+      implicit val writeableOf_urlEncodedForm: BodyWritable[scala.collection.mutable.Map[String, Seq[String]]] = {
+        import java.net.URLEncoder
+        BodyWritable(
+          formData =>
+            InMemoryBody(
+              ByteString.fromString(
+                formData.flatMap(item => item._2.map(c => s"${item._1}=${URLEncoder.encode(c, "UTF-8")}")).mkString("&")
+              )
+            ),
+          "non-standard/x-www-form-urlencoded"
+        )
+      }
+
+      val body: scala.collection.mutable.Map[String, Seq[String]] =
+        scala.collection.mutable.Map(
+          "k1" -> Seq("v1", "v2"),
+          "k2" -> Seq("v3")
+        )
+
+      val res: Future[ResDomain] =
+          httpClient2
+            .post(url"$wireMockUrl/")
+            .withBody(body)
+            .execute(fromJson[ResDomain])
+
+      res.futureValue shouldBe ResDomain("res")
+
+      wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", equalTo("nonstandard/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("k1=v1&k1=v2&k2=v3"))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("POST"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromMap(body.toMap))),
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "application/x-www-form-urlencoded")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe "\"res\""
+    }
+    */
+
     "fail if call withBody on the wsRequest itself" in new Setup {
       implicit val hc = HeaderCarrier()
 
