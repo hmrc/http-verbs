@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.HttpResponse
 class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
 
   @silent("deprecated") // allHeaders is required for Play 2.5
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
+  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders.mapValues(_.toSeq).toMap
 
   override def status: Int = wsResponse.status
 
@@ -43,6 +43,6 @@ object WSHttpResponse {
     HttpResponse(
       status  = wsResponse.status,
       body    = wsResponse.body,
-      headers = wsResponse.allHeaders
+      headers = wsResponse.allHeaders.mapValues(_.toSeq).toMap
     )
 }

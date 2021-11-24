@@ -54,7 +54,7 @@ trait Retries {
   }
 
   private[http] lazy val intervals: Seq[FiniteDuration] =
-    configuration.getDurationList("http-verbs.retries.intervals").asScala.map { d =>
+    configuration.getDurationList("http-verbs.retries.intervals").asScala.toSeq.map { d =>
       FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
     }
 
