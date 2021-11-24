@@ -23,15 +23,17 @@ import com.typesafe.config.Config
 import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, Retries}
+import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
-import java.net.URL
+import java.net.{ConnectException, URL}
+import java.util.concurrent.TimeoutException
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.{Failure, Success}
+
 
 /* What does HttpVerbs actually provide?
 
@@ -57,9 +59,8 @@ trait Executor {
   def execute[A](
     request  : WSRequest,
     hookDataF: Option[Future[Option[HookData]]],
-    isStream : Boolean
-  )(
-    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
+    isStream : Boolean,
+    r        : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
@@ -76,8 +77,11 @@ class HttpClient2Impl(
   private lazy val optProxyServer =
     WSProxyConfiguration.buildWsProxyServer(config.underlying)
 
-  private lazy val hcConfig =
+  private val hcConfig =
     HeaderCarrier.Config.fromConfig(config.underlying)
+
+  private val executor =
+    new ExecutorImpl(actorSystem, config, hooks)
 
   override protected def mkRequestBuilder(
     url   : URL,
@@ -88,7 +92,7 @@ class HttpClient2Impl(
     new RequestBuilderImpl(
       config,
       optProxyServer,
-      new ExecutorImpl(actorSystem, config, hooks)
+      executor
     )(
       wsClient
         .url(url.toString)
@@ -185,19 +189,11 @@ final class RequestBuilderImpl(
 
   // -- Execution --
 
-  override def execute[A](
-    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
-  )(implicit
-    ec: ExecutionContext
-  ): Future[A] =
-    executor.execute(request, hookDataF, isStream = false)(transformResponse)
+  override def execute[A](implicit r: HttpReads[A], ec: ExecutionContext): Future[A] =
+    executor.execute(request, hookDataF, isStream = false, r)
 
-  override def stream[A](
-    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
-  )(implicit
-    ec: ExecutionContext
-  ): Future[A] =
-    executor.execute(request, hookDataF, isStream = true)(transformResponse)
+  override def stream[A](implicit r: StreamHttpReads[A], ec: ExecutionContext): Future[A] =
+    executor.execute(request, hookDataF, isStream = true, r)
 }
 
 class ExecutorImpl(
@@ -216,9 +212,8 @@ class ExecutorImpl(
   def execute[A](
     request     : WSRequest,
     optHookDataF: Option[Future[Option[HookData]]],
-    isStream    : Boolean
-  )(
-    transformResponse: (WSRequest, Future[HttpResponse]) => Future[A]
+    isStream    : Boolean,
+    r           : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
@@ -244,7 +239,9 @@ class ExecutorImpl(
     // we don't delegate the response conversion to the client
     // (i.e. return Future[WSResponse] to be handled with Future.transform/transformWith(...))
     // since the transform functions require access to the request (method and url)
-    transformResponse(request, httpResponseF)
+    // also `mapErrors` is not performed by HttpReads for backward compatibility
+    mapErrors(request, httpResponseF)
+      .map(r.read(request.method, request.url, _))
   }
 
   // unfortunate return type - first HttpResponse is the full response, the second HttpResponse is truncated for auditing...
@@ -331,4 +328,16 @@ class ExecutorImpl(
                                 executeHooksWithHookData(None)
     }
   }
+
+  // TODO what if clients want to override this?
+  private def mapErrors(
+    request  : WSRequest,
+    responseF: Future[HttpResponse]
+  )(implicit
+    ec: ExecutionContext
+  ): Future[HttpResponse] =
+    responseF.recoverWith {
+      case e: TimeoutException => Future.failed(new GatewayTimeoutException(s"${request.method} of '${request.url}' timed out with message '${e.getMessage}'"))
+      case e: ConnectException => Future.failed(new BadGatewayException(s"${request.method} of '${request.url}' failed. Caused by: '${e.getMessage}'"))
+    }
 }

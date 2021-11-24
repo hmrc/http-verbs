@@ -16,9 +16,39 @@
 
 package uk.gov.hmrc.http
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+
 import _root_.play.api.libs.json.{JsValue, Writes}
 
-// These will still need explicitly importing
-// should they be moved to `import httpClient2._`? which means implementations can then depend on
-// httpClient values (e.g. configuration) or does this make mocking/providing alternative implementations harder?
-package object play extends ResponseTransformers
+package object play {
+  // ensure strict HttpReads are not passed to stream function, which would lead to stream being read into memory
+  trait Streaming
+  type StreamHttpReads[A] = HttpReads[A] with Streaming
+}
+
+trait StreamHttpReadsInstances {
+  def tag[A](instance: A): A with play.Streaming =
+    instance.asInstanceOf[A with play.Streaming]
+
+  implicit val readEitherSource: HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] with play.Streaming =
+    tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
+      HttpReads.ask.flatMap { case (method, url, response) =>
+        HttpErrorFunctions.handleResponseEither(method, url)(response) match {
+          case Left(err)       => HttpReads.pure(Left(err))
+          case Right(response) => HttpReads.pure(Right(response.bodyAsSource))
+        }
+      }
+    )
+
+  implicit val readSource: HttpReads[Source[ByteString, _]] with play.Streaming =
+    tag[HttpReads[Source[ByteString, _]]](
+      readEitherSource
+        .map {
+          case Left(err)    => throw err
+          case Right(value) => value
+        }
+    )
+}
+
+object StreamHttpReadsInstances extends StreamHttpReadsInstances

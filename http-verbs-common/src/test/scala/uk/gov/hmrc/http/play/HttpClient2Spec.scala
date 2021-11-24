@@ -51,6 +51,10 @@ class HttpClient2Spec
      with MockitoSugar
      with ArgumentMatchersSugar {
 
+  import uk.gov.hmrc.http.HttpReads.Implicits._
+
+  import uk.gov.hmrc.http.StreamHttpReadsInstances._
+
   "HttpClient2" should {
     "work with json" in new Setup {
       implicit val hc = HeaderCarrier()
@@ -64,7 +68,7 @@ class HttpClient2Spec
         httpClient2
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
-          .execute(withHttpReads[ResDomain])
+          .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -112,7 +116,7 @@ class HttpClient2Spec
         httpClient2
           .put(url"$wireMockUrl/")
           .withBody(srcStream)
-          .stream(fromStream)
+          .stream[Source[ByteString, _]]
 
       res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe responseBody
 
@@ -160,7 +164,7 @@ class HttpClient2Spec
         httpClient2
           .put(url"$wireMockUrl/")
           .withBody(srcStream)
-          .stream(fromStream)
+          .stream[Source[ByteString, _]]
 
       res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe responseBody
 
@@ -205,7 +209,7 @@ class HttpClient2Spec
         httpClient2
           .put(url"$wireMockUrl/")
           .withBody(requestBody)
-          .execute(withHttpReads[HttpResponse])
+          .execute[HttpResponse]
 
       res.futureValue.body shouldBe responseBody
 
@@ -253,7 +257,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(withHttpReads[ResDomain])
+            .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -315,7 +319,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(withHttpReads[ResDomain])
+            .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -377,7 +381,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(withHttpReads[ResDomain])
+            .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -440,7 +444,7 @@ class HttpClient2Spec
           httpClient2
             .post(url"$wireMockUrl/")
             .withBody(body)
-            .execute(withHttpReads[ResDomain])
+            .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -477,9 +481,9 @@ class HttpClient2Spec
       a[RuntimeException] should be thrownBy
         httpClient2
           .put(url"$wireMockUrl/")
-          .transform(_.withBody(Json.toJson(ReqDomain("req")))
+          .transform(_.withBody(Json.toJson(ReqDomain("req"))))
           .replaceHeader("User-Agent" -> "ua2")
-          .execute(withHttpReads[ResDomain])
+          .execute[ResDomain]
     }
 
     "allow overriding user-agent" in new Setup {
@@ -495,7 +499,7 @@ class HttpClient2Spec
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
           .replaceHeader("User-Agent" -> "ua2")
-          .execute(withHttpReads[ResDomain])
+          .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -528,8 +532,8 @@ class HttpClient2Spec
           count.incrementAndGet
           httpClient2
             .put(url"$wireMockUrl/")
-            .withBody((Json.toJson(ReqDomain("req")))
-            .execute(withHttpReads[ResDomain])
+            .withBody(Json.toJson(ReqDomain("req")))
+            .execute[ResDomain]
         }
 
       res.failed.futureValue shouldBe a[UpstreamErrorResponse]
