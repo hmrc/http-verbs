@@ -53,5 +53,3 @@ trait StreamHttpReadsInstances {
         }
     )
 }
-
-object StreamHttpReadsInstances extends StreamHttpReadsInstances

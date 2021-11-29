@@ -53,8 +53,6 @@ class HttpClient2Spec
 
   import uk.gov.hmrc.http.HttpReads.Implicits._
 
-  import uk.gov.hmrc.http.StreamHttpReadsInstances._
-
   "HttpClient2" should {
     "work with json" in new Setup {
       implicit val hc = HeaderCarrier()
