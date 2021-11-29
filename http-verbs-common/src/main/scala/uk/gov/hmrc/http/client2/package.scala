@@ -19,19 +19,22 @@ package uk.gov.hmrc.http
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
-import _root_.play.api.libs.json.{JsValue, Writes}
-
-package object play {
-  // ensure strict HttpReads are not passed to stream function, which would lead to stream being read into memory
+package client2 {
   trait Streaming
+}
+package object client2
+  extends StreamHttpReadsInstances {
+
+  // ensures strict HttpReads are not passed to stream function, which would lead to stream being read into memory
+  // (or runtime exceptions since HttpResponse.body with throw exception for streamed responses)
   type StreamHttpReads[A] = HttpReads[A] with Streaming
 }
 
 trait StreamHttpReadsInstances {
-  def tag[A](instance: A): A with play.Streaming =
-    instance.asInstanceOf[A with play.Streaming]
+  def tag[A](instance: A): A with client2.Streaming =
+    instance.asInstanceOf[A with client2.Streaming]
 
-  implicit val readEitherSource: HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] with play.Streaming =
+  implicit val readEitherSource: HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] with client2.Streaming =
     tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
       HttpReads.ask.flatMap { case (method, url, response) =>
         HttpErrorFunctions.handleResponseEither(method, url)(response) match {
@@ -41,7 +44,7 @@ trait StreamHttpReadsInstances {
       }
     )
 
-  implicit val readSource: HttpReads[Source[ByteString, _]] with play.Streaming =
+  implicit val readSource: HttpReads[Source[ByteString, _]] with client2.Streaming =
     tag[HttpReads[Source[ByteString, _]]](
       readEitherSource
         .map {

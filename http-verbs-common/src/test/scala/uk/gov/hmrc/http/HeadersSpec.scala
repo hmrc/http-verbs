@@ -24,11 +24,11 @@ import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import _root_.play.api.Application
-import _root_.play.api.http.{HeaderNames => PlayHeaderNames}
-import _root_.play.api.inject.guice.GuiceApplicationBuilder
-import _root_.play.api.libs.json.{JsValue, Json}
-import _root_.play.api.libs.ws.WSClient
+import play.api.Application
+import play.api.http.{HeaderNames => PlayHeaderNames}
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.{JsValue, Json}
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.http.test.WireMockSupport

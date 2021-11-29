@@ -18,7 +18,7 @@ package uk.gov.hmrc.http
 
 import java.net.URL
 
-import _root_.play.api.libs.json.Writes
+import play.api.libs.json.Writes
 
 import scala.concurrent.{ExecutionContext, Future}
 

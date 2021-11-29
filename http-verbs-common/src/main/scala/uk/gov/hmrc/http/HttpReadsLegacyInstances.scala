@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http
 
 import com.github.ghik.silencer.silent
-import _root_.play.api.libs.json.{JsNull, JsValue, Reads}
+import play.api.libs.json.{JsNull, JsValue, Reads}
 
 
 trait HttpReadsLegacyInstances extends HttpReadsLegacyOption with HttpReadsLegacyJson

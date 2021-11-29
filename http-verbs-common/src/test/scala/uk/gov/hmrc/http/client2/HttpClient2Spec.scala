@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.play
+package uk.gov.hmrc.http.client2
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
