@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-// TODO putting this in this package means that all clients which do
-// `import uk.gov.hmrc.http._` will then have to make play imports with _root_ `import _root_.play...`
-package uk.gov.hmrc.http.play
+package uk.gov.hmrc.http.client2
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString

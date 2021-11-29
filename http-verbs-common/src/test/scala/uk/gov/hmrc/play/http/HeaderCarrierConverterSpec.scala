@@ -24,7 +24,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Configuration, Play}
 import play.api.mvc._
 import play.api.test.Helpers._
-import _root_.play.api.http.{HeaderNames => PlayHeaderNames}
+import play.api.http.{HeaderNames => PlayHeaderNames}
 import play.api.test.{FakeHeaders, FakeRequest, FakeRequestFactory}
 import play.api.mvc.request.RequestFactory
 import uk.gov.hmrc.http._

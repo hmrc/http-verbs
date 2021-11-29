@@ -22,7 +22,7 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
-import uk.gov.hmrc.http.play.{HttpClient2, HttpClient2Impl}
+import uk.gov.hmrc.http.client2.{HttpClient2, HttpClient2Impl}
 
 trait HttpClient2Support {
 

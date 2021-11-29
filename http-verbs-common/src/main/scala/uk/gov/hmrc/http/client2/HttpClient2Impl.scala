@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.play
+package uk.gov.hmrc.http.client2
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
@@ -24,6 +24,7 @@ import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
+import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
 import uk.gov.hmrc.http.logging.ConnectionTracing
@@ -239,7 +240,6 @@ class ExecutorImpl(
     // we don't delegate the response conversion to the client
     // (i.e. return Future[WSResponse] to be handled with Future.transform/transformWith(...))
     // since the transform functions require access to the request (method and url)
-    // also `mapErrors` is not performed by HttpReads for backward compatibility
     mapErrors(request, httpResponseF)
       .map(r.read(request.method, request.url, _))
   }

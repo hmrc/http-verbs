@@ -19,7 +19,7 @@ package uk.gov.hmrc.http
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
-import _root_.play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 
 /**
   * The ws.Response class is very hard to dummy up as it wraps a concrete instance of

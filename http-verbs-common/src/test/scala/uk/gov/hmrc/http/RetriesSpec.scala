@@ -28,7 +28,7 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.MDC
-import _root_.play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
 import uk.gov.hmrc.play.http.logging.Mdc
