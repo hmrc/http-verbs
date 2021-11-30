@@ -5,12 +5,15 @@ import sbt._
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
-val silencerVersion = "1.7.5"
+val scala2_12 = "2.12.15"
+val scala2_13 = "2.13.7"
+
+val silencerVersion = "1.7.7"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
   majorVersion := 13,
-  scalaVersion := "2.12.14",
+  scalaVersion := scala2_12,
   isPublicArtefact := true,
   scalacOptions ++= Seq("-feature"),
   libraryDependencies ++= Seq(
@@ -39,7 +42,8 @@ lazy val library = (project in file("."))
 // empty artefact, exists to ensure eviction of previous http-verbs jar which has now moved into http-verbs-play-xx
 lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
   .settings(
-    commonSettings
+    commonSettings,
+    crossScalaVersions := Seq(scala2_12, scala2_13)
   )
 
 def shareSources(location: String) = Seq(
@@ -62,8 +66,9 @@ lazy val httpVerbsPlay26 = Project("http-verbs-play-26", file("http-verbs-play-2
   .settings(
     commonSettings,
     sharedSources,
+    crossScalaVersions := Seq(scala2_12),
     libraryDependencies ++=
-      AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompileCommon(scalaVersion.value) ++
       AppDependencies.coreCompilePlay26 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay26,
@@ -75,9 +80,10 @@ lazy val httpVerbsPlay27 = Project("http-verbs-play-27", file("http-verbs-play-2
   .settings(
     commonSettings,
     sharedSources,
+    crossScalaVersions := Seq(scala2_12, scala2_13),
     copySources(httpVerbsPlay26),
     libraryDependencies ++=
-      AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompileCommon(scalaVersion.value) ++
       AppDependencies.coreCompilePlay27 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay27,
@@ -89,8 +95,9 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
   .settings(
     commonSettings,
     sharedSources,
+    crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++=
-      AppDependencies.coreCompileCommon ++
+      AppDependencies.coreCompileCommon(scalaVersion.value) ++
       AppDependencies.coreCompilePlay28 ++
       AppDependencies.coreTestCommon ++
       AppDependencies.coreTestPlay28,
@@ -105,6 +112,7 @@ lazy val httpVerbsTestPlay26 = Project("http-verbs-test-play-26", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
+    crossScalaVersions := Seq(scala2_12),
     libraryDependencies ++= AppDependencies.testCompilePlay26,
     Test / fork := true // required to look up wiremock resources
   )
@@ -114,6 +122,7 @@ lazy val httpVerbsTestPlay27 = Project("http-verbs-test-play-27", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
+    crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++= AppDependencies.testCompilePlay27,
     Test / fork := true // required to look up wiremock resources
   )
@@ -123,6 +132,7 @@ lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-ver
   .settings(
     commonSettings,
     sharedTestSources,
+    crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++= AppDependencies.testCompilePlay28,
     Test / fork := true // required to look up wiremock resources
   )

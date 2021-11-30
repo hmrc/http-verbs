@@ -32,7 +32,7 @@ trait HttpHook {
   )(
     implicit hc: HeaderCarrier,
     ec: ExecutionContext
-  )
+  ): Unit
 }
 
 sealed trait HookData

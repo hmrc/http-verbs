@@ -7,17 +7,20 @@ object AppDependencies {
   val play28Version = "2.8.7"
 
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
-  val coreCompileCommon = Seq(
+  def coreCompileCommon(scalaVersion: String) = Seq(
     "com.typesafe"                %  "config"           % "1.4.1",
     "org.slf4j"                   %  "slf4j-api"        % "1.7.30",
-    // empty http-core added to force eviction
-    // as classes from this lib have been inlined in http-verbs
-    "uk.gov.hmrc"                 %% "http-core"        % "2.5.0",
     // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
     "com.fasterxml.jackson.core"  %  "jackson-core"     % "2.10.3",
     "com.fasterxml.jackson.core"  %  "jackson-databind" % "2.10.3",
     "com.softwaremill.sttp.model" %% "core"             % "1.2.2"
-  )
+  ) ++
+    (CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, n)) if n >= 13 => Seq.empty
+      case _ => // empty http-core added to force eviction
+                // as classes from this lib have been inlined in http-verbs
+                Seq("uk.gov.hmrc" %% "http-core" % "2.5.0")
+    })
 
   val coreCompilePlay26 = Seq(
     "com.typesafe.play" %% "play-json"   % "2.6.14",

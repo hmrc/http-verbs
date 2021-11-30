@@ -24,9 +24,8 @@ import scala.concurrent.ExecutionContext
 class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String, String])
   extends ExecutionContext {
 
-  def execute(runnable: Runnable) {
+  def execute(runnable: Runnable): Unit =
     wrapped.execute(new RunWithMDC(runnable, mdcData))
-  }
 
   private class RunWithMDC(runnable: Runnable, mdcData: Map[String, String]) extends Runnable {
     def run(): Unit = {

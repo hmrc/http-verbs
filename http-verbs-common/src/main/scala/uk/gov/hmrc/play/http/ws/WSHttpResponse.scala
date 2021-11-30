@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import com.github.ghik.silencer.silent
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.http.HttpResponse
@@ -24,8 +23,7 @@ import uk.gov.hmrc.http.HttpResponse
 @deprecated("Use WsHttpResponse.apply and HttpResponse instead", "11.0.0")
 class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
 
-  @silent("deprecated") // allHeaders is required for Play 2.5
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.allHeaders
+  override def allHeaders: Map[String, Seq[String]] = wsResponse.headers.mapValues(_.toSeq).toMap
 
   override def status: Int = wsResponse.status
 
@@ -35,7 +33,6 @@ class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
 }
 
 object WSHttpResponse {
-  @silent("deprecated") // allHeaders is required for Play 2.5
   def apply(wsResponse: WSResponse): HttpResponse =
     // Note that HttpResponse defines `def json` as `Json.parse(body)` - this may be different from wsResponse.json depending on version.
     // https://github.com/playframework/play-ws/commits/master/play-ws-standalone-json/src/main/scala/play/api/libs/ws/JsonBodyReadables.scala shows that is was redefined
@@ -43,6 +40,6 @@ object WSHttpResponse {
     HttpResponse(
       status  = wsResponse.status,
       body    = wsResponse.body,
-      headers = wsResponse.allHeaders
+      headers = wsResponse.headers.mapValues(_.toSeq).toMap
     )
 }

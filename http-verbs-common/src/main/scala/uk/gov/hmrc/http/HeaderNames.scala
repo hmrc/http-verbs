@@ -90,7 +90,7 @@ case class RequestChain(value: String) extends AnyVal {
 }
 
 object RequestChain {
-  def newComponent = (scala.util.Random.nextInt & 0xffff).toHexString
+  def newComponent = (scala.util.Random.nextInt() & 0xffff).toHexString
 
   def init = RequestChain(newComponent)
 }
