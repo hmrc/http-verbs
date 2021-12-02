@@ -46,8 +46,6 @@ trait HttpResponse {
   def json: JsValue =
     Json.parse(body)
 
-  // If we were using wsResponse, we could have a single body function...
-  //def body[T: BodyReadable]: T = super.body[T]
   def bodyAsSource: Source[ByteString, _] =
     Source.single(ByteString(body))
 

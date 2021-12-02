@@ -1,3 +1,87 @@
+## Version 14.0.0
+
+### Auditing max body length
+
+Payloads will be truncated in audit logs if they exceed the max supported (as configured by `http-verbs.auditing.maxBodyLength`).
+
+### WSProxyConfiguration
+
+`WSProxyConfiguration.apply` has been deprecated, use `WSProxyConfiguration.buildWsProxyServer` instead.
+
+There are some differences with `WSProxyConfiguration.buildWsProxyServer`:
+  * configPrefix is fixed to `proxy`.
+  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
+
+
+### Adds HttpClient2
+This is in addition to `HttpClient` (for now), so can be optionally used instead.
+
+The changes from HttpClient are:
+- Supports streaming
+- Exposes the underlying `play.api.libs.ws.WSRequest` with `transform`, making it easier to customise the request.
+
+Examples can be found in [HttpClient2Spec](/http-verbs-common/src/test/scala/uk/gov/hmrc/http/play/HttpClient2Spec.scala)
+
+To migrate:
+
+```scala
+httpClient.GET[ResponseType](url)
+```
+
+becomes
+
+```scala
+httpClient2.get(url"$url").execute[ResponseType]
+```
+
+and
+
+```scala
+httpClient.POST[ResponseType](url, payload, headers)
+```
+
+becomes
+
+```scala
+httpClient2.post(url"$url").withBody(Json.toJson(payload)).addHeaders(headers).execute[ResponseType]
+```
+
+
+#### Header manipulation
+
+With `HttpClient`, replacing a header can require providing a customised client implementation (e.g. to replace the user-agent header), or updating the `HeaderCarrier` (e.g. to replace the authorisation header). This can now all be done with the `replaceHeader` on `HttpClient2` per call. e.g.
+
+```scala
+httpClient2.get(url"$url").replaceHeader("User-Agent" -> userAgent).replaceHeader("Authorization" -> authorization).execute[ResponseType]
+```
+
+#### Using proxy
+
+With `HttpClient`, to use a proxy requires creating a new instance of HttpClient to mix in `WSProxy` and configure. With `HttpClient2` this can be done with the same client, calling `withProxy` per call. e.g.
+
+```scala
+httpClient2.get(url"$url").withProxy.execute[ResponseType]
+```
+
+* It uses `WSProxyConfiguration.buildWsProxyServer` which needs enabling with `proxy.enabled` in configuration, which by default is false, for development. See `WSProxyConfiguration` for configuration changes above.
+
+#### Streaming
+
+Streaming is supported with `HttpClient2`, and will be audited in the same way as `HttpClient`. Note that payloads will be truncated in audit logs if they exceed the max supported (as configured by `http-verbs.auditing.maxBodyLength`).
+
+Streamed requests can simply be passed to `withBody`:
+
+```scala
+val reqStream: Source[ByteString, _] = ???
+httpClient2.post(url"$url").withBody(reqStream).execute[ResponseType]
+```
+
+For streamed responses, use `stream` rather than `execute`:
+
+```scala
+httpClient2.get(url"$url").stream[Source[ByteString, _]]
+```
+
 ## Version 13.12.0
 
 ### Supported Play Versions
