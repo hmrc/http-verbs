@@ -36,26 +36,6 @@ import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.{Failure, Success}
 
 
-/* What does HttpVerbs actually provide?
-
-Readme says...
-    - Http Transport
-    - Core Http function interfaces
-    - Logging
-    - Propagation of common headers
-    - Executing hooks, for example Auditing
-    - Request & Response de-serializations
-    - Response handling, converting failure status codes into a consistent set of exceptions - allows failures to be automatically propagated to the caller
-
-Also, retries
-
-
-This version demonstrates a flat implementation that uses an HttpExecutor to centralise the execution of the request to ensure that
-the common concerns occur, but delegates out the construction of the request and parsing of the response to play-ws for flexibility.
-The use of HttpReads is optional.
-Extension methods are provided to make common patterns easier to apply.
-*/
-
 trait Executor {
   def execute[A](
     request  : WSRequest,

@@ -25,6 +25,10 @@ import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe.TypeTag
 
+/** This client centralises the execution of the request to ensure that the common concerns (e.g. auditing, logging,
+  * retries) occur, but makes building the request more flexible (by exposing play-ws).
+  * It also supports streaming.
+  */
 trait HttpClient2 {
   protected def mkRequestBuilder(url: URL, method: String)(implicit hc: HeaderCarrier): RequestBuilder
 

@@ -43,7 +43,7 @@ trait WSProxy extends WSRequest {
 
 object WSProxyConfiguration {
 
-  @deprecated("Use buildWsProxyServer instead.", "14.0.0") // TODO document differences
+  @deprecated("Use buildWsProxyServer instead. See docs for differences.", "14.0.0")
   def apply(configPrefix: String, configuration: Configuration): Option[WSProxyServer] = {
     val proxyRequired =
       configuration.getOptional[Boolean](s"$configPrefix.proxyRequiredForThisEnvironment").getOrElse(true)
