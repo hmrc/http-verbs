@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.http.client2
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import play.api.libs.ws.{BodyWritable, WSRequest}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads}
 
