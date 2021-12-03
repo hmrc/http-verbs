@@ -61,7 +61,7 @@ class HttpClient2Impl(
   private val hcConfig =
     HeaderCarrier.Config.fromConfig(config.underlying)
 
-  private val executor =
+  protected val executor =
     new ExecutorImpl(actorSystem, config, hooks)
 
   override protected def mkRequestBuilder(
@@ -190,7 +190,7 @@ class ExecutorImpl(
 
   private val maxBodyLength = config.get[Int]("http-verbs.auditing.maxBodyLength")
 
-  def execute[A](
+  final def execute[A](
     request     : WSRequest,
     optHookDataF: Option[Future[Option[HookData]]],
     isStream    : Boolean,
@@ -309,8 +309,7 @@ class ExecutorImpl(
     }
   }
 
-  // TODO what if clients want to override this?
-  private def mapErrors(
+  protected def mapErrors(
     request  : WSRequest,
     responseF: Future[HttpResponse]
   )(implicit
