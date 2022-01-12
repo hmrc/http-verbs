@@ -17,32 +17,34 @@
 package uk.gov.hmrc.http
 
 import com.typesafe.config.ConfigFactory
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.scalatest.MockitoSugar
 import org.scalactic.StringNormalizations.lowerCased
 import org.scalatest.LoneElement
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 
 class HeaderCarrierSpec
   extends AnyWordSpecLike
      with Matchers
      with MockitoSugar
+     with ArgumentMatchersSugar
      with LoneElement {
 
   "headersForUrl" should {
 
-   val internalUrls = List(
-     "http://test.public.service/bar",
-     "http://test.public.mdtp/bar",
-     "http://localhost:1234/bar"
-   )
-   val externalUrl  = "http://test.me"
-
-   def mkConfig(s: String = ""): HeaderCarrier.Config =
-     HeaderCarrier.Config.fromConfig(
-       ConfigFactory.parseString(s)
-         .withFallback(ConfigFactory.load())
+     val internalUrls = List(
+       "http://test.public.service/bar",
+       "http://test.public.mdtp/bar",
+       "http://localhost:1234/bar"
      )
+     val externalUrl  = "http://test.me"
+
+     def mkConfig(s: String = ""): HeaderCarrier.Config =
+       HeaderCarrier.Config.fromConfig(
+         ConfigFactory.parseString(s)
+           .withFallback(ConfigFactory.load())
+       )
 
     "should contain the values passed in by header-carrier for internal urls" in {
       val hc = HeaderCarrier(

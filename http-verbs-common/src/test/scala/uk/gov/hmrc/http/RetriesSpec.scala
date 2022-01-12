@@ -22,10 +22,11 @@ import java.util.concurrent.Executors
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.net.ssl.SSLException
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.MDC
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -37,7 +38,13 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
 
-class RetriesSpec extends AnyWordSpecLike with Matchers with MockitoSugar with ScalaFutures with IntegrationPatience {
+class RetriesSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with MockitoSugar
+     with ArgumentMatchersSugar
+     with ScalaFutures
+     with IntegrationPatience {
   import ExecutionContext.Implicits.global
 
   "Retries" should {
