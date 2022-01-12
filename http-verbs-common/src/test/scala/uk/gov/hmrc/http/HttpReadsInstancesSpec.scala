@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,21 +95,21 @@ class HttpReadsInstancesSpec
 
       forAll(Gen.choose(400, 499)) { s =>
         val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream4xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 500,
-          headers              = errorResponse.headers
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(UpstreamErrorResponse(
+          message    = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          statusCode = errorResponse.status,
+          reportAs   = 500,
+          headers    = errorResponse.headers
         ))
       }
 
       forAll(Gen.choose(500, 599)) { s =>
         val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream5xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 502,
-          headers              = errorResponse.headers
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(UpstreamErrorResponse(
+          message    = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          statusCode = errorResponse.status,
+          reportAs   = 502,
+          headers    = errorResponse.headers
         ))
       }
     }
@@ -176,21 +176,21 @@ class HttpReadsInstancesSpec
     "convert a failed response to an UpstreamErrorResponse" in {
       forAll(Gen.choose(400, 499)) { s =>
         val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream4xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 500,
-          headers              = errorResponse.headers
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(UpstreamErrorResponse(
+          message    = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          statusCode = errorResponse.status,
+          reportAs   = 500,
+          headers    = errorResponse.headers
         ))
       }
 
       forAll(Gen.choose(500, 599)) { s =>
         val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(Upstream5xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 502,
-          headers              = errorResponse.headers
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Left(UpstreamErrorResponse(
+          message    = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          statusCode = errorResponse.status,
+          reportAs   = 502,
+          headers    = errorResponse.headers
         ))
       }
     }
@@ -222,21 +222,21 @@ class HttpReadsInstancesSpec
     "convert a failed response to an UpstreamErrorResponse" in {
       forAll(Gen.choose(400, 499)) { s =>
         val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Failure(Upstream4xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 500,
-          headers              = errorResponse.headers
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Failure(UpstreamErrorResponse(
+          message    = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          statusCode = errorResponse.status,
+          reportAs   = 500,
+          headers    = errorResponse.headers
         ))
       }
 
       forAll(Gen.choose(500, 599)) { s =>
         val errorResponse = exampleResponse(s)
-        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Failure(Upstream5xxResponse(
-          message              = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
-          upstreamResponseCode = errorResponse.status,
-          reportAs             = 502,
-          headers              = errorResponse.headers
+        reads.read(exampleVerb, exampleUrl, errorResponse) shouldBe Failure(UpstreamErrorResponse(
+          message    = s"$exampleVerb of '$exampleUrl' returned ${errorResponse.status}. Response body: '${errorResponse.body}'",
+          statusCode = errorResponse.status,
+          reportAs   = 502,
+          headers    = errorResponse.headers
         ))
       }
     }

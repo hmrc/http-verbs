@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers.{any, eq => is}
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.captor.ArgCaptor
+import org.mockito.scalatest.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, Writes}
@@ -31,15 +30,21 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
-class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour {
+class HttpPutSpec
+  extends AnyWordSpecLike
+     with Matchers
+     with MockitoSugar
+     with ArgumentMatchersSugar
+     with CommonHttpBehaviour {
   import ExecutionContext.Implicits.global
 
-  class StubbedHttpPut(doPutResult: Future[HttpResponse])
-      extends HttpPut
-      with MockitoSugar
-      with ConnectionTracingCapturing {
-    val testHook1: HttpHook                         = mock[HttpHook]
-    val testHook2: HttpHook                         = mock[HttpHook]
+  class StubbedHttpPut(
+    doPutResult: Future[HttpResponse]
+  ) extends HttpPut
+       with ConnectionTracingCapturing {
+
+    val testHook1: HttpHook                         = mock[HttpHook](withSettings.lenient)
+    val testHook2: HttpHook                         = mock[HttpHook](withSettings.lenient)
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
@@ -162,19 +167,19 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
 
       testPut.PUT[TestRequestClass, HttpResponse](url, testObject).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testPut.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPut.testHook1).apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor1.capture())(any(), any())
-      verify(testPut.testHook2).apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testJson))), respArgCaptor2.capture())(any(), any())
+      verify(testPut.testHook1).apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testJson))), respArgCaptor1)(any, any)
+      verify(testPut.testHook2).apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testJson))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 
@@ -205,21 +210,21 @@ class HttpPutSpec extends AnyWordSpecLike with Matchers with CommonHttpBehaviour
 
       testPut.PUTString[TestClass](url, testRequestBody, Seq.empty).futureValue
 
-      val respArgCaptor1 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
-      val respArgCaptor2 = ArgumentCaptor.forClass(classOf[Future[HttpResponse]])
+      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
+      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
       val config = HeaderCarrier.Config.fromConfig(testPut.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
       verify(testPut.testHook1)
-        .apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor1.capture())(any(), any())
+        .apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor1)(any, any)
       verify(testPut.testHook2)
-        .apply(is("PUT"), is(url"$url"), is(headers), is(Some(HookData.FromString(testRequestBody))), respArgCaptor2.capture())(any(), any())
+        .apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.getValue.futureValue shouldBe dummyResponse
-      respArgCaptor2.getValue.futureValue shouldBe dummyResponse
+      respArgCaptor1.value.futureValue shouldBe dummyResponse
+      respArgCaptor2.value.futureValue shouldBe dummyResponse
     }
   }
 }
