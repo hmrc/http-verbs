@@ -1,3 +1,9 @@
+## Version 13.12.0
+
+### Supported Play Versions
+
+Drops support for Play 2.6 and Play 2.7. Only Play 2.8 is supported.
+
 ## Version 13.0.0
 
 | Change | Complexity | Fix  |
