@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,15 +86,10 @@ object BodyCaptor {
     flow(loggingContext, maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 
-  // We raise a warning, but don't provide a mechanism to opt-out of auditing payloads.
-  // Currently we can only turn off auditing for url (`auditDisabledForPattern` configuration) - not per method,
-  // and we can't turn off auditing of just the payload (and keep the fact the call has been made)
-  // TODO Check with CIP whether `RequestBuilder` could have `withoutRequestPayloadAuditing` and `withoutRequestPayloadAuditing`?
-  // Note, this also applies to bootstrap AuditFilter.
   def bodyUpto(body: String, maxBodyLength: Int, loggingContext: String): String =
     if (body.length > maxBodyLength) {
       logger.warn(
-        s"txm play auditing: $loggingContext body ${body.length} exceeds maxLength $maxBodyLength - do you need to be auditing this payload?"
+        s"$loggingContext body ${body.length} exceeds maxLength $maxBodyLength - truncating"
       )
       body.take(maxBodyLength)
     } else
@@ -103,7 +98,7 @@ object BodyCaptor {
   def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String): ByteString =
     if (body.length > maxBodyLength) {
       logger.warn(
-        s"txm play auditing: $loggingContext body ${body.length} exceeds maxLength $maxBodyLength - do you need to be auditing this payload?"
+        s"$loggingContext body ${body.length} exceeds maxLength $maxBodyLength - truncating"
       )
       body.take(maxBodyLength)
     } else
