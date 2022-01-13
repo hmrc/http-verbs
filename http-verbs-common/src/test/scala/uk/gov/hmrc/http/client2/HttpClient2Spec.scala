@@ -17,7 +17,6 @@
 package uk.gov.hmrc.http.client2
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock
@@ -30,7 +29,6 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.Configuration
-import play.api.libs.functional.syntax._
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpReadsInstances, HttpResponse, Retries, StringContextOps, UpstreamErrorResponse}
@@ -75,6 +73,7 @@ class HttpClient2Spec
           .withHeader("Content-Type", equalTo("application/json"))
           .withRequestBody(equalTo("\"req\""))
           .withHeader("User-Agent", equalTo("myapp"))
+          .withHeader("Http-Client2-Version", matching(".*"))
       )
 
       val headersCaptor  = ArgCaptor[Seq[(String, String)]]
@@ -541,7 +540,6 @@ class HttpClient2Spec
 
   trait Setup {
     implicit val as: ActorSystem = ActorSystem("test-actor-system")
-    implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
 
     val mockHttpHook = mock[HttpHook](withSettings.lenient)
 

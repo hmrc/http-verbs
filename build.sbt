@@ -59,6 +59,7 @@ lazy val sharedSources =
   shareSources("http-verbs-common")
 
 lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(
     commonSettings,
     sharedSources,
@@ -70,6 +71,10 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
       AppDependencies.coreTestPlay28,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
+  .settings( // https://github.com/sbt/sbt-buildinfo
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "uk.gov.hmrc.http"
+   )
   .dependsOn(httpVerbs)
 
 lazy val sharedTestSources =

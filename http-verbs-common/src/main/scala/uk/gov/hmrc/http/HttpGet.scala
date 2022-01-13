@@ -45,7 +45,7 @@ trait HttpGet extends CoreGet with GetHttpTransport with HttpVerb with Connectio
     val urlWithQuery = url + makeQueryString(queryParams)
 
     withTracing(GET_VERB, urlWithQuery) {
-      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = allHeaders))
       executeHooks(GET_VERB, url"$url", allHeaders, None, httpResponse)
       mapErrors(GET_VERB, urlWithQuery, httpResponse).map(response => rds.read(GET_VERB, urlWithQuery, response))

@@ -23,7 +23,7 @@ import com.typesafe.config.Config
 import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
-import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
+import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
@@ -64,6 +64,9 @@ class HttpClient2Impl(
   protected val executor =
     new ExecutorImpl(actorSystem, config, hooks)
 
+  private val clientVersionHeader =
+    "Http-Client2-Version" -> BuildInfo.version
+
   override protected def mkRequestBuilder(
     url   : URL,
     method: String
@@ -78,7 +81,7 @@ class HttpClient2Impl(
       wsClient
         .url(url.toString)
         .withMethod(method)
-        .withHttpHeaders(hc.headersForUrl(hcConfig)(url.toString) : _*),
+        .withHttpHeaders(hc.headersForUrl(hcConfig)(url.toString) :+ clientVersionHeader : _*),
       None
     )
 }
