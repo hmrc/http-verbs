@@ -16,8 +16,13 @@
 
 package uk.gov.hmrc.http
 
-import akka.stream.scaladsl.Source
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Source, Sink}
 import akka.util.ByteString
+
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+import scala.annotation.implicitNotFound
 
 package client2 {
   trait Streaming
@@ -27,6 +32,8 @@ package object client2
 
   // ensures strict HttpReads are not passed to stream function, which would lead to stream being read into memory
   // (or runtime exceptions since HttpResponse.body with throw exception for streamed responses)
+  @implicitNotFound("""Cannot find an implicit StreamHttpReads[${A}].
+    You may be missing an implicit Materializer.""")
   type StreamHttpReads[A] = HttpReads[A] with Streaming
 }
 
@@ -34,21 +41,22 @@ trait StreamHttpReadsInstances {
   def tag[A](instance: A): A with client2.Streaming =
     instance.asInstanceOf[A with client2.Streaming]
 
-  implicit val readEitherSource: HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] with client2.Streaming =
-    tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
+  implicit val readEitherSource: HttpReads[Either[Source[UpstreamErrorResponse, _], Source[ByteString, _]]] with client2.Streaming =
+    tag[HttpReads[Either[Source[UpstreamErrorResponse, _], Source[ByteString, _]]]](
       HttpReads.ask.flatMap { case (method, url, response) =>
-        HttpErrorFunctions.handleResponseEither(method, url)(response) match {
+        HttpErrorFunctions.handleResponseEitherStream(method, url)(response) match {
           case Left(err)       => HttpReads.pure(Left(err))
           case Right(response) => HttpReads.pure(Right(response.bodyAsSource))
         }
       }
     )
 
-  implicit val readSource: HttpReads[Source[ByteString, _]] with client2.Streaming =
+  implicit def readSource(implicit mat: Materializer): HttpReads[Source[ByteString, _]] with client2.Streaming =
     tag[HttpReads[Source[ByteString, _]]](
       readEitherSource
         .map {
-          case Left(err)    => throw err
+          case Left(err)    => // this await is unfortunate, but HttpReads doesn't support Future
+                               throw Await.result(err.runWith(Sink.head), 10.seconds)
           case Right(value) => value
         }
     )
