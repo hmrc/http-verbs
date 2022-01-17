@@ -30,16 +30,20 @@ package object client2
 
   // ensures strict HttpReads are not passed to stream function, which would lead to stream being read into memory
   // (or runtime exceptions since HttpResponse.body with throw exception for streamed responses)
-  @implicitNotFound("""Cannot find an implicit StreamHttpReads[${A}].
+  @implicitNotFound("""Could not find an implicit StreamHttpReads[${A}].
     You may be missing an implicit Materializer.""")
   type StreamHttpReads[A] = HttpReads[A] with Streaming
 }
 
 trait StreamHttpReadsInstances {
+  // default may be overridden if required
+  implicit val errorTimeout: ErrorTimeout =
+    ErrorTimeout()
+
   def tag[A](instance: A): A with client2.Streaming =
     instance.asInstanceOf[A with client2.Streaming]
 
-  implicit def readEitherSource(implicit mat: Materializer): client2.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
+  implicit def readEitherSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client2.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
     tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
       HttpReads.ask.flatMap { case (method, url, response) =>
         HttpErrorFunctions.handleResponseEitherStream(method, url)(response) match {
@@ -49,7 +53,7 @@ trait StreamHttpReadsInstances {
       }
     )
 
-  implicit def readSource(implicit mat: Materializer): client2.StreamHttpReads[Source[ByteString, _]] =
+  implicit def readSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client2.StreamHttpReads[Source[ByteString, _]] =
     tag[HttpReads[Source[ByteString, _]]](
       readEitherSource
         .map {

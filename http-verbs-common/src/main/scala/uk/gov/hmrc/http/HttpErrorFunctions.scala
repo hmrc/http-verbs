@@ -19,7 +19,7 @@ package uk.gov.hmrc.http
 import akka.stream.Materializer
 
 import scala.concurrent.{Await, TimeoutException}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 
 trait HttpErrorFunctions {
   def notFoundMessage(verbName: String, url: String, responseBody: String): String =
@@ -92,7 +92,8 @@ trait HttpErrorFunctions {
   )(
     response: HttpResponse
   )(implicit
-    mat: Materializer
+    mat         : Materializer,
+    errorTimeout: ErrorTimeout
   ): Either[UpstreamErrorResponse, HttpResponse] =
     response.status match {
       case status if is4xx(status) || is5xx(status) =>
@@ -102,7 +103,7 @@ trait HttpErrorFunctions {
           val errorMessage =
             // this await is unfortunate, but HttpReads doesn't support Future
             try {
-              Await.result(errorMessageF, 10.seconds)
+              Await.result(errorMessageF, errorTimeout.toDuration)
             } catch {
               case e: TimeoutException => "<Timed out awaiting error message>"
             }
@@ -120,3 +121,7 @@ trait HttpErrorFunctions {
 }
 
 object HttpErrorFunctions extends HttpErrorFunctions
+
+case class ErrorTimeout(
+  toDuration: Duration = 10.seconds
+) extends AnyVal
