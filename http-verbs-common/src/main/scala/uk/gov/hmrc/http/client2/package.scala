@@ -17,11 +17,9 @@
 package uk.gov.hmrc.http
 
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Source, Sink}
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 import scala.annotation.implicitNotFound
 
 package client2 {
@@ -41,8 +39,8 @@ trait StreamHttpReadsInstances {
   def tag[A](instance: A): A with client2.Streaming =
     instance.asInstanceOf[A with client2.Streaming]
 
-  implicit val readEitherSource: HttpReads[Either[Source[UpstreamErrorResponse, _], Source[ByteString, _]]] with client2.Streaming =
-    tag[HttpReads[Either[Source[UpstreamErrorResponse, _], Source[ByteString, _]]]](
+  implicit def readEitherSource(implicit mat: Materializer): client2.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
+    tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
       HttpReads.ask.flatMap { case (method, url, response) =>
         HttpErrorFunctions.handleResponseEitherStream(method, url)(response) match {
           case Left(err)       => HttpReads.pure(Left(err))
@@ -51,12 +49,11 @@ trait StreamHttpReadsInstances {
       }
     )
 
-  implicit def readSource(implicit mat: Materializer): HttpReads[Source[ByteString, _]] with client2.Streaming =
+  implicit def readSource(implicit mat: Materializer): client2.StreamHttpReads[Source[ByteString, _]] =
     tag[HttpReads[Source[ByteString, _]]](
       readEitherSource
         .map {
-          case Left(err)    => // this await is unfortunate, but HttpReads doesn't support Future
-                               throw Await.result(err.runWith(Sink.head), 10.seconds)
+          case Left(err)    => throw err
           case Right(value) => value
         }
     )

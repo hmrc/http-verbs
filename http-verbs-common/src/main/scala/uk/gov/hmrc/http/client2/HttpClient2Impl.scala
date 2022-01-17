@@ -147,7 +147,7 @@ final class RequestBuilderImpl(
                                     (body, req2.header("Content-Type")) match {
                                       case (IsMap(m), _                                        ) => hookDataP.success(Some(HookData.FromMap(m)))
                                       case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
-                                      case _                                                     => val auditedBody = BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext).decodeString("UTF-8")
+                                      case _                                                     => val auditedBody = BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false).decodeString("UTF-8")
                                                                                                     hookDataP.success(Some(HookData.FromString(auditedBody)))
                                     }
                                     req2
@@ -269,7 +269,7 @@ class ExecutorImpl(
           auditResponseF.success(
             HttpResponse(
               status  = response.status,
-              body    = BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext),
+              body    = BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext, isStream = false),
               headers = response.headers.mapValues(_.toSeq).toMap
             )
           )
