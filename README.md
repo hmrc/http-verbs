@@ -94,7 +94,7 @@ With `HttpClient`, to use a proxy requires creating a new instance of HttpClient
 httpClient2.get(url"$url").withProxy.execute[ResponseType]
 ```
 
-* It uses `WSProxyConfiguration.buildWsProxyServer` which needs enabling with `proxy.enabled` in configuration, which by default is `false`, for development. See [WSProxyConfiguration](CHANGELOG.md#wsproxyconfiguration) for configuration changes.
+* It uses `WSProxyConfiguration.buildWsProxyServer` which needs enabling with `http-verbs.proxy.enabled` in configuration, which by default is `false`, for development. See [WSProxyConfiguration](CHANGELOG.md#wsproxyconfiguration) for configuration changes.
 
 #### Streaming
 

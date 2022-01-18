@@ -66,7 +66,7 @@ object WSProxyConfiguration {
     def getOptionalString(key: String): Option[String] =
       if (configuration.hasPath(key)) Some(configuration.getString(key)) else None
 
-    if (configuration.getBoolean("proxy.enabled"))
+    if (configuration.getBoolean("http-verbs.proxy.enabled"))
       Some(
         DefaultWSProxyServer(
           protocol  = Some(configuration.getString("proxy.protocol")),
