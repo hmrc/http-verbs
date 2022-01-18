@@ -54,7 +54,7 @@ private class BodyCaptorFlow(
           }
 
           override def onUpstreamFinish(): Unit = {
-            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, loggingContext))
+            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, loggingContext, isStream = true))
             if (isAvailable(out) && buffer == ByteString.empty)
               push(out, buffer)
             completeStage()
@@ -86,19 +86,19 @@ object BodyCaptor {
     flow(loggingContext, maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 
-  def bodyUpto(body: String, maxBodyLength: Int, loggingContext: String): String =
+  def bodyUpto(body: String, maxBodyLength: Int, loggingContext: String, isStream: Boolean): String =
     if (body.length > maxBodyLength) {
       logger.warn(
-        s"$loggingContext body ${body.length} exceeds maxLength $maxBodyLength - truncating"
+        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating"
       )
       body.take(maxBodyLength)
     } else
       body
 
-  def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String): ByteString =
+  def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String, isStream: Boolean): ByteString =
     if (body.length > maxBodyLength) {
       logger.warn(
-        s"$loggingContext body ${body.length} exceeds maxLength $maxBodyLength - truncating"
+        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating"
       )
       body.take(maxBodyLength)
     } else

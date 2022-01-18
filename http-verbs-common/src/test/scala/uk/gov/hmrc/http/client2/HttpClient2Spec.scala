@@ -143,6 +143,58 @@ class HttpClient2Spec
       auditedResponse.body   shouldBe responseBody
     }
 
+    "handled failed requests with streams" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      val requestBody  = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
+      val responseBody = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody(responseBody).withStatus(500))
+      )
+
+      val srcStream: Source[ByteString, _] =
+        Source.single(ByteString(requestBody))
+
+      val res: Future[Source[ByteString, _]] =
+        httpClient2
+          .put(url"$wireMockUrl/")
+          .withBody(srcStream)
+          .stream[Source[ByteString, _]]
+
+      val failure = res.failed.futureValue
+
+      failure shouldBe a[UpstreamErrorResponse]
+      failure.asInstanceOf[UpstreamErrorResponse].statusCode shouldBe 500
+      failure.asInstanceOf[UpstreamErrorResponse].message shouldBe s"PUT of 'http://localhost:6001/' returned 500. Response body: '$responseBody'"
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", equalTo("application/octet-stream"))
+          .withRequestBody(equalTo(requestBody))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("PUT"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromString(requestBody))),
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "application/octet-stream")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 500
+      auditedResponse.body   shouldBe responseBody
+    }
+
     "truncate stream payloads for auditing if too long" in new Setup {
       implicit val hc = HeaderCarrier()
 

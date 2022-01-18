@@ -10,7 +10,7 @@ Payloads will be truncated in audit logs if they exceed the max supported (as co
 
 There are some differences with `WSProxyConfiguration.buildWsProxyServer`:
   * configPrefix is fixed to `proxy`.
-  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
+  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `http-verbs.proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
 
 
 ### Adds HttpClient2

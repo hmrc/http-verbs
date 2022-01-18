@@ -16,6 +16,11 @@
 
 package uk.gov.hmrc.http
 
+import akka.stream.Materializer
+
+import scala.concurrent.{Await, TimeoutException}
+import scala.concurrent.duration.{Duration, DurationInt}
+
 trait HttpErrorFunctions {
   def notFoundMessage(verbName: String, url: String, responseBody: String): String =
     s"$verbName of '$url' returned 404 (Not Found). Response body: '$responseBody'"
@@ -77,6 +82,46 @@ trait HttpErrorFunctions {
       // default followRedirect should mean we don't see 3xx...
       case status  => Right(response)
     }
+
+  /* Same as `handleResponseEither` but should be used when reading the `HttpResponse` as a stream.
+   * The error is returned as `Source[UpstreamErrorResponse, _]`.
+   */
+  def handleResponseEitherStream(
+    httpMethod: String,
+    url       : String
+  )(
+    response: HttpResponse
+  )(implicit
+    mat         : Materializer,
+    errorTimeout: ErrorTimeout
+  ): Either[UpstreamErrorResponse, HttpResponse] =
+    response.status match {
+      case status if is4xx(status) || is5xx(status) =>
+        Left {
+          val errorMessageF =
+            response.bodyAsSource.runFold("")(_ + _.utf8String)
+          val errorMessage =
+            // this await is unfortunate, but HttpReads doesn't support Future
+            try {
+              Await.result(errorMessageF, errorTimeout.toDuration)
+            } catch {
+              case e: TimeoutException => "<Timed out awaiting error message>"
+            }
+          UpstreamErrorResponse(
+            message    = upstreamResponseMessage(httpMethod, url, status, errorMessage),
+            statusCode = status,
+            reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
+            headers    = response.headers
+          )
+        }
+      // Note all cases not handled above (e.g. 1xx, 2xx and 3xx) will be returned as is
+      // default followRedirect should mean we don't see 3xx...
+      case status  => Right(response)
+    }
 }
 
 object HttpErrorFunctions extends HttpErrorFunctions
+
+case class ErrorTimeout(
+  toDuration: Duration = 10.seconds
+) extends AnyVal
