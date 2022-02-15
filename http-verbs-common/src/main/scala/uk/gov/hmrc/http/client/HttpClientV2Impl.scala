@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.client2
+package uk.gov.hmrc.http.client
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
@@ -48,12 +48,12 @@ trait Executor {
   ): Future[A]
 }
 
-class HttpClient2Impl(
+class HttpClientV2Impl(
   wsClient   : WSClient,
   actorSystem: ActorSystem,
   config     : Configuration,
   hooks      : Seq[HttpHook]
-) extends HttpClient2 {
+) extends HttpClientV2 {
 
   private lazy val optProxyServer =
     WSProxyConfiguration.buildWsProxyServer(config)
@@ -65,7 +65,7 @@ class HttpClient2Impl(
     new ExecutorImpl(actorSystem, config, hooks)
 
   private val clientVersionHeader =
-    "Http-Client2-Version" -> BuildInfo.version
+    "Http-ClientV2-Version" -> BuildInfo.version
 
   override protected def mkRequestBuilder(
     url   : URL,

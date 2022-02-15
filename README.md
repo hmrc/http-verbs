@@ -42,7 +42,7 @@ Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http
 URLs can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` and using the provided [URL interpolator](#url-interpolator) for correct escaping of query and path parameters.
 
 
-### uk.gov.hmrc.http.client2.HttpClient2
+### uk.gov.hmrc.http.client.HttpClientV2
 
 This client follows the same patterns as `HttpClient` - that is, it also requires a `HeaderCarrier` to represent the context of the caller, and an `HttpReads` to process the http response.
 
@@ -51,7 +51,7 @@ In addition, it:
 - Exposes the underlying `play.api.libs.ws.WSRequest` with `transform`, making it easier to customise the request.
 - Only accepts the URL as `java.net.URL`; you can make use of the provided [URL interpolator](#url-interpolator).
 
-Examples can be found in [here](/http-verbs-common/src/test/scala/uk/gov/hmrc/http/client2/HttpClient2Spec.scala)
+Examples can be found in [here](/http-verbs-common/src/test/scala/uk/gov/hmrc/http/client/HttpClientV2Spec.scala)
 
 To migrate:
 
@@ -62,7 +62,7 @@ httpClient.GET[ResponseType](url)
 becomes
 
 ```scala
-httpClient2.get(url"$url").execute[ResponseType]
+httpClientV2.get(url"$url").execute[ResponseType]
 ```
 
 and
@@ -74,43 +74,43 @@ httpClient.POST[ResponseType](url, payload, headers)
 becomes
 
 ```scala
-httpClient2.post(url"$url").withBody(Json.toJson(payload)).addHeaders(headers).execute[ResponseType]
+httpClientV2.post(url"$url").withBody(Json.toJson(payload)).addHeaders(headers).execute[ResponseType]
 ```
 
 
 #### Header manipulation
 
-With `HttpClient`, replacing a header can require providing a customised client implementation (e.g. to replace the user-agent header), or updating the `HeaderCarrier` (e.g. to replace the authorisation header). This can now all be done with the `replaceHeader` on `HttpClient2` per call. e.g.
+With `HttpClient`, replacing a header can require providing a customised client implementation (e.g. to replace the user-agent header), or updating the `HeaderCarrier` (e.g. to replace the authorisation header). This can now all be done with the `replaceHeader` on `HttpClientV2` per call. e.g.
 
 ```scala
-httpClient2.get(url"$url").replaceHeader("User-Agent" -> userAgent).replaceHeader("Authorization" -> authorization).execute[ResponseType]
+httpClientV2.get(url"$url").replaceHeader("User-Agent" -> userAgent).replaceHeader("Authorization" -> authorization).execute[ResponseType]
 ```
 
 #### Using proxy
 
-With `HttpClient`, to use a proxy requires creating a new instance of HttpClient to mix in `WSProxy` and configure. With `HttpClient2` this can be done with the same client, calling `withProxy` per call. e.g.
+With `HttpClient`, to use a proxy requires creating a new instance of HttpClient to mix in `WSProxy` and configure. With `HttpClientV2` this can be done with the same client, calling `withProxy` per call. e.g.
 
 ```scala
-httpClient2.get(url"$url").withProxy.execute[ResponseType]
+httpClientV2.get(url"$url").withProxy.execute[ResponseType]
 ```
 
 * It uses `WSProxyConfiguration.buildWsProxyServer` which needs enabling with `http-verbs.proxy.enabled` in configuration, which by default is `false`, for development. See [WSProxyConfiguration](CHANGELOG.md#wsproxyconfiguration) for configuration changes.
 
 #### Streaming
 
-Streaming is supported with `HttpClient2`, and will be audited in the same way as `HttpClient`. Note that payloads will be truncated in audit logs if they exceed the max supported (as configured by `http-verbs.auditing.maxBodyLength`).
+Streaming is supported with `HttpClientV2`, and will be audited in the same way as `HttpClient`. Note that payloads will be truncated in audit logs if they exceed the max supported (as configured by `http-verbs.auditing.maxBodyLength`).
 
 Streamed requests can simply be passed to `withBody`:
 
 ```scala
 val reqStream: Source[ByteString, _] = ???
-httpClient2.post(url"$url").withBody(reqStream).execute[ResponseType]
+httpClientV2.post(url"$url").withBody(reqStream).execute[ResponseType]
 ```
 
 For streamed responses, use `stream` rather than `execute`:
 
 ```scala
-httpClient2.get(url"$url").stream[Source[ByteString, _]]
+httpClientV2.get(url"$url").stream[Source[ByteString, _]]
 ```
 
 ### URL interpolator
@@ -208,7 +208,7 @@ class MyConnectorSpec extends WireMockSupport with HttpClientSupport {
 }
 ```
 
-Similarly `HttpClient2Support` can be used to provide an instance of `HttpClient2`.
+Similarly `HttpClientV2Support` can be used to provide an instance of `HttpClientV2`.
 
 The `ExternalWireMockSupport` trait is an alternative to `WireMockSupport` which uses `127.0.0.1` instead of `localhost` for the hostname which is treated as an external host for header forwarding rules. This should be used for tests of connectors which call endpoints external to the platform. The variable `externalWireMockHost` (or `externalWireMockUrl`) should be used to provide the hostname in configuration.
 

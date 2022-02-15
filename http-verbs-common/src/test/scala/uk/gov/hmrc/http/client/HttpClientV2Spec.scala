@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.client2
+package uk.gov.hmrc.http.client
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
@@ -40,7 +40,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
 
-class HttpClient2Spec
+class HttpClientV2Spec
   extends AnyWordSpecLike
      with Matchers
      with WireMockSupport
@@ -51,7 +51,7 @@ class HttpClient2Spec
 
   import uk.gov.hmrc.http.HttpReads.Implicits._
 
-  "HttpClient2" should {
+  "HttpClientV2" should {
     "work with json" in new Setup {
       implicit val hc = HeaderCarrier()
 
@@ -61,7 +61,7 @@ class HttpClient2Spec
       )
 
       val res: Future[ResDomain] =
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
           .execute[ResDomain]
@@ -73,7 +73,7 @@ class HttpClient2Spec
           .withHeader("Content-Type", equalTo("application/json"))
           .withRequestBody(equalTo("\"req\""))
           .withHeader("User-Agent", equalTo("myapp"))
-          .withHeader("Http-Client2-Version", matching(".*"))
+          .withHeader("Http-ClientV2-Version", matching(".*"))
       )
 
       val headersCaptor  = ArgCaptor[Seq[(String, String)]]
@@ -110,7 +110,7 @@ class HttpClient2Spec
         Source.single(ByteString(requestBody))
 
       val res: Future[Source[ByteString, _]] =
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(srcStream)
           .stream[Source[ByteString, _]]
@@ -158,7 +158,7 @@ class HttpClient2Spec
         Source.single(ByteString(requestBody))
 
       val res: Future[Source[ByteString, _]] =
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(srcStream)
           .stream[Source[ByteString, _]]
@@ -210,7 +210,7 @@ class HttpClient2Spec
         Source.single(ByteString(requestBody))
 
       val res: Future[Source[ByteString, _]] =
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(srcStream)
           .stream[Source[ByteString, _]]
@@ -255,7 +255,7 @@ class HttpClient2Spec
       )
 
       val res: Future[HttpResponse] =
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(requestBody)
           .execute[HttpResponse]
@@ -303,10 +303,10 @@ class HttpClient2Spec
         )
 
       val res: Future[ResDomain] =
-          httpClient2
-            .post(url"$wireMockUrl/")
-            .withBody(body)
-            .execute[ResDomain]
+        httpClientV2
+          .post(url"$wireMockUrl/")
+          .withBody(body)
+          .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -365,10 +365,10 @@ class HttpClient2Spec
         )
 
       val res: Future[ResDomain] =
-          httpClient2
-            .post(url"$wireMockUrl/")
-            .withBody(body)
-            .execute[ResDomain]
+        httpClientV2
+          .post(url"$wireMockUrl/")
+          .withBody(body)
+          .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -427,10 +427,10 @@ class HttpClient2Spec
         )
 
       val res: Future[ResDomain] =
-          httpClient2
-            .post(url"$wireMockUrl/")
-            .withBody(body)
-            .execute[ResDomain]
+        httpClientV2
+          .post(url"$wireMockUrl/")
+          .withBody(body)
+          .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -490,10 +490,10 @@ class HttpClient2Spec
         )
 
       val res: Future[ResDomain] =
-          httpClient2
-            .post(url"$wireMockUrl/")
-            .withBody(body)
-            .execute[ResDomain]
+        httpClientV2
+          .post(url"$wireMockUrl/")
+          .withBody(body)
+          .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
 
@@ -528,7 +528,7 @@ class HttpClient2Spec
       implicit val hc = HeaderCarrier()
 
       a[RuntimeException] should be thrownBy
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .transform(_.withBody(Json.toJson(ReqDomain("req"))))
           .replaceHeader("User-Agent" -> "ua2")
@@ -544,7 +544,7 @@ class HttpClient2Spec
       )
 
       val res: Future[ResDomain] =
-        httpClient2
+        httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
           .replaceHeader("User-Agent" -> "ua2")
@@ -579,7 +579,7 @@ class HttpClient2Spec
       val res: Future[ResDomain] =
         retries.retryFor("get reqdomain"){ case UpstreamErrorResponse.WithStatusCode(502) => true }{
           count.incrementAndGet
-          httpClient2
+          httpClientV2
             .put(url"$wireMockUrl/")
             .withBody(Json.toJson(ReqDomain("req")))
             .execute[ResDomain]
@@ -597,7 +597,7 @@ class HttpClient2Spec
 
     val maxAuditBodyLength = 30
 
-    val httpClient2: HttpClient2 = {
+    val httpClientV2: HttpClientV2 = {
       val config =
         Configuration(
           ConfigFactory.parseString(
@@ -606,7 +606,7 @@ class HttpClient2Spec
                 |""".stripMargin
           ).withFallback(ConfigFactory.load())
         )
-      new HttpClient2Impl(
+      new HttpClientV2Impl(
         wsClient = AhcWSClient(AhcWSClientConfigFactory.forConfig(config.underlying)),
         as,
         config,

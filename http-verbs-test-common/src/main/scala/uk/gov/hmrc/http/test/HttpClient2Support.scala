@@ -20,16 +20,16 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
-import uk.gov.hmrc.http.client2.{HttpClient2, HttpClient2Impl}
+import uk.gov.hmrc.http.client.{HttpClientV2, HttpClientV2Impl}
 
-trait HttpClient2Support {
+trait HttpClientV2Support {
 
-  def mkHttpClient2(
+  def mkHttpClientV2(
     config: Configuration = Configuration(ConfigFactory.load())
-  ): HttpClient2 = {
+  ): HttpClientV2 = {
     implicit val as: ActorSystem = ActorSystem("test-actor-system")
 
-    new HttpClient2Impl(
+    new HttpClientV2Impl(
       wsClient = AhcWSClient(AhcWSClientConfigFactory.forConfig(config.underlying)),
       as,
       config,
@@ -37,5 +37,5 @@ trait HttpClient2Support {
     )
   }
 
-  lazy val httpClient2: HttpClient2 = mkHttpClient2()
+  lazy val httpClientV2: HttpClientV2 = mkHttpClientV2()
 }

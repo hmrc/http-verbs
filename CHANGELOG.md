@@ -13,7 +13,7 @@ There are some differences with `WSProxyConfiguration.buildWsProxyServer`:
   * `proxy.proxyRequiredForThisEnvironment` has been replaced with `http-verbs.proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
 
 
-### Adds HttpClient2
+### Adds HttpClientV2
 This is in addition to `HttpClient` (for now), so can be optionally used instead.
 
 See [README](/README.md) for details.

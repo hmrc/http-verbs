@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http.client2
+package uk.gov.hmrc.http.client
 
 import play.api.libs.ws.{BodyWritable, WSRequest}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads}
@@ -27,7 +27,7 @@ import scala.reflect.runtime.universe.TypeTag
   * retries) occur, but makes building the request more flexible (by exposing play-ws).
   * It also supports streaming.
   */
-trait HttpClient2 {
+trait HttpClientV2 {
   protected def mkRequestBuilder(url: URL, method: String)(implicit hc: HeaderCarrier): RequestBuilder
 
   def get(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =

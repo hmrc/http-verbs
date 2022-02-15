@@ -22,10 +22,10 @@ import akka.util.ByteString
 
 import scala.annotation.implicitNotFound
 
-package client2 {
+package client {
   trait Streaming
 }
-package object client2
+package object client
   extends StreamHttpReadsInstances {
 
   // ensures strict HttpReads are not passed to stream function, which would lead to stream being read into memory
@@ -40,10 +40,10 @@ trait StreamHttpReadsInstances {
   implicit val errorTimeout: ErrorTimeout =
     ErrorTimeout()
 
-  def tag[A](instance: A): A with client2.Streaming =
-    instance.asInstanceOf[A with client2.Streaming]
+  def tag[A](instance: A): A with client.Streaming =
+    instance.asInstanceOf[A with client.Streaming]
 
-  implicit def readEitherSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client2.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
+  implicit def readEitherSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
     tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
       HttpReads.ask.flatMap { case (method, url, response) =>
         HttpErrorFunctions.handleResponseEitherStream(method, url)(response) match {
@@ -53,7 +53,7 @@ trait StreamHttpReadsInstances {
       }
     )
 
-  implicit def readSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client2.StreamHttpReads[Source[ByteString, _]] =
+  implicit def readSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client.StreamHttpReads[Source[ByteString, _]] =
     tag[HttpReads[Source[ByteString, _]]](
       readEitherSource
         .map {
