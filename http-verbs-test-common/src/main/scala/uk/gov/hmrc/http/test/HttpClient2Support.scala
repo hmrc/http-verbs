@@ -17,8 +17,6 @@
 package uk.gov.hmrc.http.test
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
@@ -30,9 +28,6 @@ trait HttpClient2Support {
     config: Configuration = Configuration(ConfigFactory.load())
   ): HttpClient2 = {
     implicit val as: ActorSystem = ActorSystem("test-actor-system")
-
-    @silent("deprecated")
-    implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
 
     new HttpClient2Impl(
       wsClient = AhcWSClient(AhcWSClientConfigFactory.forConfig(config.underlying)),

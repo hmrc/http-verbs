@@ -35,17 +35,20 @@ trait Retries {
 
   private val logger = LoggerFactory.getLogger("application")
 
+  private lazy val sslRetryEnabled =
+    configuration.getBoolean("http-verbs.retries.ssl-engine-closed-already.enabled")
+
   def retryOnSslEngineClosed[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
-    retryFor(s"$verb $url") { case ex @ `sslEngineClosedMatcher`() => true }(block)
+    retryFor(s"$verb $url") { case ex: SSLException if ex.getMessage == "SSLEngine closed already" => sslRetryEnabled }(block)
 
   @deprecated("Use retryOnSslEngineClosed instead", "14.0.0")
   def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
     retryOnSslEngineClosed(verb, url)(block)
 
   def retryFor[A](
-     label    : String
-  )( condition: PartialFunction[Exception, Boolean]
-  )( block    : => Future[A]
+    label    : String
+  )(condition: PartialFunction[Exception, Boolean]
+  )(block    : => Future[A]
   )(implicit
     ec: ExecutionContext
   ): Future[A] = {
@@ -70,17 +73,4 @@ trait Retries {
     configuration.getDurationList("http-verbs.retries.intervals").asScala.toSeq.map { d =>
       FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
     }
-
-  private lazy val sslEngineClosedMatcher =
-    new SSlEngineClosedMatcher(
-      enabled = configuration.getBoolean("http-verbs.retries.ssl-engine-closed-already.enabled")
-    )
-
-  private class SSlEngineClosedMatcher(enabled: Boolean) {
-    def unapply(ex: Throwable): Boolean =
-      ex match {
-        case _: SSLException if ex.getMessage == "SSLEngine closed already" => enabled
-        case _                                                              => false
-      }
-  }
 }

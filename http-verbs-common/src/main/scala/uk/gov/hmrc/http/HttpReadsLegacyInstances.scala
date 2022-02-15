@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import com.github.ghik.silencer.silent
 import play.api.libs.json.{JsNull, JsValue, Reads}
 
 
@@ -24,41 +23,39 @@ trait HttpReadsLegacyInstances extends HttpReadsLegacyOption with HttpReadsLegac
 
 trait HttpReadsLegacyRawReads extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  implicit val readRaw: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    @silent("deprecated")
-    def read(method: String, url: String, response: HttpResponse) = handleResponse(method, url)(response)
-  }
+  implicit val readRaw: HttpReads[HttpResponse] =
+    (method: String, url: String, response: HttpResponse) =>
+      handleResponse(method, url)(response)
 }
 
 object HttpReadsLegacyRawReads extends HttpReadsLegacyRawReads
 
 trait HttpReadsLegacyOption extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] = new HttpReads[Option[P]] {
-    def read(method: String, url: String, response: HttpResponse) = response.status match {
-      case 204 | 404 => None
-      case _         => Some(rds.read(method, url, response))
-    }
-  }
+  implicit def readOptionOf[P](implicit rds: HttpReads[P]): HttpReads[Option[P]] =
+    (method: String, url: String, response: HttpResponse) =>
+      response.status match {
+        case 204 | 404 => None
+        case _         => Some(rds.read(method, url, response))
+      }
 }
 
 trait HttpReadsLegacyJson extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  implicit def readFromJson[O](implicit rds: Reads[O], mf: Manifest[O]): HttpReads[O] = new HttpReads[O] {
-    def read(method: String, url: String, response: HttpResponse) =
+  implicit def readFromJson[O](implicit rds: Reads[O], mf: Manifest[O]): HttpReads[O] =
+    (method: String, url: String, response: HttpResponse) =>
       readJson(method, url, handleResponse(method, url)(response).json)
-  }
 
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: Reads[O], mf: Manifest[O]) = new HttpReads[Seq[O]] {
-    def read(method: String, url: String, response: HttpResponse) = response.status match {
-      case 204 | 404 => Seq.empty
-      case _ =>
-        readJson[Seq[O]](method, url, (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
-    }
-  }
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: Reads[O], mf: Manifest[O]): HttpReads[Seq[O]] =
+    (method: String, url: String, response: HttpResponse) =>
+      response.status match {
+        case 204 | 404 => Seq.empty
+        case _ =>
+          readJson[Seq[O]](method, url, (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
+      }
 
-  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: Reads[A], mf: Manifest[A]) =
+  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: Reads[A], mf: Manifest[A]): A =
     jsValue
       .validate[A]
       .fold(

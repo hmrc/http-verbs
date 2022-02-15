@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import com.typesafe.config.Config
 import play.api.Configuration
 import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest}
 
@@ -61,21 +60,16 @@ object WSProxyConfiguration {
     else None
   }
 
-
-  def buildWsProxyServer(configuration: Config): Option[WSProxyServer] = {
-    def getOptionalString(key: String): Option[String] =
-      if (configuration.hasPath(key)) Some(configuration.getString(key)) else None
-
-    if (configuration.getBoolean("http-verbs.proxy.enabled"))
+  def buildWsProxyServer(configuration: Configuration): Option[WSProxyServer] =
+    if (configuration.get[Boolean]("http-verbs.proxy.enabled"))
       Some(
         DefaultWSProxyServer(
-          protocol  = Some(configuration.getString("proxy.protocol")),
-          host      = configuration.getString("proxy.host"),
-          port      = configuration.getInt("proxy.port"),
-          principal = getOptionalString("proxy.username"),
-          password  = getOptionalString("proxy.password")
+          protocol  = Some(configuration.get[String]("proxy.protocol")),
+          host      = configuration.get[String]("proxy.host"),
+          port      = configuration.get[Int]("proxy.port"),
+          principal = configuration.getOptional[String]("proxy.username"),
+          password  = configuration.getOptional[String]("proxy.password")
         )
       )
     else None
-  }
 }

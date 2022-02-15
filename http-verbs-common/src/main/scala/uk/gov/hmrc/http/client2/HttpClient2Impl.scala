@@ -56,7 +56,7 @@ class HttpClient2Impl(
 ) extends HttpClient2 {
 
   private lazy val optProxyServer =
-    WSProxyConfiguration.buildWsProxyServer(config.underlying)
+    WSProxyConfiguration.buildWsProxyServer(config)
 
   private val hcConfig =
     HeaderCarrier.Config.fromConfig(config.underlying)
@@ -87,7 +87,7 @@ class HttpClient2Impl(
 }
 
 
-// is final since `tranform` (and derived functions) return instances of RequestBuilderImpl, and any overrides would be lost.
+// is final since `transform` (and derived functions) return instances of RequestBuilderImpl, and any overrides would be lost.
 final class RequestBuilderImpl(
   config        : Configuration,
   optProxyServer: Option[WSProxyServer],
@@ -197,7 +197,7 @@ class ExecutorImpl(
     request     : WSRequest,
     optHookDataF: Option[Future[Option[HookData]]],
     isStream    : Boolean,
-    r           : HttpReads[A]
+    httpReads   : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
@@ -224,7 +224,7 @@ class ExecutorImpl(
     // (i.e. return Future[WSResponse] to be handled with Future.transform/transformWith(...))
     // since the transform functions require access to the request (method and url)
     mapErrors(request, httpResponseF)
-      .map(r.read(request.method, request.url, _))
+      .map(httpReads.read(request.method, request.url, _))
   }
 
   // unfortunate return type - first HttpResponse is the full response, the second HttpResponse is truncated for auditing...
@@ -239,7 +239,22 @@ class ExecutorImpl(
     val httpResponseF =
       for {
         response <- responseF
-      } yield
+        status   =  response.status
+        headers  =  response.headers.mapValues(_.toSeq).toMap
+      } yield {
+        def httpResponse(body : Either[Source[ByteString, _], String]): HttpResponse =
+          body match {
+            case Left(src) => HttpResponse(
+                                status       = response.status,
+                                bodyAsSource = src,
+                                headers      = response.headers.mapValues(_.toSeq).toMap
+                              )
+            case Right(str) => HttpResponse(
+                                status       = response.status,
+                                body         = str,
+                                headers      = response.headers.mapValues(_.toSeq).toMap
+                              )
+          }
         if (isStream) {
           val source =
             response.bodyAsSource
@@ -247,38 +262,22 @@ class ExecutorImpl(
                 BodyCaptor.sink(
                   loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
-                  withCapturedBody = body =>
-                                       auditResponseF.success(
-                                         HttpResponse(
-                                           status  = response.status,
-                                           body    = body.decodeString("UTF-8"),
-                                           headers = response.headers.mapValues(_.toSeq).toMap
-                                         )
-                                       )
+                  withCapturedBody = body => auditResponseF.success(httpResponse(Right(body.decodeString("UTF-8"))))
                 )
               )
               .recover {
                 case e => auditResponseF.failure(e); throw e
               }
-          HttpResponse(
-            status       = response.status,
-            bodyAsSource = source,
-            headers      = response.headers.mapValues(_.toSeq).toMap
-          )
+          httpResponse(Left(source))
         } else {
           auditResponseF.success(
-            HttpResponse(
-              status  = response.status,
-              body    = BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext, isStream = false),
-              headers = response.headers.mapValues(_.toSeq).toMap
-            )
+            httpResponse(Right(
+              BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext, isStream = false)
+            ))
           )
-          HttpResponse(
-            status  = response.status,
-            body    = response.body,
-            headers = response.headers.mapValues(_.toSeq).toMap
-          )
+          httpResponse(Right(response.body))
         }
+      }
     (httpResponseF, auditResponseF.future)
   }
 

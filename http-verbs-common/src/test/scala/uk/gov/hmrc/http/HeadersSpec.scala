@@ -18,7 +18,6 @@ package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
 import com.github.ghik.silencer.silent
-import com.github.tomakehurst.wiremock._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}

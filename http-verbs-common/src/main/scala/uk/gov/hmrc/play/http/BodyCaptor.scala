@@ -35,8 +35,7 @@ private class BodyCaptorFlow(
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      private var buffer     = ByteString.empty
-      private var bodyLength = 0
+      private var buffer = ByteString.empty
 
       setHandlers(
         in,
@@ -47,7 +46,6 @@ private class BodyCaptorFlow(
 
           override def onPush(): Unit = {
             val chunk = grab(in)
-            bodyLength += chunk.length
             if (buffer.size < maxBodyLength)
               buffer ++= chunk
             push(out, chunk)
