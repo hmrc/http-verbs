@@ -53,8 +53,6 @@ private class BodyCaptorFlow(
 
           override def onUpstreamFinish(): Unit = {
             withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, loggingContext, isStream = true))
-            if (isAvailable(out) && buffer == ByteString.empty)
-              push(out, buffer)
             completeStage()
           }
         }
