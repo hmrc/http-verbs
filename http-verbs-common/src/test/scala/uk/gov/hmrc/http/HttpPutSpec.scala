@@ -170,16 +170,22 @@ class HttpPutSpec
       val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
       val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
+      val headerCaptor1 = ArgCaptor[Seq[(String, String)]]
+      val headerCaptor2 = ArgCaptor[Seq[(String, String)]]
+
       val config = HeaderCarrier.Config.fromConfig(testPut.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPut.testHook1).apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testJson))), respArgCaptor1)(any, any)
-      verify(testPut.testHook2).apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testJson))), respArgCaptor2)(any, any)
+      verify(testPut.testHook1).apply(eqTo("PUT"), eqTo(url"$url"), headerCaptor1, eqTo(Some(HookData.FromString(testJson))), respArgCaptor1)(any, any)
+      verify(testPut.testHook2).apply(eqTo("PUT"), eqTo(url"$url"), headerCaptor2, eqTo(Some(HookData.FromString(testJson))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
       respArgCaptor1.value.futureValue shouldBe dummyResponse
       respArgCaptor2.value.futureValue shouldBe dummyResponse
+
+      headerCaptor1.value should contain allElementsOf(headers)
+      headerCaptor2.value should contain allElementsOf(headers)
     }
   }
 
@@ -198,7 +204,8 @@ class HttpPutSpec
 
     behave like anErrorMappingHttpCall(
       "PUT",
-      (url, responseF) => new StubbedHttpPut(responseF).PUTString[HttpResponse](url, testRequestBody, Seq.empty))
+      (url, responseF) => new StubbedHttpPut(responseF).PUTString[HttpResponse](url, testRequestBody, Seq.empty)
+    )
     behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) {
       _.PUTString[HttpResponse](url, testRequestBody, Seq.empty)
     }
@@ -213,18 +220,22 @@ class HttpPutSpec
       val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
       val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
 
+      val headerCaptor1 = ArgCaptor[Seq[(String, String)]]
+      val headerCaptor2 = ArgCaptor[Seq[(String, String)]]
+
       val config = HeaderCarrier.Config.fromConfig(testPut.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPut.testHook1)
-        .apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor1)(any, any)
-      verify(testPut.testHook2)
-        .apply(eqTo("PUT"), eqTo(url"$url"), eqTo(headers), eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor2)(any, any)
+      verify(testPut.testHook1).apply(eqTo("PUT"), eqTo(url"$url"), headerCaptor1, eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor1)(any, any)
+      verify(testPut.testHook2).apply(eqTo("PUT"), eqTo(url"$url"), headerCaptor2, eqTo(Some(HookData.FromString(testRequestBody))), respArgCaptor2)(any, any)
 
       // verifying directly without ArgumentCaptor didn't work as Futures were different instances
       // e.g. Future.successful(5) != Future.successful(5)
       respArgCaptor1.value.futureValue shouldBe dummyResponse
       respArgCaptor2.value.futureValue shouldBe dummyResponse
+
+      headerCaptor1.value should contain allElementsOf(headers)
+      headerCaptor2.value should contain allElementsOf(headers)
     }
   }
 }

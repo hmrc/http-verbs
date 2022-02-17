@@ -36,8 +36,8 @@ trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with Connectio
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
-      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
-      val httpResponse = retry(PUT_VERB, url)(doPut(url, body, allHeaders))
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
+      val httpResponse = retryOnSslEngineClosed(PUT_VERB, url)(doPut(url, body, allHeaders))
       executeHooks(PUT_VERB, url"$url", allHeaders, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
     }
@@ -50,8 +50,8 @@ trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with Connectio
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(PUT_VERB, url) {
-      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
-      val httpResponse = retry(PUT_VERB, url)(doPutString(url, body, allHeaders))
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
+      val httpResponse = retryOnSslEngineClosed(PUT_VERB, url)(doPutString(url, body, allHeaders))
       executeHooks(PUT_VERB, url"$url", allHeaders, Option(HookData.FromString(body)), httpResponse)
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))
     }

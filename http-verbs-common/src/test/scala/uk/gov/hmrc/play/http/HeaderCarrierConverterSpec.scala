@@ -24,6 +24,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Configuration, Play}
 import play.api.mvc._
 import play.api.test.Helpers._
+import play.api.http.{HeaderNames => PlayHeaderNames}
 import play.api.test.{FakeHeaders, FakeRequest, FakeRequestFactory}
 import play.api.mvc.request.RequestFactory
 import uk.gov.hmrc.http._
@@ -381,7 +382,7 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
   "utilise values from cookies" should {
     "find the deviceID from the cookie if set in header" in {
       val cookieHeader = Cookies.encodeCookieHeader(Seq(Cookie(CookieNames.deviceID, "deviceIdCookie")))
-      val req          = FakeRequest().withHeaders(play.api.http.HeaderNames.COOKIE -> cookieHeader)
+      val req          = FakeRequest().withHeaders(PlayHeaderNames.COOKIE -> cookieHeader)
 
       HeaderCarrierConverter.fromHeadersAndSession(req.headers, Some(req.session))
         .deviceID shouldBe Some("deviceIdCookie")

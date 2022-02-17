@@ -17,11 +17,9 @@
 package uk.gov.hmrc.http.test
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
-import com.github.ghik.silencer.silent
 import com.typesafe.config.{Config, ConfigFactory}
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws.WSHttp
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
@@ -32,9 +30,6 @@ trait HttpClientSupport {
   ) =
     new HttpClient with WSHttp {
       private implicit val as: ActorSystem = ActorSystem("test-actor-system")
-
-      @silent("deprecated")
-      private implicit val mat: Materializer = ActorMaterializer() // explicitly required for play-26
 
       override val wsClient: WSClient                 = AhcWSClient(AhcWSClientConfigFactory.forConfig(config))
       override protected val configuration: Config    = config

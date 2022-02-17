@@ -42,8 +42,8 @@ trait HttpPatch
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[O] =
     withTracing(PATCH_VERB, url) {
-      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers)
-      val httpResponse = retry(PATCH_VERB, url)(doPatch(url, body, allHeaders))
+      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
+      val httpResponse = retryOnSslEngineClosed(PATCH_VERB, url)(doPatch(url, body, allHeaders))
       executeHooks(PATCH_VERB, url"$url", allHeaders, Option(HookData.FromString(Json.stringify(wts.writes(body)))), httpResponse)
       mapErrors(PATCH_VERB, url, httpResponse).map(response => rds.read(PATCH_VERB, url, response))
     }
