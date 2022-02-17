@@ -36,10 +36,6 @@ package object client
 }
 
 trait StreamHttpReadsInstances {
-  // default may be overridden if required
-  implicit val errorTimeout: ErrorTimeout =
-    ErrorTimeout()
-
   def tag[A](instance: A): A with client.Streaming =
     instance.asInstanceOf[A with client.Streaming]
 

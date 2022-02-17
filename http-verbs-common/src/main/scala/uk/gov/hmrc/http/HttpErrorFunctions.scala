@@ -123,5 +123,10 @@ trait HttpErrorFunctions {
 object HttpErrorFunctions extends HttpErrorFunctions
 
 case class ErrorTimeout(
-  toDuration: Duration = 10.seconds
+  toDuration: Duration
 ) extends AnyVal
+
+object ErrorTimeout {
+  implicit val errorTimeout: ErrorTimeout =
+    ErrorTimeout(10.seconds)
+}
