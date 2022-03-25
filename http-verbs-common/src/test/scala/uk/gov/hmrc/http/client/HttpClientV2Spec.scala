@@ -288,6 +288,115 @@ class HttpClientV2Spec
       auditedResponse.body   shouldBe responseBody.take(maxAuditBodyLength)
     }
 
+    "ignore stream payloads for auditing if too long and includePartialPayloads is false" in new Setup {
+      override val httpClientV2: HttpClientV2 =
+        mkHttpClientV2(
+          s"""|appName = myapp
+              |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+              |http-verbs.auditing.includePartialPayloads = false
+              |""".stripMargin
+        )
+
+      implicit val hc = HeaderCarrier()
+
+      val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+      val responseBody = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody(responseBody).withStatus(200))
+      )
+
+      val srcStream: Source[ByteString, _] =
+        Source.single(ByteString(requestBody))
+
+      val res: Future[Source[ByteString, _]] =
+        httpClientV2
+          .put(url"$wireMockUrl/")
+          .withBody(srcStream)
+          .stream[Source[ByteString, _]]
+
+      res.futureValue.map(_.utf8String).runReduce(_ + _).futureValue shouldBe responseBody
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", equalTo("application/octet-stream"))
+          .withRequestBody(equalTo(requestBody))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("PUT"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(None),  // empty
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "application/octet-stream")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe "" // empty
+    }
+
+    "not truncate strict payloads for auditing if too long and includePartialPayloads is false" in new Setup {
+      override val httpClientV2: HttpClientV2 =
+        mkHttpClientV2(
+          s"""|appName = myapp
+              |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+              |http-verbs.auditing.includePartialPayloads = false
+              |""".stripMargin
+        )
+
+      implicit val hc = HeaderCarrier()
+
+      val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+      val responseBody = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody(responseBody).withStatus(200))
+      )
+
+      val res: Future[HttpResponse] =
+        httpClientV2
+          .put(url"$wireMockUrl/")
+          .withBody(requestBody)
+          .execute[HttpResponse]
+
+      res.futureValue.body shouldBe responseBody
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader("Content-Type", containing("text/plain")) // play-26 doesn't send charset
+          .withRequestBody(equalTo(requestBody))
+          .withHeader("User-Agent", equalTo("myapp"))
+      )
+
+      val headersCaptor  = ArgCaptor[Seq[(String, String)]]
+      val responseCaptor = ArgCaptor[Future[HttpResponse]]
+
+      verify(mockHttpHook)
+        .apply(
+          verb      = eqTo("PUT"),
+          url       = eqTo(url"$wireMockUrl/"),
+          headers   = headersCaptor,
+          body      = eqTo(Some(HookData.FromString(requestBody))), // not truncated
+          responseF = responseCaptor
+        )(any[HeaderCarrier], any[ExecutionContext])
+
+      headersCaptor.value should contain ("User-Agent" -> "myapp")
+      headersCaptor.value should contain ("Content-Type" -> "text/plain")
+      val auditedResponse = responseCaptor.value.futureValue
+      auditedResponse.status shouldBe 200
+      auditedResponse.body   shouldBe responseBody // not truncated
+    }
+
     "work with form data" in new Setup {
       implicit val hc = HeaderCarrier()
 
@@ -597,14 +706,11 @@ class HttpClientV2Spec
 
     val maxAuditBodyLength = 30
 
-    val httpClientV2: HttpClientV2 = {
+    def mkHttpClientV2(configStr: String): HttpClientV2 = {
       val config =
         Configuration(
-          ConfigFactory.parseString(
-            s"""|appName = myapp
-                |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
-                |""".stripMargin
-          ).withFallback(ConfigFactory.load())
+          ConfigFactory.parseString(configStr)
+            .withFallback(ConfigFactory.load())
         )
       new HttpClientV2Impl(
         wsClient = AhcWSClient(AhcWSClientConfigFactory.forConfig(config.underlying)),
@@ -613,6 +719,13 @@ class HttpClientV2Spec
         hooks = Seq(mockHttpHook),
       )
     }
+
+    val httpClientV2: HttpClientV2 =
+      mkHttpClientV2(
+        s"""|appName = myapp
+            |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+            |""".stripMargin
+      )
   }
 }
 
