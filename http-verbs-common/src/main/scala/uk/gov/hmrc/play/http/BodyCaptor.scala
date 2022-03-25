@@ -85,7 +85,7 @@ object BodyCaptor {
   def bodyUpto(body: String, maxBodyLength: Int, loggingContext: String, isStream: Boolean): String =
     if (body.length > maxBodyLength) {
       logger.warn(
-        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating"
+        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating for audit"
       )
       body.take(maxBodyLength)
     } else
@@ -94,7 +94,7 @@ object BodyCaptor {
   def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String, isStream: Boolean): ByteString =
     if (body.length > maxBodyLength) {
       logger.warn(
-        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating"
+        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating for audit"
       )
       body.take(maxBodyLength)
     } else
