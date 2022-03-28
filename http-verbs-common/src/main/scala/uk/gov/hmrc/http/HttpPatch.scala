@@ -51,7 +51,7 @@ trait HttpPatch
         url"$url",
         allHeaders,
         Option(HookData.FromString(Json.stringify(wts.writes(body)), isTruncated = false)),
-        httpResponse.map(ResponseData(_, isTruncated = false))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PATCH_VERB, url, httpResponse).map(response => rds.read(PATCH_VERB, url, response))
     }

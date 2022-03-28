@@ -43,7 +43,7 @@ trait HttpDelete
     withTracing(DELETE_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(DELETE_VERB, url)(doDelete(url, allHeaders))
-      executeHooks(DELETE_VERB, url"$url", allHeaders, None, httpResponse.map(ResponseData(_, isTruncated = false)))
+      executeHooks(DELETE_VERB, url"$url", allHeaders, None, httpResponse.map(ResponseData.fromHttpResponse))
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
     }
 }

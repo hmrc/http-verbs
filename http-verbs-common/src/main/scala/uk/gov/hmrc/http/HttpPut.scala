@@ -51,7 +51,7 @@ trait HttpPut
         url"$url",
         allHeaders,
         Option(HookData.FromString(Json.stringify(wts.writes(body)), isTruncated = false)),
-        httpResponse.map(ResponseData(_, isTruncated = false))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
     }
@@ -73,7 +73,7 @@ trait HttpPut
         url"$url",
         allHeaders,
         Option(HookData.FromString(body, isTruncated = false)),
-        httpResponse.map(ResponseData(_, isTruncated = false))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))
     }

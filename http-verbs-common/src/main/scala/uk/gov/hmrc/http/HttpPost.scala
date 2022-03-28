@@ -40,8 +40,8 @@ trait HttpPost
   )(implicit
     wts: Writes[I],
     rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    hc : HeaderCarrier,
+    ec : ExecutionContext
   ): Future[O] =
     withTracing(POST_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
@@ -51,7 +51,7 @@ trait HttpPost
         url"$url",
         allHeaders,
         Option(HookData.FromString(Json.stringify(wts.writes(body)), isTruncated = false)),
-        httpResponse.map(ResponseData(_, isTruncated = false))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -62,8 +62,8 @@ trait HttpPost
     headers: Seq[(String, String)]
   )(implicit
     rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    hc : HeaderCarrier,
+    ec : ExecutionContext
   ): Future[O] =
     withTracing(POST_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
@@ -73,7 +73,7 @@ trait HttpPost
         url"$url",
         allHeaders,
         Option(HookData.FromString(body, isTruncated = false)),
-        httpResponse.map(ResponseData(_, isTruncated = false))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -84,8 +84,8 @@ trait HttpPost
     headers: Seq[(String, String)]
   )(implicit
     rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    hc : HeaderCarrier,
+    ec : ExecutionContext
   ): Future[O] =
     withTracing(POST_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
@@ -95,7 +95,7 @@ trait HttpPost
         url"$url",
         allHeaders,
         Option(HookData.FromMap(body)),
-        httpResponse.map(ResponseData(_, isTruncated = true))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }
@@ -105,8 +105,8 @@ trait HttpPost
     headers: Seq[(String, String)]
   )(implicit
     rds: HttpReads[O],
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    hc : HeaderCarrier,
+    ec : ExecutionContext
   ): Future[O] =
     withTracing(POST_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
@@ -116,7 +116,7 @@ trait HttpPost
         url"$url",
         allHeaders,
         None,
-        httpResponse.map(ResponseData(_, isTruncated = false))
+        httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
     }

@@ -55,7 +55,7 @@ trait HttpGet
     withTracing(GET_VERB, urlWithQuery) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = allHeaders))
-      executeHooks(GET_VERB, url"$url", allHeaders, None, httpResponse.map(ResponseData(_, isTruncated = false)))
+      executeHooks(GET_VERB, url"$url", allHeaders, None, httpResponse.map(ResponseData.fromHttpResponse))
       mapErrors(GET_VERB, urlWithQuery, httpResponse).map(response => rds.read(GET_VERB, urlWithQuery, response))
     }
   }

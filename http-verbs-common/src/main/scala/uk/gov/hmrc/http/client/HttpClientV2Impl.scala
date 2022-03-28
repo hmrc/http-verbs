@@ -249,19 +249,6 @@ class ExecutorImpl(
         status   =  response.status
         headers  =  response.headers.mapValues(_.toSeq).toMap
       } yield {
-        def httpResponse(body : Either[Source[ByteString, _], String]): HttpResponse =
-          body match {
-            case Left(src) => HttpResponse(
-                                status       = response.status,
-                                bodyAsSource = src,
-                                headers      = response.headers.mapValues(_.toSeq).toMap
-                              )
-            case Right(str) => HttpResponse(
-                                status       = response.status,
-                                body         = str,
-                                headers      = response.headers.mapValues(_.toSeq).toMap
-                              )
-          }
         if (isStream) {
           val source =
             response.bodyAsSource
@@ -270,22 +257,34 @@ class ExecutorImpl(
                   loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
                   withCapturedBody = bodyResult => auditResponseF.success(ResponseData(
-                                                     httpResponse = httpResponse(Right(bodyResult.body.utf8String)),
-                                                     isTruncated  = bodyResult.isTruncated
+                                                     body            = bodyResult.body.utf8String,
+                                                     status          = response.status,
+                                                     bodyIsTruncated = bodyResult.isTruncated,
+                                                     bodyIsOmitted   = false
                                                    ))
                 )
               )
               .recover {
                 case e => auditResponseF.failure(e); throw e
               }
-          httpResponse(Left(source))
+          HttpResponse(
+            status       = response.status,
+            bodyAsSource = source,
+            headers      = response.headers.mapValues(_.toSeq).toMap
+          )
         } else {
           val bodyResult = BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false)
           auditResponseF.success(ResponseData(
-            httpResponse = httpResponse(Right(bodyResult.body.utf8String)),
-            isTruncated  = bodyResult.isTruncated
+            body            = bodyResult.body.utf8String,
+            status          = response.status,
+            bodyIsTruncated = bodyResult.isTruncated,
+            bodyIsOmitted   = false
           ))
-          httpResponse(Right(response.body))
+          HttpResponse(
+            status       = response.status,
+            body         = response.body,
+            headers      = response.headers.mapValues(_.toSeq).toMap
+          )
         }
       }
     (httpResponseF, auditResponseF.future)

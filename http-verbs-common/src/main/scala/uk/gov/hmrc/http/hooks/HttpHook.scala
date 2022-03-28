@@ -35,10 +35,23 @@ trait HttpHook {
   ): Unit
 }
 
+// TODO also include Headers (not used by play-auditing...)
 case class ResponseData(
-  httpResponse: HttpResponse, // TODO do we actually need HttpResponse? pull out statusCode, headers, body?
-  isTruncated : Boolean
+  body           : String,
+  status         : Int,
+  bodyIsTruncated: Boolean,
+  bodyIsOmitted  : Boolean
 )
+
+object ResponseData {
+  def fromHttpResponse(httpResponse: HttpResponse) =
+    ResponseData(
+      body            = httpResponse.body,
+      status          = httpResponse.status,
+      bodyIsTruncated = false,
+      bodyIsOmitted   = false
+    )
+}
 
 sealed trait HookData
 object HookData {
