@@ -24,19 +24,20 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHook {
   def apply(
-    verb: String,
-    url: URL,
+    verb     : String,
+    url      : URL,
     headers  : Seq[(String, String)],
-    body: Option[HookData],
+    body     : Option[HookData],
     responseF: Future[HttpResponse]
-  )(
-    implicit hc: HeaderCarrier,
+  )(implicit
+    hc: HeaderCarrier,
     ec: ExecutionContext
   ): Unit
 }
 
 sealed trait HookData
 object HookData {
-  case class FromString(s: String) extends HookData
+  // TODO won' be binary compatible with play-auditing...
+  case class FromString(s: String, isTruncated: Boolean) extends HookData
   case class FromMap(m: Map[String, Seq[String]]) extends HookData
 }

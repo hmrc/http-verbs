@@ -134,10 +134,9 @@ final class RequestBuilderImpl(
   }
 
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
-    val hookDataP            = Promise[Option[HookData]]()
-    val maxBodyLength        = config.get[Int]("http-verbs.auditing.maxBodyLength")
-    val auditPartialPayloads = config.get[Boolean]("http-verbs.auditing.includePartialPayloads")
-    val loggingContext       = s"outgoing ${request.method} ${request.url} request"
+    val hookDataP      = Promise[Option[HookData]]()
+    val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
+    val loggingContext = s"outgoing ${request.method} ${request.url} request"
 
     transform { req =>
       val req2 = req.withBody(body)
@@ -148,33 +147,29 @@ final class RequestBuilderImpl(
                                     // by provided body type (Map) or content-type (e.g. form data as a string)
                                     (body, req2.header("Content-Type")) match {
                                       case (IsMap(m), _                                        ) => hookDataP.success(Some(HookData.FromMap(m)))
-                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
-                                      case _                                                     => val auditedBody =
-                                                                                                      if (auditPartialPayloads)
-                                                                                                        BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false).decodeString("UTF-8")
-                                                                                                      else
-                                                                                                        // this may be rejected if too long, but this is compatible with previous behaviour
-                                                                                                        bytes.decodeString("UTF-8")
-                                                                                                    hookDataP.success(Some(HookData.FromString(auditedBody)))
+                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String))))
+                                      case _                                                     => val bodyResult =
+                                                                                                      BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false)
+                                                                                                    hookDataP.success(Some(HookData.FromString(
+                                                                                                      s           = bodyResult.body.utf8String,
+                                                                                                      isTruncated = bodyResult.isTruncated
+                                                                                                    )))
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =
-                                      if (auditPartialPayloads)
-                                        source
-                                          .alsoTo(
-                                            BodyCaptor.sink(
-                                              loggingContext   = loggingContext,
-                                              maxBodyLength    = maxBodyLength,
-                                              withCapturedBody = body => hookDataP.success(Some(HookData.FromString(body.decodeString("UTF-8"))))
-                                            )
-                                          ).recover {
-                                            case e => hookDataP.failure(e); throw e
-                                          }
-                                      else {
-                                        // previously, streaming was made outside of http-verbs, here we will at least receive an audit that the call was made
-                                        hookDataP.success(None)
-                                        source
-                                      }
+                                      source
+                                        .alsoTo(
+                                          BodyCaptor.sink(
+                                            loggingContext   = loggingContext,
+                                            maxBodyLength    = maxBodyLength,
+                                            withCapturedBody = bodyResult => hookDataP.success(Some(HookData.FromString(
+                                                                               s           = bodyResult.body.utf8String,
+                                                                               isTruncated = bodyResult.isTruncated
+                                                                             )))
+                                          )
+                                        ).recover {
+                                          case e => hookDataP.failure(e); throw e
+                                        }
                                     // preserve content-type (it may have been set with a different body writeable - e.g. play.api.libs.ws.WSBodyWritables.bodyWritableOf_Multipart)
                                     req2.header("Content-Type") match {
                                       case Some(contentType) => replaceHeaderOnRequest(req2.withBody(src2), "Content-Type" -> contentType)
@@ -205,8 +200,6 @@ class ExecutorImpl(
   override val configuration: Config = config.underlying
 
   private val maxBodyLength = config.get[Int]("http-verbs.auditing.maxBodyLength")
-
-  private val auditPartialPayloads = config.get[Boolean]("http-verbs.auditing.includePartialPayloads")
 
   final def execute[A](
     request     : WSRequest,
@@ -272,32 +265,26 @@ class ExecutorImpl(
           }
         if (isStream) {
           val source =
-            if (auditPartialPayloads)
-              response.bodyAsSource
-                .alsoTo(
-                  BodyCaptor.sink(
-                    loggingContext   = loggingContext,
-                    maxBodyLength    = maxBodyLength,
-                    withCapturedBody = body => auditResponseF.success(httpResponse(Right(body.decodeString("UTF-8"))))
-                  )
+            response.bodyAsSource
+              .alsoTo(
+                BodyCaptor.sink(
+                  loggingContext   = loggingContext,
+                  maxBodyLength    = maxBodyLength,
+                  withCapturedBody = bodyResult => auditResponseF.success(httpResponse(Right(
+                                                     // TODO also capture that it was truncated
+                                                     bodyResult.body.utf8String
+                                                   )))
                 )
-                .recover {
-                  case e => auditResponseF.failure(e); throw e
-                }
-              else {
-                // previously, streaming was made outside of http-verbs, here we will at least receive an audit that the call was made
-                auditResponseF.success(httpResponse(Right("")))
-                response.bodyAsSource
+              )
+              .recover {
+                case e => auditResponseF.failure(e); throw e
               }
           httpResponse(Left(source))
         } else {
           auditResponseF.success(
             httpResponse(Right(
-              if (auditPartialPayloads)
-                BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext, isStream = false)
-              else
-                // this may be rejected if too long, but this is compatible with previous behaviour
-                response.body
+              // TODO also capture that it was truncated
+              BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false).body.utf8String
             ))
           )
           httpResponse(Right(response.body))
