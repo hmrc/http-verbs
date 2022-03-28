@@ -26,7 +26,7 @@ import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
-import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
+import uk.gov.hmrc.http.hooks.{HookData, HttpHook, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import java.net.{ConnectException, URL}
@@ -235,14 +235,13 @@ class ExecutorImpl(
       .map(httpReads.read(request.method, request.url, _))
   }
 
-  // unfortunate return type - first HttpResponse is the full response, the second HttpResponse is truncated for auditing...
   private def toHttpResponse(
     isStream : Boolean,
     request  : WSRequest,
     responseF: Future[WSResponse]
   )(implicit ec: ExecutionContext
-  ): (Future[HttpResponse], Future[HttpResponse]) = {
-    val auditResponseF = Promise[HttpResponse]()
+  ): (Future[HttpResponse], Future[ResponseData]) = {
+    val auditResponseF = Promise[ResponseData]()
     val loggingContext = s"outgoing ${request.method} ${request.url} response"
     val httpResponseF =
       for {
@@ -270,10 +269,10 @@ class ExecutorImpl(
                 BodyCaptor.sink(
                   loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
-                  withCapturedBody = bodyResult => auditResponseF.success(httpResponse(Right(
-                                                     // TODO also capture that it was truncated
-                                                     bodyResult.body.utf8String
-                                                   )))
+                  withCapturedBody = bodyResult => auditResponseF.success(ResponseData(
+                                                     httpResponse = httpResponse(Right(bodyResult.body.utf8String)),
+                                                     isTruncated  = bodyResult.isTruncated
+                                                   ))
                 )
               )
               .recover {
@@ -281,12 +280,11 @@ class ExecutorImpl(
               }
           httpResponse(Left(source))
         } else {
-          auditResponseF.success(
-            httpResponse(Right(
-              // TODO also capture that it was truncated
-              BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false).body.utf8String
-            ))
-          )
+          val bodyResult = BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false)
+          auditResponseF.success(ResponseData(
+            httpResponse = httpResponse(Right(bodyResult.body.utf8String)),
+            isTruncated  = bodyResult.isTruncated
+          ))
           httpResponse(Right(response.body))
         }
       }
@@ -297,7 +295,7 @@ class ExecutorImpl(
     isStream        : Boolean,
     request         : WSRequest,
     hookDataF       : Future[Option[HookData]],
-    auditedResponseF: Future[HttpResponse] // play-auditing expects the body to be a String
+    auditedResponseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext

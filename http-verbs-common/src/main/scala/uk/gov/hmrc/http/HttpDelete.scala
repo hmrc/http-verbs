@@ -17,26 +17,33 @@
 package uk.gov.hmrc.http
 
 import uk.gov.hmrc.http.HttpVerbs.{DELETE => DELETE_VERB}
-import uk.gov.hmrc.http.hooks.HttpHooks
+import uk.gov.hmrc.http.hooks.{HttpHooks, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpDelete
-    extends CoreDelete
-    with DeleteHttpTransport
-    with HttpVerb
-    with ConnectionTracing
-    with HttpHooks
-    with Retries {
+  extends CoreDelete
+     with DeleteHttpTransport
+     with HttpVerb
+     with ConnectionTracing
+     with HttpHooks
+     with Retries {
 
   private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
 
-  override def DELETE[O](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext): Future[O] =
+  override def DELETE[O](
+    url    : String,
+    headers: Seq[(String, String)] = Seq.empty
+  )(implicit
+    rds: HttpReads[O],
+    hc : HeaderCarrier,
+    ec : ExecutionContext
+  ): Future[O] =
     withTracing(DELETE_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(DELETE_VERB, url)(doDelete(url, allHeaders))
-      executeHooks(DELETE_VERB, url"$url", allHeaders, None, httpResponse)
+      executeHooks(DELETE_VERB, url"$url", allHeaders, None, httpResponse.map(ResponseData(_, isTruncated = false)))
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))
     }
 }

@@ -18,41 +18,63 @@ package uk.gov.hmrc.http
 
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.HttpVerbs.{PUT => PUT_VERB}
-import uk.gov.hmrc.http.hooks.{HookData, HttpHooks}
+import uk.gov.hmrc.http.hooks.{HookData, HttpHooks, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait HttpPut extends CorePut with PutHttpTransport with HttpVerb with ConnectionTracing with HttpHooks with Retries {
+trait HttpPut
+  extends CorePut
+     with PutHttpTransport
+     with HttpVerb
+     with ConnectionTracing
+     with HttpHooks
+     with Retries {
 
   private lazy val hcConfig = HeaderCarrier.Config.fromConfig(configuration)
 
   override def PUT[I, O](
-    url: String,
-    body: I,
-    headers: Seq[(String, String)])(
-      implicit wts: Writes[I],
-      rds: HttpReads[O],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[O] =
+    url    : String,
+    body   : I,
+    headers: Seq[(String, String)]
+  )(implicit
+    wts: Writes[I],
+    rds: HttpReads[O],
+    hc : HeaderCarrier,
+    ec : ExecutionContext
+  ): Future[O] =
     withTracing(PUT_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(PUT_VERB, url)(doPut(url, body, allHeaders))
-      executeHooks(PUT_VERB, url"$url", allHeaders, Option(HookData.FromString(Json.stringify(wts.writes(body)), isTruncated = false)), httpResponse)
+      executeHooks(
+        PUT_VERB,
+        url"$url",
+        allHeaders,
+        Option(HookData.FromString(Json.stringify(wts.writes(body)), isTruncated = false)),
+        httpResponse.map(ResponseData(_, isTruncated = false))
+      )
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
     }
 
   override def PUTString[O](
-    url: String,
-    body: String,
-    headers: Seq[(String, String)])(
-      implicit rds: HttpReads[O],
-      hc: HeaderCarrier,
-      ec: ExecutionContext): Future[O] =
+    url    : String,
+    body   : String,
+    headers: Seq[(String, String)]
+  )(implicit
+    rds: HttpReads[O],
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[O] =
     withTracing(PUT_VERB, url) {
       val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(PUT_VERB, url)(doPutString(url, body, allHeaders))
-      executeHooks(PUT_VERB, url"$url", allHeaders, Option(HookData.FromString(body, isTruncated = false)), httpResponse)
+      executeHooks(
+        PUT_VERB,
+        url"$url",
+        allHeaders,
+        Option(HookData.FromString(body, isTruncated = false)),
+        httpResponse.map(ResponseData(_, isTruncated = false))
+      )
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))
     }
 }

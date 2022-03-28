@@ -28,12 +28,17 @@ trait HttpHook {
     url      : URL,
     headers  : Seq[(String, String)],
     body     : Option[HookData],
-    responseF: Future[HttpResponse]
+    responseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Unit
 }
+
+case class ResponseData(
+  httpResponse: HttpResponse, // TODO do we actually need HttpResponse? pull out statusCode, headers, body?
+  isTruncated : Boolean
+)
 
 sealed trait HookData
 object HookData {
