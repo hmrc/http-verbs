@@ -25,21 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait HttpHooks {
   val hooks: Seq[HttpHook]
 
-  // TODO why not Seq.empty?
-  val NoneRequired = Seq(
-    new HttpHook {
-      def apply(
-        verb     : String,
-        url      : URL,
-        headers  : Seq[(String, String)],
-        body     : Option[HookData],
-        responseF: Future[ResponseData]
-      )(implicit
-        hc: HeaderCarrier,
-        ec: ExecutionContext
-     ): Unit = {}
-    }
-  )
+  val NoneRequired = Seq.empty
 
   protected def executeHooks(
     verb     : String,

@@ -82,15 +82,6 @@ object BodyCaptor {
     flow(loggingContext, maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 
-  /*def bodyUpto(body: String, maxBodyLength: Int, loggingContext: String, isStream: Boolean): (String, Boolean) =
-    if (body.length > maxBodyLength) {
-      logger.warn(
-        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating for audit"
-      )
-      (body.take(maxBodyLength), true)
-    } else
-      (body, false)*/
-
   def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String, isStream: Boolean): BodyCaptorResult =
     if (body.length > maxBodyLength) {
       logger.warn(
