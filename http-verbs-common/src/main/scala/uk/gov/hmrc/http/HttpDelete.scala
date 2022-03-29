@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http
 
 import uk.gov.hmrc.http.HttpVerbs.{DELETE => DELETE_VERB}
-import uk.gov.hmrc.http.hooks.{HttpHooks, Payload, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{Body, HttpHooks, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,7 +46,7 @@ trait HttpDelete
       executeHooks(
         DELETE_VERB,
         url"$url",
-        RequestData(allHeaders, Payload(None)),
+        RequestData(allHeaders, Body.Complete(None)),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(DELETE_VERB, url, httpResponse).map(rds.read(DELETE_VERB, url, _))

@@ -18,7 +18,7 @@ package uk.gov.hmrc.http
 
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.HttpVerbs.{PUT => PUT_VERB}
-import uk.gov.hmrc.http.hooks.{HookData, HttpHooks, Payload, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{Body, HookData, HttpHooks, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,7 +49,7 @@ trait HttpPut
       executeHooks(
         PUT_VERB,
         url"$url",
-        RequestData(allHeaders, Payload(Option(HookData.FromString(Json.stringify(wts.writes(body)))))),
+        RequestData(allHeaders, Body.Complete(Option(HookData.FromString(Json.stringify(wts.writes(body)))))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
@@ -70,7 +70,7 @@ trait HttpPut
       executeHooks(
         PUT_VERB,
         url"$url",
-        RequestData(allHeaders, Payload(Option(HookData.FromString(body)))),
+        RequestData(allHeaders, Body.Complete(Option(HookData.FromString(body)))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))

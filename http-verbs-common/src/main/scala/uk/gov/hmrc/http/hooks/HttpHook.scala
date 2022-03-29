@@ -36,14 +36,22 @@ trait HttpHook {
   ): Unit
 }
 
-case class Payload[A](
-  body       : A,
-  isTruncated: Boolean = false,
-  isOmitted  : Boolean = false
-)
+sealed trait Body[+A] {
+  final def map[B](f: A => B): Body[B] =
+    this match {
+      case Body.Complete(body)  => Body.Complete(f(body))
+      case Body.Truncated(body) => Body.Truncated(f(body))
+      case Body.Omitted         => Body.Omitted
+    }
+}
+object Body {
+  case class Complete [A](body: A) extends Body[A]
+  case class Truncated[A](body: A) extends Body[A]
+  case object Omitted              extends Body[Nothing]
+}
 
 case class ResponseData(
-  payload: Payload[String],
+  body   : Body[String],
   status : Int,
   headers: Map[String, Seq[String]]
 )
@@ -51,15 +59,15 @@ case class ResponseData(
 object ResponseData {
   def fromHttpResponse(httpResponse: HttpResponse) =
     ResponseData(
-      payload         = Payload(httpResponse.body, isTruncated = false, isOmitted = false),
-      status          = httpResponse.status,
-      headers         = httpResponse.headers
+      body     = Body.Complete(httpResponse.body),
+      status   = httpResponse.status,
+      headers  = httpResponse.headers
     )
 }
 
 case class RequestData(
-  headers: Seq[(String, String)], // This doesn't match response type: Map[String, Seq[String]] ...
-  payload: Payload[Option[HookData]]
+  headers: Seq[(String, String)], // TODO This doesn't match response type: Map[String, Seq[String]] ...
+  body   : Body[Option[HookData]]
 )
 
 sealed trait HookData
