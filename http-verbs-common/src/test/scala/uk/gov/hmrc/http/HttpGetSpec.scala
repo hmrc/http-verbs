@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-/*
- * Copyright 2015 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
@@ -40,7 +24,7 @@ import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import uk.gov.hmrc.http.hooks.HttpHook
+import uk.gov.hmrc.http.hooks.{Body, HttpHook, RequestData, ResponseData}
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -139,25 +123,35 @@ class HttpGetSpec
 
       testGet.GET[HttpResponse](url).futureValue
 
-      val respArgCaptor1 = ArgCaptor[Future[HttpResponse]]
-      val respArgCaptor2 = ArgCaptor[Future[HttpResponse]]
+      val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
+      val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
 
-      val headerCaptor1 = ArgCaptor[Seq[(String, String)]]
-      val headerCaptor2 = ArgCaptor[Seq[(String, String)]]
+      val requestCaptor1 = ArgCaptor[RequestData]
+      val requestCaptor2 = ArgCaptor[RequestData]
 
       val config = HeaderCarrier.Config.fromConfig(testGet.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testGet.testHook1).apply(eqTo("GET"), eqTo(url"$url"), headerCaptor1, eqTo(None), respArgCaptor1)(any, any)
-      verify(testGet.testHook2).apply(eqTo("GET"), eqTo(url"$url"), headerCaptor2, eqTo(None), respArgCaptor2)(any, any)
+      verify(testGet.testHook1).apply(eqTo("GET"), eqTo(url"$url"), requestCaptor1, responseFCaptor1)(any, any)
+      verify(testGet.testHook2).apply(eqTo("GET"), eqTo(url"$url"), requestCaptor2, responseFCaptor2)(any, any)
 
-      // verifying directly without ArgumentCaptor didn't work as Futures were different instances
+      val request1 = requestCaptor1.value
+      request1.headers  should contain allElementsOf(headers)
+      request1.body     shouldBe Body.Complete(None)
+
+      val request2 = requestCaptor2.value
+      request2.headers  should contain allElementsOf(headers)
+      request2.body     shouldBe Body.Complete(None)
+
+      // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      respArgCaptor1.value.futureValue shouldBe dummyResponse
-      respArgCaptor2.value.futureValue shouldBe dummyResponse
+      val response1 = responseFCaptor1.value.futureValue
+      response1.status shouldBe 200
+      response1.body shouldBe Body.Complete(testBody)
 
-      headerCaptor1.value should contain allElementsOf(headers)
-      headerCaptor2.value should contain allElementsOf(headers)
+      val response2 = responseFCaptor2.value.futureValue
+      response2.status shouldBe 200
+      response2.body shouldBe Body.Complete(testBody)
     }
   }
 
