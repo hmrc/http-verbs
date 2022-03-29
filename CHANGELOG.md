@@ -1,3 +1,10 @@
+### Version 14.0.0
+
+Improves hook-data model for auditing.
+
+This should not affect most clients, as long as a compatible library versions are used. It is generally expected that clients only depend on `bootstrap-play` which will transitively provide compatible versions.
+
+
 ## Version 13.13.0
 
 ### Auditing max body length

@@ -66,7 +66,7 @@ object ResponseData {
 }
 
 case class RequestData(
-  headers: Seq[(String, String)], // TODO This doesn't match response type: Map[String, Seq[String]] ...
+  headers: Seq[(String, String)],
   body   : Body[Option[HookData]]
 )
 

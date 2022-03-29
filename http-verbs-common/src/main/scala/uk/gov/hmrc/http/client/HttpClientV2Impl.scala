@@ -147,9 +147,9 @@ final class RequestBuilderImpl(
                                     (body, req2.header("Content-Type")) match {
                                       case (IsMap(m), _                                        ) => hookDataP.success(Body.Complete(Some(HookData.FromMap(m))))
                                       case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Body.Complete(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
-                                      case _                                                     => val bodyResult =
+                                      case _                                                     => val body =
                                                                                                       BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false)
-                                                                                                    hookDataP.success(bodyResult.map(bytes => Some(HookData.FromString(bytes.utf8String))))
+                                                                                                    hookDataP.success(body.map(bytes => Some(HookData.FromString(bytes.utf8String))))
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =
@@ -158,7 +158,7 @@ final class RequestBuilderImpl(
                                           BodyCaptor.sink(
                                             loggingContext   = loggingContext,
                                             maxBodyLength    = maxBodyLength,
-                                            withCapturedBody = bodyResult => hookDataP.success(bodyResult.map(bytes => Some(HookData.FromString(bytes.utf8String))))
+                                            withCapturedBody = body => hookDataP.success(body.map(bytes => Some(HookData.FromString(bytes.utf8String))))
                                           )
                                         ).recover {
                                           case e => hookDataP.failure(e); throw e
@@ -254,11 +254,11 @@ class ExecutorImpl(
                 BodyCaptor.sink(
                   loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
-                  withCapturedBody = bodyResult => auditResponseF.success(ResponseData(
-                                                     body    = bodyResult.map(_.utf8String),
-                                                     status  = response.status,
-                                                     headers = headers
-                                                   ))
+                  withCapturedBody = body => auditResponseF.success(ResponseData(
+                                               body    = body.map(_.utf8String),
+                                               status  = response.status,
+                                               headers = headers
+                                             ))
                 )
               )
               .recover {
@@ -270,9 +270,10 @@ class ExecutorImpl(
             headers      = headers
           )
         } else {
-          val bodyResult = BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false)
           auditResponseF.success(ResponseData(
-            body    = bodyResult.map(_.utf8String),
+            body    = BodyCaptor
+                        .bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false)
+                        .map(_.utf8String),
             status  = response.status,
             headers = headers
           ))

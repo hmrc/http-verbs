@@ -40,8 +40,8 @@ trait HttpGet
     headers    : Seq[(String, String)]
   )(implicit
     rds: HttpReads[A],
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    hc : HeaderCarrier,
+    ec : ExecutionContext
   ): Future[A] = {
     if (queryParams.nonEmpty && url.contains("?")) {
       throw new UrlValidationException(

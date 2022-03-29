@@ -6,13 +6,13 @@ import sbt._
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_12 = "2.12.15"
-val scala2_13 = "2.13.7"
+val scala2_13 = "2.13.8"
 
-val silencerVersion = "1.7.7"
+val silencerVersion = "1.7.8"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc",
-  majorVersion := 13,
+  majorVersion := 14,
   scalaVersion := scala2_12,
   isPublicArtefact := true,
   scalacOptions ++= Seq("-feature"),
