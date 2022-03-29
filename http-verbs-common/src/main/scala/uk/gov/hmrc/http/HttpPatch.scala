@@ -18,7 +18,7 @@ package uk.gov.hmrc.http
 
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.HttpVerbs.{PATCH => PATCH_VERB}
-import uk.gov.hmrc.http.hooks.{HookData, HttpHooks, ResponseData}
+import uk.gov.hmrc.http.hooks.{HookData, HttpHooks, Payload, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,13 +44,12 @@ trait HttpPatch
     ec : ExecutionContext
   ): Future[O] =
     withTracing(PATCH_VERB, url) {
-      val allHeaders = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
+      val allHeaders   = HeaderCarrier.headersForUrl(hcConfig, url, headers) :+ "Http-Client-Version" -> BuildInfo.version
       val httpResponse = retryOnSslEngineClosed(PATCH_VERB, url)(doPatch(url, body, allHeaders))
       executeHooks(
         PATCH_VERB,
         url"$url",
-        allHeaders,
-        Option(HookData.FromString(Json.stringify(wts.writes(body)), isTruncated = false)),
+        RequestData(allHeaders, Payload(Option(HookData.FromString(Json.stringify(wts.writes(body)))))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PATCH_VERB, url, httpResponse).map(response => rds.read(PATCH_VERB, url, response))

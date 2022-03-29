@@ -30,12 +30,11 @@ trait HttpHooks {
   protected def executeHooks(
     verb     : String,
     url      : URL,
-    headers  : Seq[(String, String)],
-    body     : Option[HookData],
+    request  : RequestData,
     responseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Unit =
-    hooks.foreach(_.apply(verb, url, headers, body, responseF))
+    hooks.foreach(_.apply(verb, url, request, responseF))
 }

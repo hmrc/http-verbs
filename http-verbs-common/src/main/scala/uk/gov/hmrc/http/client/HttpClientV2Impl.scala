@@ -26,7 +26,7 @@ import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
-import uk.gov.hmrc.http.hooks.{HookData, HttpHook, ResponseData}
+import uk.gov.hmrc.http.hooks.{HookData, HttpHook, Payload, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import java.net.{ConnectException, URL}
@@ -39,7 +39,7 @@ import scala.util.{Failure, Success}
 trait Executor {
   def execute[A](
     request  : WSRequest,
-    hookDataF: Option[Future[Option[HookData]]],
+    hookDataF: Option[Future[Payload[Option[HookData]]]],
     isStream : Boolean,
     r        : HttpReads[A]
   )(implicit
@@ -94,7 +94,7 @@ final class RequestBuilderImpl(
   executor      : Executor
 )(
   request  : WSRequest,
-  hookDataF: Option[Future[Option[HookData]]]
+  hookDataF: Option[Future[Payload[Option[HookData]]]]
 )(implicit
   hc: HeaderCarrier
 ) extends RequestBuilder {
@@ -120,7 +120,7 @@ final class RequestBuilderImpl(
   override def withProxy: RequestBuilderImpl =
     transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 
-  private def withHookData(hookDataF: Future[Option[HookData]]): RequestBuilderImpl =
+  private def withHookData(hookDataF: Future[Payload[Option[HookData]]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
   // for erasure
@@ -134,26 +134,32 @@ final class RequestBuilderImpl(
   }
 
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
-    val hookDataP      = Promise[Option[HookData]]()
+    val hookDataP      = Promise[Payload[Option[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
     val loggingContext = s"outgoing ${request.method} ${request.url} request"
+
+    def notifyPayload(hookData: HookData, isTruncated: Boolean = false) =
+      hookDataP.success(Payload(
+        Some(hookData),
+        isTruncated = isTruncated
+      ))
 
     transform { req =>
       val req2 = req.withBody(body)
       req2.body match {
-        case EmptyBody           => hookDataP.success(None)
+        case EmptyBody           => hookDataP.success(Payload(None))
                                     replaceHeaderOnRequest(req2, play.api.http.HeaderNames.CONTENT_LENGTH -> "0") // rejected by Akami without a Content-Length (https://jira.tools.tax.service.gov.uk/browse/APIS-5100)
         case InMemoryBody(bytes) => // we can't guarantee that the default BodyWritables have been used - so rather than relying on content-type alone, we identify form data
                                     // by provided body type (Map) or content-type (e.g. form data as a string)
                                     (body, req2.header("Content-Type")) match {
-                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(HookData.FromMap(m)))
-                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String))))
+                                      case (IsMap(m), _                                        ) => notifyPayload(HookData.FromMap(m))
+                                      case (_       , Some("application/x-www-form-urlencoded")) => notifyPayload(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))
                                       case _                                                     => val bodyResult =
                                                                                                       BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false)
-                                                                                                    hookDataP.success(Some(HookData.FromString(
-                                                                                                      s           = bodyResult.body.utf8String,
+                                                                                                    notifyPayload(
+                                                                                                      HookData.FromString(bodyResult.body.utf8String),
                                                                                                       isTruncated = bodyResult.isTruncated
-                                                                                                    )))
+                                                                                                    )
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =
@@ -162,10 +168,10 @@ final class RequestBuilderImpl(
                                           BodyCaptor.sink(
                                             loggingContext   = loggingContext,
                                             maxBodyLength    = maxBodyLength,
-                                            withCapturedBody = bodyResult => hookDataP.success(Some(HookData.FromString(
-                                                                               s           = bodyResult.body.utf8String,
+                                            withCapturedBody = bodyResult => notifyPayload(
+                                                                               HookData.FromString(bodyResult.body.utf8String),
                                                                                isTruncated = bodyResult.isTruncated
-                                                                             )))
+                                                                             )
                                           )
                                         ).recover {
                                           case e => hookDataP.failure(e); throw e
@@ -203,18 +209,18 @@ class ExecutorImpl(
 
   final def execute[A](
     request     : WSRequest,
-    optHookDataF: Option[Future[Option[HookData]]],
+    optHookDataF: Option[Future[Payload[Option[HookData]]]],
     isStream    : Boolean,
     httpReads   : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[A] = {
-    val hookDataF =
+    val hookDataF: Future[Payload[Option[HookData]]] =
       optHookDataF match {
         case None if request.body != EmptyBody =>
           sys.error(s"There is no audit data available. Please ensure you call `withBody` on the RequestBuilder rather than `transform(_.withBody)`")
-        case None    => Future.successful(None)
+        case None    => Future.successful(Payload(None))
         case Some(f) => f
       }
 
@@ -243,11 +249,16 @@ class ExecutorImpl(
   ): (Future[HttpResponse], Future[ResponseData]) = {
     val auditResponseF = Promise[ResponseData]()
     val loggingContext = s"outgoing ${request.method} ${request.url} response"
+
+    // play returns scala.collection, but default for Scala 2.13 is scala.collection.immutable
+    def forScala2_13(m: scala.collection.Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
+      m.mapValues(_.toSeq).toMap
+
     val httpResponseF =
       for {
         response <- responseF
         status   =  response.status
-        headers  =  response.headers.mapValues(_.toSeq).toMap
+        headers  =  forScala2_13(response.headers)
       } yield {
         if (isStream) {
           val source =
@@ -257,10 +268,9 @@ class ExecutorImpl(
                   loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
                   withCapturedBody = bodyResult => auditResponseF.success(ResponseData(
-                                                     body            = bodyResult.body.utf8String,
+                                                     payload         = Payload(bodyResult.body.utf8String, isTruncated = bodyResult.isTruncated),
                                                      status          = response.status,
-                                                     bodyIsTruncated = bodyResult.isTruncated,
-                                                     bodyIsOmitted   = false
+                                                     headers         = headers
                                                    ))
                 )
               )
@@ -270,20 +280,19 @@ class ExecutorImpl(
           HttpResponse(
             status       = response.status,
             bodyAsSource = source,
-            headers      = response.headers.mapValues(_.toSeq).toMap
+            headers      = headers
           )
         } else {
           val bodyResult = BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false)
           auditResponseF.success(ResponseData(
-            body            = bodyResult.body.utf8String,
+            payload         = Payload(bodyResult.body.utf8String, isTruncated = bodyResult.isTruncated),
             status          = response.status,
-            bodyIsTruncated = bodyResult.isTruncated,
-            bodyIsOmitted   = false
+            headers         = headers
           ))
           HttpResponse(
             status       = response.status,
             body         = response.body,
-            headers      = response.headers.mapValues(_.toSeq).toMap
+            headers      = headers
           )
         }
       }
@@ -293,7 +302,7 @@ class ExecutorImpl(
   private def executeHooks(
     isStream        : Boolean,
     request         : WSRequest,
-    hookDataF       : Future[Option[HookData]],
+    hookDataF       : Future[Payload[Option[HookData]]],
     auditedResponseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
@@ -302,13 +311,15 @@ class ExecutorImpl(
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
-    def executeHooksWithHookData(hookData: Option[HookData]) =
+    def executeHooksWithHookData(hookData: Payload[Option[HookData]]) =
       hooks.foreach(
         _.apply(
           verb      = request.method,
           url       = new URL(request.url),
-          headers   = denormalise(request.headers),
-          body      = hookData,
+          request   = RequestData(
+                        headers         = denormalise(request.headers),
+                        payload         = hookData
+                      ),
           responseF = auditedResponseF
         )
       )
@@ -316,7 +327,7 @@ class ExecutorImpl(
     hookDataF.onComplete {
       case Success(hookData) => executeHooksWithHookData(hookData)
       case Failure(e)        => // this is unlikely, but we want best attempt at auditing
-                                executeHooksWithHookData(None)
+                                executeHooksWithHookData(Payload(None, isOmitted = true))
     }
   }
 
