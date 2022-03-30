@@ -136,7 +136,6 @@ final class RequestBuilderImpl(
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
     val hookDataP      = Promise[Body[Option[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
-    val loggingContext = s"outgoing ${request.method} ${request.url} request"
     transform { req =>
       val req2 = req.withBody(body)
       req2.body match {
@@ -148,7 +147,7 @@ final class RequestBuilderImpl(
                                       case (IsMap(m), _                                        ) => hookDataP.success(Body.Complete(Some(HookData.FromMap(m))))
                                       case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Body.Complete(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
                                       case _                                                     => val body =
-                                                                                                      BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false)
+                                                                                                      BodyCaptor.bodyUpto(bytes, maxBodyLength, isStream = false)
                                                                                                     hookDataP.success(body.map(bytes => Some(HookData.FromString(bytes.utf8String))))
                                     }
                                     req2
@@ -156,7 +155,6 @@ final class RequestBuilderImpl(
                                       source
                                         .alsoTo(
                                           BodyCaptor.sink(
-                                            loggingContext   = loggingContext,
                                             maxBodyLength    = maxBodyLength,
                                             withCapturedBody = body => hookDataP.success(body.map(bytes => Some(HookData.FromString(bytes.utf8String))))
                                           )
@@ -235,7 +233,6 @@ class ExecutorImpl(
   )(implicit ec: ExecutionContext
   ): (Future[HttpResponse], Future[ResponseData]) = {
     val auditResponseF = Promise[ResponseData]()
-    val loggingContext = s"outgoing ${request.method} ${request.url} response"
 
     // play returns scala.collection, but default for Scala 2.13 is scala.collection.immutable
     def forScala2_13(m: scala.collection.Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
@@ -252,7 +249,6 @@ class ExecutorImpl(
             response.bodyAsSource
               .alsoTo(
                 BodyCaptor.sink(
-                  loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
                   withCapturedBody = body => auditResponseF.success(ResponseData(
                                                body    = body.map(_.utf8String),
@@ -272,7 +268,7 @@ class ExecutorImpl(
         } else {
           auditResponseF.success(ResponseData(
             body    = BodyCaptor
-                        .bodyUpto(ByteString(response.body), maxBodyLength, loggingContext, isStream = false)
+                        .bodyUpto(ByteString(response.body), maxBodyLength, isStream = false)
                         .map(_.utf8String),
             status  = response.status,
             headers = headers

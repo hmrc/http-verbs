@@ -22,8 +22,6 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-// TODO requires major version change of http-verbs/play-auditing/bootstrap-play
-
 trait HttpHook {
   def apply(
     verb     : String,

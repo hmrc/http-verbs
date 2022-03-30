@@ -20,13 +20,11 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.stage._
 import akka.util.ByteString
-import org.slf4j.LoggerFactory
 import uk.gov.hmrc.http.hooks.Body
 
 // based on play.filters.csrf.CSRFAction#BodyHandler
 
 private class BodyCaptorFlow(
-  loggingContext  : String,
   maxBodyLength   : Int,
   withCapturedBody: Body[ByteString] => Unit
 ) extends GraphStage[FlowShape[ByteString, ByteString]] {
@@ -53,7 +51,7 @@ private class BodyCaptorFlow(
           }
 
           override def onUpstreamFinish(): Unit = {
-            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, loggingContext, isStream = true))
+            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, isStream = true))
             completeStage()
           }
         }
@@ -62,33 +60,25 @@ private class BodyCaptorFlow(
 }
 
 object BodyCaptor {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   def flow(
-    loggingContext  : String,
     maxBodyLength   : Int,
     withCapturedBody: Body[ByteString] => Unit // provide a callback since a Materialized value would be not be available until the flow has been run
   ): Flow[ByteString, ByteString, akka.NotUsed] =
     Flow.fromGraph(new BodyCaptorFlow(
-      loggingContext   = loggingContext,
       maxBodyLength    = maxBodyLength,
       withCapturedBody = withCapturedBody
     ))
 
   def sink(
-    loggingContext  : String,
     maxBodyLength   : Int,
     withCapturedBody: Body[ByteString] => Unit
   ): Sink[ByteString, akka.NotUsed] =
-    flow(loggingContext, maxBodyLength, withCapturedBody)
+    flow(maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 
-  def bodyUpto(body: ByteString, maxBodyLength: Int, loggingContext: String, isStream: Boolean): Body[ByteString] =
-    if (body.length > maxBodyLength) {
-      logger.warn(
-        s"$loggingContext ${if (isStream) "streamed body" else "body " + body.length} exceeds maxLength $maxBodyLength - truncating for audit"
-      )
+  def bodyUpto(body: ByteString, maxBodyLength: Int, isStream: Boolean): Body[ByteString] =
+    if (body.length > maxBodyLength)
       Body.Truncated(body.take(maxBodyLength))
-    } else
+    else
       Body.Complete(body)
 }
