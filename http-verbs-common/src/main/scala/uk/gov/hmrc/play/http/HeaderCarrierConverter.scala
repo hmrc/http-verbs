@@ -94,10 +94,8 @@ trait HeaderCarrierConverter {
       trueClientPort   = headers.get(HeaderNames.trueClientPort),
       gaToken          = headers.get(HeaderNames.googleAnalyticTokenId),
       gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
-      deviceID         = session.fold(headers.get(HeaderNames.deviceID))(_ =>
-                           cookies.get(CookieNames.deviceID).map(_.value)
-                             .fold[Option[String]](headers.get(HeaderNames.deviceID))(Some(_))
-                         ),
+      deviceID         = session.flatMap(_ => cookies.get(CookieNames.deviceID).map(_.value))
+                           .orElse(headers.get(HeaderNames.deviceID)),
       akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
       otherHeaders     = otherHeaders(headers, request)
     )
