@@ -40,7 +40,14 @@ sealed trait Body[+A] {
       case Body.Complete(body)  => Body.Complete(f(body))
       case Body.Truncated(body) => Body.Truncated(f(body))
     }
+
+  final def isTruncated: Boolean =
+    this match {
+      case Body.Complete (b) => false
+      case Body.Truncated(b) => true
+    }
 }
+
 object Body {
   case class Complete [A](body: A) extends Body[A]
   case class Truncated[A](body: A) extends Body[A]
