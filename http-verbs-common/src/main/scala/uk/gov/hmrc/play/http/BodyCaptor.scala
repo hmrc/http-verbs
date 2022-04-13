@@ -51,7 +51,7 @@ private class BodyCaptorFlow(
           }
 
           override def onUpstreamFinish(): Unit = {
-            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength, isStream = true))
+            withCapturedBody(BodyCaptor.bodyUpto(buffer, maxBodyLength))
             completeStage()
           }
         }
@@ -76,7 +76,7 @@ object BodyCaptor {
     flow(maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 
-  def bodyUpto(body: ByteString, maxBodyLength: Int, isStream: Boolean): Body[ByteString] =
+  def bodyUpto(body: ByteString, maxBodyLength: Int): Body[ByteString] =
     if (body.length > maxBodyLength)
       Body.Truncated(body.take(maxBodyLength))
     else
