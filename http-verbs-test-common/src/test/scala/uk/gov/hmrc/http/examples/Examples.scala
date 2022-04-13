@@ -206,7 +206,7 @@ class Examples
       )
 
       val bankHolidays: BankHolidays = httpClient.GET[BankHolidays](url"$wireMockUrl/bank-holidays.json").futureValue
-      bankHolidays.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
+      bankHolidays.events.head shouldBe BankHoliday("New Year's Day", LocalDate.of(2017, 1, 2))
     }
 
     "read some json and return a raw http response" in {
@@ -241,7 +241,7 @@ class Examples
 
       httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/401.json")
         .recover {
-          case Upstream4xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 4xx errors
+          case UpstreamErrorResponse.Upstream4xxResponse(e) => // handle here 4xx errors
         }.futureValue
     }
 
@@ -255,7 +255,7 @@ class Examples
 
       httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/500.json")
         .recover {
-          case Upstream5xxResponse(message, upstreamResponseCode, reportAs, headers) => // handle here 5xx errors
+          case UpstreamErrorResponse.Upstream5xxResponse(e) => // handle here 5xx errors
         }.futureValue
     }
   }
@@ -306,6 +306,7 @@ class Examples
           case Success(data) => Some(data)
           case Failure(e)    => throw new CustomException("Unable to parse response")
         }
+        case other => throw new CustomException(s"Unexpected status code $other")
       }
 
     "Return some data when getting a 200 back" in {
@@ -317,7 +318,7 @@ class Examples
       val bankHolidays = httpClient.GET[HttpResponse](url"$wireMockUrl/bank-holidays.xml")
         .map(responseHandler).futureValue
 
-      bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
+      bankHolidays.get.events.head shouldBe BankHoliday("New Year's Day", LocalDate.of(2017, 1, 2))
     }
 
     "Fail when the response payload cannot be deserialised" in {
@@ -353,7 +354,7 @@ class Examples
       )
 
       val bankHolidays = httpClient.GET[Option[BankHolidays]](url"$wireMockUrl/bank-holidays.json").futureValue
-      bankHolidays.get.events.head shouldBe BankHoliday("New Year’s Day", LocalDate.of(2017, 1, 2))
+      bankHolidays.get.events.head shouldBe BankHoliday("New Year's Day", LocalDate.of(2017, 1, 2))
     }
 
     "Fail when the response payload cannot be deserialised" in {
