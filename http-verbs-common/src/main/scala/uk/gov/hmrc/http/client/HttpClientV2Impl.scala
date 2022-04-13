@@ -310,8 +310,8 @@ class ExecutorImpl(
 
     hookDataF.onComplete {
       case Success(hookData) => executeHooksWithHookData(hookData)
-      case Failure(e)        => // this is unlikely, but we want best attempt at auditing
-                                executeHooksWithHookData(Body.Omitted)
+      case Failure(e)        => // this will only happen if we fail to upload a stream. We want best attempt at auditing
+                                executeHooksWithHookData(Body.Truncated(None))
     }
   }
 

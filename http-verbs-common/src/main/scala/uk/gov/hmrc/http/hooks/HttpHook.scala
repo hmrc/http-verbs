@@ -39,13 +39,11 @@ sealed trait Body[+A] {
     this match {
       case Body.Complete(body)  => Body.Complete(f(body))
       case Body.Truncated(body) => Body.Truncated(f(body))
-      case Body.Omitted         => Body.Omitted
     }
 }
 object Body {
   case class Complete [A](body: A) extends Body[A]
   case class Truncated[A](body: A) extends Body[A]
-  case object Omitted              extends Body[Nothing]
 }
 
 case class ResponseData(
@@ -70,6 +68,6 @@ case class RequestData(
 
 sealed trait HookData
 object HookData {
-  case class FromString(s: String) extends HookData
+  case class FromString(s: String)                extends HookData
   case class FromMap(m: Map[String, Seq[String]]) extends HookData
 }
