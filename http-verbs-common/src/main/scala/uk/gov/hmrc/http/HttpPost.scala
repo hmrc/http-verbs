@@ -49,7 +49,7 @@ trait HttpPost
       executeHooks(
         POST_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(Option(HookData.FromString(Json.stringify(wts.writes(body)))))),
+        RequestData(allHeaders, Some(Body.Complete(HookData.FromString(Json.stringify(wts.writes(body)))))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
@@ -70,7 +70,7 @@ trait HttpPost
       executeHooks(
         POST_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(Option(HookData.FromString(body)))),
+        RequestData(allHeaders, Some(Body.Complete(HookData.FromString(body)))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
@@ -91,7 +91,7 @@ trait HttpPost
       executeHooks(
         POST_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(Option(HookData.FromMap(body)))),
+        RequestData(allHeaders, Some(Body.Complete(HookData.FromMap(body)))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))
@@ -111,7 +111,7 @@ trait HttpPost
       executeHooks(
         POST_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(None)),
+        RequestData(allHeaders, None),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(POST_VERB, url, httpResponse).map(rds.read(POST_VERB, url, _))

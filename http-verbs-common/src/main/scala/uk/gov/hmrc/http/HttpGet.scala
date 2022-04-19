@@ -19,7 +19,7 @@ package uk.gov.hmrc.http
 import java.net.URLEncoder
 
 import uk.gov.hmrc.http.HttpVerbs.{GET => GET_VERB}
-import uk.gov.hmrc.http.hooks.{Body, HttpHooks, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{HttpHooks, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,7 +58,7 @@ trait HttpGet
       executeHooks(
         GET_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(None)),
+        RequestData(allHeaders, None),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(GET_VERB, urlWithQuery, httpResponse).map(response => rds.read(GET_VERB, urlWithQuery, response))

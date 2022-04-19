@@ -181,11 +181,11 @@ class HttpPutSpec
 
       val request1 = requestCaptor1.value
       request1.headers  should contain allElementsOf(headers)
-      request1.body     shouldBe Body.Complete(Some(HookData.FromString(testJson)))
+      request1.body     shouldBe Some(Body.Complete(HookData.FromString(testJson)))
 
       val request2 = requestCaptor2.value
       request2.headers  should contain allElementsOf(headers)
-      request2.body     shouldBe Body.Complete(Some(HookData.FromString(testJson)))
+      request2.body     shouldBe Some(Body.Complete(HookData.FromString(testJson)))
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
@@ -242,11 +242,11 @@ class HttpPutSpec
 
       val request1 = requestCaptor1.value
       request1.headers  should contain allElementsOf(headers)
-      request1.body     shouldBe Body.Complete(Some(HookData.FromString(testRequestBody)))
+      request1.body     shouldBe Some(Body.Complete(HookData.FromString(testRequestBody)))
 
       val request2 = requestCaptor2.value
       request2.headers  should contain allElementsOf(headers)
-      request2.body     shouldBe Body.Complete(Some(HookData.FromString(testRequestBody)))
+      request2.body     shouldBe Some(Body.Complete(HookData.FromString(testRequestBody)))
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)

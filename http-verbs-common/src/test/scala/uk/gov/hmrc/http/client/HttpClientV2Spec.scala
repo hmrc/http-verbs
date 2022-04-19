@@ -87,7 +87,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromString("\"req\"")))
+      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromString("\"req\"")))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/json")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -135,7 +135,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromString(requestBody)))
+      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromString(requestBody)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -187,7 +187,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromString(requestBody)))
+      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromString(requestBody)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -235,7 +235,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Truncated(Some(HookData.FromString(requestBody.take(maxAuditBodyLength))))
+      requestCaptor.value.body shouldBe Some(Body.Truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -280,7 +280,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Truncated(Some(HookData.FromString(requestBody.take(maxAuditBodyLength))))
+      requestCaptor.value.body shouldBe Some(Body.Truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "text/plain")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -328,7 +328,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromMap(body)))
+      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromMap(body)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -390,7 +390,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromMap(body)))
+      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromMap(body)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "nonstandard/x-www-form-urlencoded")
       val auditedResponse = responseFCaptor.value.futureValue
@@ -452,7 +452,7 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromMap(body.toMap)))
+      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromMap(body.toMap)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
       val auditedResponse = responseFCaptor.value.futureValue

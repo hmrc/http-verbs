@@ -39,7 +39,7 @@ import scala.util.{Failure, Success}
 trait Executor {
   def execute[A](
     request  : WSRequest,
-    hookDataF: Option[Future[Body[Option[HookData]]]],
+    hookDataF: Option[Future[Option[Body[HookData]]]],
     isStream : Boolean,
     r        : HttpReads[A]
   )(implicit
@@ -94,7 +94,7 @@ final class RequestBuilderImpl(
   executor      : Executor
 )(
   request  : WSRequest,
-  hookDataF: Option[Future[Body[Option[HookData]]]]
+  hookDataF: Option[Future[Option[Body[HookData]]]]
 )(implicit
   hc: HeaderCarrier
 ) extends RequestBuilder {
@@ -120,7 +120,7 @@ final class RequestBuilderImpl(
   override def withProxy: RequestBuilderImpl =
     transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 
-  private def withHookData(hookDataF: Future[Body[Option[HookData]]]): RequestBuilderImpl =
+  private def withHookData(hookDataF: Future[Option[Body[HookData]]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
   // for erasure
@@ -134,20 +134,20 @@ final class RequestBuilderImpl(
   }
 
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
-    val hookDataP      = Promise[Body[Option[HookData]]]()
+    val hookDataP      = Promise[Option[Body[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
     transform { req =>
       val req2 = req.withBody(body)
       req2.body match {
-        case EmptyBody           => hookDataP.success(Body.Complete(None))
+        case EmptyBody           => hookDataP.success(None)
                                     replaceHeaderOnRequest(req2, play.api.http.HeaderNames.CONTENT_LENGTH -> "0") // rejected by Akami without a Content-Length (https://jira.tools.tax.service.gov.uk/browse/APIS-5100)
         case InMemoryBody(bytes) => // we can't guarantee that the default BodyWritables have been used - so rather than relying on content-type alone, we identify form data
                                     // by provided body type (Map) or content-type (e.g. form data as a string)
                                     (body, req2.header("Content-Type")) match {
-                                      case (IsMap(m), _                                        ) => hookDataP.success(Body.Complete(Some(HookData.FromMap(m))))
-                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Body.Complete(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
+                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(Body.Complete(HookData.FromMap(m))))
+                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(Body.Complete(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
                                       case _                                                     => val body = BodyCaptor.bodyUpto(bytes, maxBodyLength)
-                                                                                                    hookDataP.success(body.map(bytes => Some(HookData.FromString(bytes.utf8String))))
+                                                                                                    hookDataP.success(Some(body.map(bytes => HookData.FromString(bytes.utf8String))))
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =
@@ -155,7 +155,7 @@ final class RequestBuilderImpl(
                                         .alsoTo(
                                           BodyCaptor.sink(
                                             maxBodyLength    = maxBodyLength,
-                                            withCapturedBody = body => hookDataP.success(body.map(bytes => Some(HookData.FromString(bytes.utf8String))))
+                                            withCapturedBody = body => hookDataP.success(Some(body.map(bytes => HookData.FromString(bytes.utf8String))))
                                           )
                                         ).recover {
                                           case e => hookDataP.failure(e); throw e
@@ -193,18 +193,18 @@ class ExecutorImpl(
 
   final def execute[A](
     request     : WSRequest,
-    optHookDataF: Option[Future[Body[Option[HookData]]]],
+    optHookDataF: Option[Future[Option[Body[HookData]]]],
     isStream    : Boolean,
     httpReads   : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[A] = {
-    val hookDataF: Future[Body[Option[HookData]]] =
+    val hookDataF: Future[Option[Body[HookData]]] =
       optHookDataF match {
         case None if request.body != EmptyBody =>
           sys.error(s"There is no audit data available. Please ensure you call `withBody` on the RequestBuilder rather than `transform(_.withBody)`")
-        case None    => Future.successful(Body.Complete(None))
+        case None    => Future.successful(None)
         case Some(f) => f
       }
 
@@ -283,7 +283,7 @@ class ExecutorImpl(
   private def executeHooks(
     isStream        : Boolean,
     request         : WSRequest,
-    hookDataF       : Future[Body[Option[HookData]]],
+    hookDataF       : Future[Option[Body[HookData]]],
     auditedResponseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
@@ -292,7 +292,7 @@ class ExecutorImpl(
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
-    def executeHooksWithHookData(hookData: Body[Option[HookData]]) =
+    def executeHooksWithHookData(hookData: Option[Body[HookData]]) =
       hooks.foreach(
         _.apply(
           verb      = request.method,
@@ -308,7 +308,7 @@ class ExecutorImpl(
     hookDataF.onComplete {
       case Success(hookData) => executeHooksWithHookData(hookData)
       case Failure(e)        => // this will only happen if we fail to upload a stream. We want best attempt at auditing
-                                executeHooksWithHookData(Body.Truncated(None))
+                                executeHooksWithHookData(None)
     }
   }
 

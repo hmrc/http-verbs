@@ -49,7 +49,7 @@ trait HttpPut
       executeHooks(
         PUT_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(Option(HookData.FromString(Json.stringify(wts.writes(body)))))),
+        RequestData(allHeaders, Some(Body.Complete(HookData.FromString(Json.stringify(wts.writes(body)))))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PUT_VERB, url, httpResponse).map(response => rds.read(PUT_VERB, url, response))
@@ -70,7 +70,7 @@ trait HttpPut
       executeHooks(
         PUT_VERB,
         url"$url",
-        RequestData(allHeaders, Body.Complete(Option(HookData.FromString(body)))),
+        RequestData(allHeaders, Some(Body.Complete(HookData.FromString(body)))),
         httpResponse.map(ResponseData.fromHttpResponse)
       )
       mapErrors(PUT_VERB, url, httpResponse).map(rds.read(PUT_VERB, url, _))

@@ -157,11 +157,11 @@ class HttpDeleteSpec
 
       val request1 = requestCaptor1.value
       request1.headers  should contain allElementsOf(headers)
-      request1.body     shouldBe Body.Complete(None)
+      request1.body     shouldBe None
 
       val request2 = requestCaptor2.value
       request2.headers  should contain allElementsOf(headers)
-      request2.body     shouldBe Body.Complete(None)
+      request2.body     shouldBe None
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)

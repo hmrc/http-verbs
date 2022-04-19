@@ -70,7 +70,7 @@ object ResponseData {
 
 case class RequestData(
   headers: Seq[(String, String)],
-  body   : Body[Option[HookData]]
+  body   : Option[Body[HookData]]
 )
 
 sealed trait HookData
