@@ -24,19 +24,57 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHook {
   def apply(
-    verb: String,
-    url: URL,
-    headers  : Seq[(String, String)],
-    body: Option[HookData],
-    responseF: Future[HttpResponse]
-  )(
-    implicit hc: HeaderCarrier,
+    verb     : String,
+    url      : URL,
+    request  : RequestData,
+    responseF: Future[ResponseData]
+  )(implicit
+    hc: HeaderCarrier,
     ec: ExecutionContext
   ): Unit
 }
 
+sealed trait Body[+A] {
+  final def map[B](f: A => B): Body[B] =
+    this match {
+      case Body.Complete(body)  => Body.Complete(f(body))
+      case Body.Truncated(body) => Body.Truncated(f(body))
+    }
+
+  final def isTruncated: Boolean =
+    this match {
+      case Body.Complete (b) => false
+      case Body.Truncated(b) => true
+    }
+}
+
+object Body {
+  case class Complete [A](body: A) extends Body[A]
+  case class Truncated[A](body: A) extends Body[A]
+}
+
+case class ResponseData(
+  body   : Body[String],
+  status : Int,
+  headers: Map[String, Seq[String]]
+)
+
+object ResponseData {
+  def fromHttpResponse(httpResponse: HttpResponse) =
+    ResponseData(
+      body     = Body.Complete(httpResponse.body),
+      status   = httpResponse.status,
+      headers  = httpResponse.headers
+    )
+}
+
+case class RequestData(
+  headers: Seq[(String, String)],
+  body   : Option[Body[HookData]]
+)
+
 sealed trait HookData
 object HookData {
-  case class FromString(s: String) extends HookData
+  case class FromString(s: String)                extends HookData
   case class FromMap(m: Map[String, Seq[String]]) extends HookData
 }

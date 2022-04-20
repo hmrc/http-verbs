@@ -26,7 +26,7 @@ import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
-import uk.gov.hmrc.http.hooks.{HookData, HttpHook}
+import uk.gov.hmrc.http.hooks.{Body, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import java.net.{ConnectException, URL}
@@ -39,7 +39,7 @@ import scala.util.{Failure, Success}
 trait Executor {
   def execute[A](
     request  : WSRequest,
-    hookDataF: Option[Future[Option[HookData]]],
+    hookDataF: Option[Future[Option[Body[HookData]]]],
     isStream : Boolean,
     r        : HttpReads[A]
   )(implicit
@@ -94,7 +94,7 @@ final class RequestBuilderImpl(
   executor      : Executor
 )(
   request  : WSRequest,
-  hookDataF: Option[Future[Option[HookData]]]
+  hookDataF: Option[Future[Option[Body[HookData]]]]
 )(implicit
   hc: HeaderCarrier
 ) extends RequestBuilder {
@@ -120,7 +120,7 @@ final class RequestBuilderImpl(
   override def withProxy: RequestBuilderImpl =
     transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 
-  private def withHookData(hookDataF: Future[Option[HookData]]): RequestBuilderImpl =
+  private def withHookData(hookDataF: Future[Option[Body[HookData]]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
   // for erasure
@@ -134,9 +134,8 @@ final class RequestBuilderImpl(
   }
 
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
-    val hookDataP      = Promise[Option[HookData]]()
+    val hookDataP      = Promise[Option[Body[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
-    val loggingContext = s"outgoing ${request.method} ${request.url} request"
     transform { req =>
       val req2 = req.withBody(body)
       req2.body match {
@@ -145,19 +144,18 @@ final class RequestBuilderImpl(
         case InMemoryBody(bytes) => // we can't guarantee that the default BodyWritables have been used - so rather than relying on content-type alone, we identify form data
                                     // by provided body type (Map) or content-type (e.g. form data as a string)
                                     (body, req2.header("Content-Type")) match {
-                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(HookData.FromMap(m)))
-                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(HookData.FromMap(FormUrlEncodedParser.parse(bytes.decodeString("UTF-8")))))
-                                      case _                                                     => val auditedBody = BodyCaptor.bodyUpto(bytes, maxBodyLength, loggingContext, isStream = false).decodeString("UTF-8")
-                                                                                                    hookDataP.success(Some(HookData.FromString(auditedBody)))
+                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(Body.Complete(HookData.FromMap(m))))
+                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(Body.Complete(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
+                                      case _                                                     => val body = BodyCaptor.bodyUpto(bytes, maxBodyLength)
+                                                                                                    hookDataP.success(Some(body.map(bytes => HookData.FromString(bytes.utf8String))))
                                     }
                                     req2
         case SourceBody(source)  => val src2: Source[ByteString, _] =
                                       source
                                         .alsoTo(
                                           BodyCaptor.sink(
-                                            loggingContext   = loggingContext,
                                             maxBodyLength    = maxBodyLength,
-                                            withCapturedBody = body => hookDataP.success(Some(HookData.FromString(body.decodeString("UTF-8"))))
+                                            withCapturedBody = body => hookDataP.success(Some(body.map(bytes => HookData.FromString(bytes.utf8String))))
                                           )
                                         ).recover {
                                           case e => hookDataP.failure(e); throw e
@@ -195,14 +193,14 @@ class ExecutorImpl(
 
   final def execute[A](
     request     : WSRequest,
-    optHookDataF: Option[Future[Option[HookData]]],
+    optHookDataF: Option[Future[Option[Body[HookData]]]],
     isStream    : Boolean,
     httpReads   : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[A] = {
-    val hookDataF =
+    val hookDataF: Future[Option[Body[HookData]]] =
       optHookDataF match {
         case None if request.body != EmptyBody =>
           sys.error(s"There is no audit data available. Please ensure you call `withBody` on the RequestBuilder rather than `transform(_.withBody)`")
@@ -227,55 +225,56 @@ class ExecutorImpl(
       .map(httpReads.read(request.method, request.url, _))
   }
 
-  // unfortunate return type - first HttpResponse is the full response, the second HttpResponse is truncated for auditing...
   private def toHttpResponse(
     isStream : Boolean,
     request  : WSRequest,
     responseF: Future[WSResponse]
   )(implicit ec: ExecutionContext
-  ): (Future[HttpResponse], Future[HttpResponse]) = {
-    val auditResponseF = Promise[HttpResponse]()
-    val loggingContext = s"outgoing ${request.method} ${request.url} response"
+  ): (Future[HttpResponse], Future[ResponseData]) = {
+    val auditResponseF = Promise[ResponseData]()
+
+    // play returns scala.collection, but default for Scala 2.13 is scala.collection.immutable
+    def forScala2_13(m: scala.collection.Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
+      m.mapValues(_.toSeq).toMap
+
     val httpResponseF =
       for {
         response <- responseF
         status   =  response.status
-        headers  =  response.headers.mapValues(_.toSeq).toMap
+        headers  =  forScala2_13(response.headers)
       } yield {
-        def httpResponse(body : Either[Source[ByteString, _], String]): HttpResponse =
-          body match {
-            case Left(src) => HttpResponse(
-                                status       = response.status,
-                                bodyAsSource = src,
-                                headers      = response.headers.mapValues(_.toSeq).toMap
-                              )
-            case Right(str) => HttpResponse(
-                                status       = response.status,
-                                body         = str,
-                                headers      = response.headers.mapValues(_.toSeq).toMap
-                              )
-          }
         if (isStream) {
           val source =
             response.bodyAsSource
               .alsoTo(
                 BodyCaptor.sink(
-                  loggingContext   = loggingContext,
                   maxBodyLength    = maxBodyLength,
-                  withCapturedBody = body => auditResponseF.success(httpResponse(Right(body.decodeString("UTF-8"))))
+                  withCapturedBody = body => auditResponseF.success(ResponseData(
+                                               body    = body.map(_.utf8String),
+                                               status  = response.status,
+                                               headers = headers
+                                             ))
                 )
               )
               .recover {
                 case e => auditResponseF.failure(e); throw e
               }
-          httpResponse(Left(source))
-        } else {
-          auditResponseF.success(
-            httpResponse(Right(
-              BodyCaptor.bodyUpto(response.body, maxBodyLength, loggingContext, isStream = false)
-            ))
+          HttpResponse(
+            status       = response.status,
+            bodyAsSource = source,
+            headers      = headers
           )
-          httpResponse(Right(response.body))
+        } else {
+          auditResponseF.success(ResponseData(
+            body    = BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength).map(_.utf8String),
+            status  = response.status,
+            headers = headers
+          ))
+          HttpResponse(
+            status       = response.status,
+            body         = response.body,
+            headers      = headers
+          )
         }
       }
     (httpResponseF, auditResponseF.future)
@@ -284,8 +283,8 @@ class ExecutorImpl(
   private def executeHooks(
     isStream        : Boolean,
     request         : WSRequest,
-    hookDataF       : Future[Option[HookData]],
-    auditedResponseF: Future[HttpResponse] // play-auditing expects the body to be a String
+    hookDataF       : Future[Option[Body[HookData]]],
+    auditedResponseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
@@ -293,20 +292,22 @@ class ExecutorImpl(
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
-    def executeHooksWithHookData(hookData: Option[HookData]) =
+    def executeHooksWithHookData(hookData: Option[Body[HookData]]) =
       hooks.foreach(
         _.apply(
           verb      = request.method,
           url       = new URL(request.url),
-          headers   = denormalise(request.headers),
-          body      = hookData,
+          request   = RequestData(
+                        headers = denormalise(request.headers),
+                        body    = hookData
+                      ),
           responseF = auditedResponseF
         )
       )
 
     hookDataF.onComplete {
       case Success(hookData) => executeHooksWithHookData(hookData)
-      case Failure(e)        => // this is unlikely, but we want best attempt at auditing
+      case Failure(e)        => // this will only happen if we fail to upload a stream. We want best attempt at auditing
                                 executeHooksWithHookData(None)
     }
   }

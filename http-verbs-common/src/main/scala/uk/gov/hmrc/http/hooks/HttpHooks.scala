@@ -18,37 +18,23 @@ package uk.gov.hmrc.http.hooks
 
 import java.net.URL
 
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHooks {
   val hooks: Seq[HttpHook]
 
-  val NoneRequired = Seq(
-    new HttpHook {
-      def apply(
-        verb     : String,
-        url      : URL,
-        headers  : Seq[(String, String)],
-        body     : Option[HookData],
-        responseF: Future[HttpResponse]
-      )(
-        implicit hc: HeaderCarrier,
-        ec: ExecutionContext
-     ): Unit = {}
-    }
-  )
+  val NoneRequired = Seq.empty
 
   protected def executeHooks(
-    verb   : String,
-    url    : URL,
-    headers: Seq[(String, String)],
-    body   : Option[HookData],
-    responseF: Future[HttpResponse]
-  )(
-    implicit hc: HeaderCarrier,
+    verb     : String,
+    url      : URL,
+    request  : RequestData,
+    responseF: Future[ResponseData]
+  )(implicit
+    hc: HeaderCarrier,
     ec: ExecutionContext
   ): Unit =
-    hooks.foreach(_.apply(verb, url, headers, body, responseF))
+    hooks.foreach(_.apply(verb, url, request, responseF))
 }
