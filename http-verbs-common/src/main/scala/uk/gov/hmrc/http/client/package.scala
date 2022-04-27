@@ -39,14 +39,25 @@ trait StreamHttpReadsInstances {
   def tag[A](instance: A): A with client.Streaming =
     instance.asInstanceOf[A with client.Streaming]
 
-  implicit def readEitherSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
-    tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
+  implicit val readStreamHttpResponse: client.StreamHttpReads[HttpResponse] =
+    tag[HttpReads[HttpResponse]](
+      HttpReads.ask.map { case (_, _, response) => response }
+    )
+
+  implicit def readStreamEitherHttpResponse(implicit mat: Materializer, errorTimeout: ErrorTimeout): client.StreamHttpReads[Either[UpstreamErrorResponse, HttpResponse]] =
+    tag[HttpReads[Either[UpstreamErrorResponse, HttpResponse]]](
       HttpReads.ask.flatMap { case (method, url, response) =>
         HttpErrorFunctions.handleResponseEitherStream(method, url)(response) match {
           case Left(err)       => HttpReads.pure(Left(err))
-          case Right(response) => HttpReads.pure(Right(response.bodyAsSource))
+          case Right(response) => HttpReads.pure(Right(response))
         }
       }
+    )
+
+  implicit def readEitherSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client.StreamHttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]] =
+    tag[HttpReads[Either[UpstreamErrorResponse, Source[ByteString, _]]]](
+      readStreamEitherHttpResponse
+         .map(_.map(_.bodyAsSource))
     )
 
   implicit def readSource(implicit mat: Materializer, errorTimeout: ErrorTimeout): client.StreamHttpReads[Source[ByteString, _]] =

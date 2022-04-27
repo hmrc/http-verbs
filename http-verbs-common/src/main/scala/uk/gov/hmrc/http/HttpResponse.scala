@@ -50,7 +50,7 @@ trait HttpResponse {
     Source.single(ByteString(body))
 
   def header(key: String): Option[String] =
-    headers.get(key).flatMap(_.headOption)
+    headers.collectFirst { case (k, v :: _) if k.equalsIgnoreCase(key) => v }
 
   override def toString: String =
     s"HttpResponse status=$status"
