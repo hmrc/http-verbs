@@ -113,6 +113,15 @@ For streamed responses, use `stream` rather than `execute`:
 httpClientV2.get(url"$url").stream[Source[ByteString, _]]
 ```
 
+#### Auditing
+
+HttpClientV2 truncates payloads for audit logs if they exceed the max supported (as configured by `http-verbs.auditing.maxBodyLength`).
+
+This means audits that were rejected for being too large with HttpClient will probably be accepted with HttpclientV2.
+
+:warning: Please check any potential impact this may have on auditing performance.
+
+
 ### URL interpolator
 
 A [URL interpolator](https://sttp.softwaremill.com/en/latest/model/uri.html) has been provided to help with escaping query and parameters correctly.
