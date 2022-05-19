@@ -7,9 +7,10 @@ This should not affect most clients, as long as a compatible library versions ar
 
 ## Version 13.13.0
 
-### Auditing max body length
+### Adds HttpClientV2
+This is in addition to `HttpClient` (for now), so can be optionally used instead.
 
-Payloads will be truncated in audit logs if they exceed the max supported (as configured by `http-verbs.auditing.maxBodyLength`).
+See [README](/README.md) for details.
 
 ### WSProxyConfiguration
 
@@ -19,11 +20,6 @@ There are some differences with `WSProxyConfiguration.buildWsProxyServer`:
   * configPrefix is fixed to `proxy`.
   * `proxy.proxyRequiredForThisEnvironment` has been replaced with `http-verbs.proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
 
-
-### Adds HttpClientV2
-This is in addition to `HttpClient` (for now), so can be optionally used instead.
-
-See [README](/README.md) for details.
 
 ## Version 13.12.0
 
