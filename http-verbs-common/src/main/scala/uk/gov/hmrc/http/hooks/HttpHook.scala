@@ -17,9 +17,9 @@
 package uk.gov.hmrc.http.hooks
 
 import java.net.URL
-
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
+import scala.collection.generic.CanBuildFrom
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHook {
@@ -34,27 +34,34 @@ trait HttpHook {
   ): Unit
 }
 
-sealed trait Body[+A] {
-  final def map[B](f: A => B): Body[B] =
-    this match {
-      case Body.Complete(body)  => Body.Complete(f(body))
-      case Body.Truncated(body) => Body.Truncated(f(body))
-    }
+final case class Data[+A](value: A, isTruncated: Boolean) {
 
-  final def isTruncated: Boolean =
-    this match {
-      case Body.Complete (b) => false
-      case Body.Truncated(b) => true
-    }
+  def map[B](f: A => B): Data[B] =
+    flatMap(a => Data.pure(f(a)))
+
+  def map2[B, C](data: Data[B])(f: (A, B) => C): Data[C] =
+    flatMap(a => data.map(b => f(a, b)))
+
+  def flatMap[B](f: A => Data[B]): Data[B] =
+    if (isTruncated) Data(f(value).value, isTruncated = true) else f(value)
 }
 
-object Body {
-  case class Complete [A](body: A) extends Body[A]
-  case class Truncated[A](body: A) extends Body[A]
+object Data {
+
+  def pure[A](value: A): Data[A] =
+    Data(value, isTruncated = false)
+
+  def truncated[A](value: A): Data[A] =
+    Data(value, isTruncated = true)
+
+  def traverse[A, B, M[X] <: TraversableOnce[X]](in: M[A])(f: A => Data[B])(
+    implicit cbf: CanBuildFrom[M[A], B, M[B]]
+  ): Data[M[B]] =
+    in.foldLeft(Data.pure(cbf(in)))((acc, x) => acc.map2(f(x))(_ += _)).map(_.result())
 }
 
 case class ResponseData(
-  body   : Body[String],
+  body   : Data[String],
   status : Int,
   headers: Map[String, Seq[String]]
 )
@@ -62,7 +69,7 @@ case class ResponseData(
 object ResponseData {
   def fromHttpResponse(httpResponse: HttpResponse) =
     ResponseData(
-      body     = Body.Complete(httpResponse.body),
+      body     = Data.pure(httpResponse.body),
       status   = httpResponse.status,
       headers  = httpResponse.headers
     )
@@ -70,7 +77,7 @@ object ResponseData {
 
 case class RequestData(
   headers: Seq[(String, String)],
-  body   : Option[Body[HookData]]
+  body   : Option[Data[HookData]]
 )
 
 sealed trait HookData

@@ -32,7 +32,7 @@ import play.api.Configuration
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpReadsInstances, HttpResponse, Retries, StringContextOps, UpstreamErrorResponse}
-import uk.gov.hmrc.http.hooks.{Body, HookData, HttpHook, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.test.WireMockSupport
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -87,12 +87,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromString("\"req\"")))
+      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromString("\"req\"")))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/json")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Complete("\"res\"")
+      auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
 
     "work with streams" in new Setup {
@@ -135,12 +135,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromString(requestBody)))
+      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromString(requestBody)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Complete(responseBody)
+      auditedResponse.body   shouldBe Data.pure(responseBody)
     }
 
     "handled failed requests with streams" in new Setup {
@@ -187,12 +187,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromString(requestBody)))
+      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromString(requestBody)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 500
-      auditedResponse.body   shouldBe Body.Complete(responseBody)
+      auditedResponse.body   shouldBe Data.pure(responseBody)
     }
 
     "truncate stream payloads for auditing if too long" in new Setup {
@@ -235,12 +235,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
+      requestCaptor.value.body shouldBe Some(Data.truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Truncated(responseBody.take(maxAuditBodyLength))
+      auditedResponse.body   shouldBe Data.truncated(responseBody.take(maxAuditBodyLength))
     }
 
     "truncate strict payloads for auditing if too long" in new Setup {
@@ -280,12 +280,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
+      requestCaptor.value.body shouldBe Some(Data.truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "text/plain")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Truncated(responseBody.take(maxAuditBodyLength))
+      auditedResponse.body   shouldBe Data.truncated(responseBody.take(maxAuditBodyLength))
     }
 
     "work with form data" in new Setup {
@@ -328,12 +328,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromMap(body)))
+      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromMap(body)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Complete("\"res\"")
+      auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
 
     "work with form data - custom writeable for content-type" in new Setup {
@@ -390,12 +390,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromMap(body)))
+      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromMap(body)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "nonstandard/x-www-form-urlencoded")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Complete("\"res\"")
+      auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
 
     "work with form data - custom writeable for map type" in new Setup {
@@ -452,12 +452,12 @@ class HttpClientV2Spec
           responseF = responseFCaptor
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Body.Complete(HookData.FromMap(body.toMap)))
+      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromMap(body.toMap)))
       requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
       requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
       val auditedResponse = responseFCaptor.value.futureValue
       auditedResponse.status shouldBe 200
-      auditedResponse.body   shouldBe Body.Complete("\"res\"")
+      auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
 
     /* Note, using non-form-encoding and a non immutable Map implementation will not be escaped properly

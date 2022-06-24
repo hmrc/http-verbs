@@ -26,7 +26,7 @@ import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
-import uk.gov.hmrc.http.hooks.{Body, HookData, HttpHook, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import java.net.{ConnectException, URL}
@@ -39,7 +39,7 @@ import scala.util.{Failure, Success}
 trait Executor {
   def execute[A](
     request  : WSRequest,
-    hookDataF: Option[Future[Option[Body[HookData]]]],
+    hookDataF: Option[Future[Option[Data[HookData]]]],
     isStream : Boolean,
     r        : HttpReads[A]
   )(implicit
@@ -94,7 +94,7 @@ final class RequestBuilderImpl(
   executor      : Executor
 )(
   request  : WSRequest,
-  hookDataF: Option[Future[Option[Body[HookData]]]]
+  hookDataF: Option[Future[Option[Data[HookData]]]]
 )(implicit
   hc: HeaderCarrier
 ) extends RequestBuilder {
@@ -120,7 +120,7 @@ final class RequestBuilderImpl(
   override def withProxy: RequestBuilderImpl =
     transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 
-  private def withHookData(hookDataF: Future[Option[Body[HookData]]]): RequestBuilderImpl =
+  private def withHookData(hookDataF: Future[Option[Data[HookData]]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
   // for erasure
@@ -134,7 +134,7 @@ final class RequestBuilderImpl(
   }
 
   override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
-    val hookDataP      = Promise[Option[Body[HookData]]]()
+    val hookDataP      = Promise[Option[Data[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
     transform { req =>
       val req2 = req.withBody(body)
@@ -144,8 +144,8 @@ final class RequestBuilderImpl(
         case InMemoryBody(bytes) => // we can't guarantee that the default BodyWritables have been used - so rather than relying on content-type alone, we identify form data
                                     // by provided body type (Map) or content-type (e.g. form data as a string)
                                     (body, req2.header("Content-Type")) match {
-                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(Body.Complete(HookData.FromMap(m))))
-                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(Body.Complete(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
+                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(Data.pure(HookData.FromMap(m))))
+                                      case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(Data.pure(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
                                       case _                                                     => val body = BodyCaptor.bodyUpto(bytes, maxBodyLength)
                                                                                                     hookDataP.success(Some(body.map(bytes => HookData.FromString(bytes.utf8String))))
                                     }
@@ -193,14 +193,14 @@ class ExecutorImpl(
 
   final def execute[A](
     request     : WSRequest,
-    optHookDataF: Option[Future[Option[Body[HookData]]]],
+    optHookDataF: Option[Future[Option[Data[HookData]]]],
     isStream    : Boolean,
     httpReads   : HttpReads[A]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[A] = {
-    val hookDataF: Future[Option[Body[HookData]]] =
+    val hookDataF: Future[Option[Data[HookData]]] =
       optHookDataF match {
         case None if request.body != EmptyBody =>
           sys.error(s"There is no audit data available. Please ensure you call `withBody` on the RequestBuilder rather than `transform(_.withBody)`")
@@ -283,7 +283,7 @@ class ExecutorImpl(
   private def executeHooks(
     isStream        : Boolean,
     request         : WSRequest,
-    hookDataF       : Future[Option[Body[HookData]]],
+    hookDataF       : Future[Option[Data[HookData]]],
     auditedResponseF: Future[ResponseData]
   )(implicit
     hc: HeaderCarrier,
@@ -292,7 +292,7 @@ class ExecutorImpl(
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
 
-    def executeHooksWithHookData(hookData: Option[Body[HookData]]) =
+    def executeHooksWithHookData(hookData: Option[Data[HookData]]) =
       hooks.foreach(
         _.apply(
           verb      = request.method,

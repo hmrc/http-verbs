@@ -20,13 +20,13 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.stage._
 import akka.util.ByteString
-import uk.gov.hmrc.http.hooks.Body
+import uk.gov.hmrc.http.hooks.Data
 
 // based on play.filters.csrf.CSRFAction#BodyHandler
 
 private class BodyCaptorFlow(
   maxBodyLength   : Int,
-  withCapturedBody: Body[ByteString] => Unit
+  withCapturedBody: Data[ByteString] => Unit
 ) extends GraphStage[FlowShape[ByteString, ByteString]] {
   val in             = Inlet[ByteString]("BodyCaptorFlow.in")
   val out            = Outlet[ByteString]("BodyCaptorFlow.out")
@@ -62,7 +62,7 @@ private class BodyCaptorFlow(
 object BodyCaptor {
   def flow(
     maxBodyLength   : Int,
-    withCapturedBody: Body[ByteString] => Unit // provide a callback since a Materialized value would be not be available until the flow has been run
+    withCapturedBody: Data[ByteString] => Unit // provide a callback since a Materialized value would be not be available until the flow has been run
   ): Flow[ByteString, ByteString, akka.NotUsed] =
     Flow.fromGraph(new BodyCaptorFlow(
       maxBodyLength    = maxBodyLength,
@@ -71,14 +71,14 @@ object BodyCaptor {
 
   def sink(
     maxBodyLength   : Int,
-    withCapturedBody: Body[ByteString] => Unit
+    withCapturedBody: Data[ByteString] => Unit
   ): Sink[ByteString, akka.NotUsed] =
     flow(maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 
-  def bodyUpto(body: ByteString, maxBodyLength: Int): Body[ByteString] =
+  def bodyUpto(body: ByteString, maxBodyLength: Int): Data[ByteString] =
     if (body.length > maxBodyLength)
-      Body.Truncated(body.take(maxBodyLength))
+      Data.truncated(body.take(maxBodyLength))
     else
-      Body.Complete(body)
+      Data.pure(body)
 }

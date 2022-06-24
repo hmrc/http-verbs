@@ -24,7 +24,7 @@ import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import uk.gov.hmrc.http.hooks.{Body, HttpHook, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{Data, HttpHook, RequestData, ResponseData}
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -147,11 +147,11 @@ class HttpGetSpec
       // e.g. Future.successful(5) != Future.successful(5)
       val response1 = responseFCaptor1.value.futureValue
       response1.status shouldBe 200
-      response1.body shouldBe Body.Complete(testBody)
+      response1.body shouldBe Data.pure(testBody)
 
       val response2 = responseFCaptor2.value.futureValue
       response2.status shouldBe 200
-      response2.body shouldBe Body.Complete(testBody)
+      response2.body shouldBe Data.pure(testBody)
     }
   }
 
