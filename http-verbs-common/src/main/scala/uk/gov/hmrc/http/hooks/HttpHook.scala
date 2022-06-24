@@ -19,7 +19,6 @@ package uk.gov.hmrc.http.hooks
 import java.net.URL
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
-import scala.collection.generic.CanBuildFrom
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpHook {
@@ -71,10 +70,8 @@ object Data {
   def redacted[A](value: A): Data[A] =
     pure(value).copy(isRedacted = true)
 
-  def traverse[A, B, M[X] <: TraversableOnce[X]](in: M[A])(f: A => Data[B])(
-    implicit cbf: CanBuildFrom[M[A], B, M[B]]
-  ): Data[M[B]] =
-    in.foldLeft(Data.pure(cbf(in)))((acc, x) => acc.map2(f(x))(_ += _)).map(_.result())
+  def traverse[A, B](seq: Seq[A])(f: A => Data[B]): Data[Seq[B]] =
+    seq.foldLeft(Data.pure(Seq.empty[B]))((acc, x) => acc.map2(f(x))(_ :+ _))
 }
 
 case class ResponseData(
