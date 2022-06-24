@@ -34,7 +34,11 @@ trait HttpHook {
   ): Unit
 }
 
-final case class Data[+A](value: A, isTruncated: Boolean) {
+final case class Data[+A](
+  value: A,
+  isTruncated: Boolean,
+  isRedacted: Boolean
+) {
 
   def map[B](f: A => B): Data[B] =
     flatMap(a => Data.pure(f(a)))
@@ -42,17 +46,30 @@ final case class Data[+A](value: A, isTruncated: Boolean) {
   def map2[B, C](data: Data[B])(f: (A, B) => C): Data[C] =
     flatMap(a => data.map(b => f(a, b)))
 
-  def flatMap[B](f: A => Data[B]): Data[B] =
-    if (isTruncated) Data(f(value).value, isTruncated = true) else f(value)
+  def flatMap[B](f: A => Data[B]): Data[B] = {
+    val dataB = f(value)
+    Data(
+      value       = dataB.value,
+      isTruncated = isTruncated || dataB.isTruncated,
+      isRedacted  = isRedacted || dataB.isRedacted
+    )
+  }
 }
 
 object Data {
 
   def pure[A](value: A): Data[A] =
-    Data(value, isTruncated = false)
+    Data(
+      value       = value,
+      isTruncated = false,
+      isRedacted  = false
+    )
 
   def truncated[A](value: A): Data[A] =
-    Data(value, isTruncated = true)
+    pure(value).copy(isTruncated = true)
+
+  def redacted[A](value: A): Data[A] =
+    pure(value).copy(isRedacted = true)
 
   def traverse[A, B, M[X] <: TraversableOnce[X]](in: M[A])(f: A => Data[B])(
     implicit cbf: CanBuildFrom[M[A], B, M[B]]
