@@ -24,7 +24,7 @@ import org.mockito.scalatest.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, Writes}
-import uk.gov.hmrc.http.hooks.{Body, HookData, HttpHook, RequestData, ResponseData}
+import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -163,21 +163,21 @@ class HttpPatchSpec
 
       val request1 = requestCaptor1.value
       request1.headers  should contain allElementsOf(headers)
-      request1.body     shouldBe Some(Body.Complete(HookData.FromString(testJson)))
+      request1.body     shouldBe Some(Data.pure(HookData.FromString(testJson)))
 
       val request2 = requestCaptor2.value
       request2.headers  should contain allElementsOf(headers)
-      request2.body     shouldBe Some(Body.Complete(HookData.FromString(testJson)))
+      request2.body     shouldBe Some(Data.pure(HookData.FromString(testJson)))
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
       val response1 = responseFCaptor1.value.futureValue
       response1.status shouldBe 200
-      response1.body shouldBe Body.Complete(testBody)
+      response1.body shouldBe Data.pure(testBody)
 
       val response2 = responseFCaptor2.value.futureValue
       response2.status shouldBe 200
-      response2.body shouldBe Body.Complete(testBody)
+      response2.body shouldBe Data.pure(testBody)
     }
   }
 }
