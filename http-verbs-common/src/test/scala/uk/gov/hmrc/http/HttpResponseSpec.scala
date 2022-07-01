@@ -33,4 +33,22 @@ class HttpResponseSpec extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "header" should {
+    "return the `headOption` value of the associated and case-insensitive header name" in {
+      val headers =
+        Map(
+          "Test-Header-1" -> Vector("v1", "v2"),
+        )
+
+      val response =
+        HttpResponse(
+          status  = 200,
+          body    = "",
+          headers = headers
+        )
+
+      response.header("test-header-1") shouldBe Some("v1")
+    }
+  }
 }
