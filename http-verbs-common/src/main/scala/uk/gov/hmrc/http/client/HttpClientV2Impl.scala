@@ -111,8 +111,11 @@ final class RequestBuilderImpl(
     request.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*)
   }
 
-  override def replaceHeader(header: (String, String)): RequestBuilderImpl =
+  override def setHeader(header: (String, String)): RequestBuilderImpl =
     transform(replaceHeaderOnRequest(_, header))
+
+  override def replaceHeader(header: (String, String)): RequestBuilderImpl =
+    setHeader(header)
 
   override def addHeaders(headers: (String, String)*): RequestBuilderImpl =
     transform(_.addHttpHeaders(headers: _*))

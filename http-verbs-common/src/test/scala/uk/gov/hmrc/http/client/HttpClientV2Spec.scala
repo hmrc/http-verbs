@@ -531,7 +531,7 @@ class HttpClientV2Spec
         httpClientV2
           .put(url"$wireMockUrl/")
           .transform(_.withBody(Json.toJson(ReqDomain("req"))))
-          .replaceHeader("User-Agent" -> "ua2")
+          .setHeader("User-Agent" -> "ua2")
           .execute[ResDomain]
     }
 
@@ -547,7 +547,7 @@ class HttpClientV2Spec
         httpClientV2
           .put(url"$wireMockUrl/")
           .withBody(Json.toJson(ReqDomain("req")))
-          .replaceHeader("User-Agent" -> "ua2")
+          .setHeader("User-Agent" -> "ua2")
           .execute[ResDomain]
 
       res.futureValue shouldBe ResDomain("res")
