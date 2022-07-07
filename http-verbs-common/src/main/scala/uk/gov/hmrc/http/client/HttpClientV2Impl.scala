@@ -104,15 +104,15 @@ final class RequestBuilderImpl(
 
   // -- Transform helpers --
 
-  private def replaceHeaderOnRequest(request: WSRequest, header: (String, String)): WSRequest = {
+  private def replaceHeaderOnRequest(request: WSRequest, headers: (String, String)*): WSRequest = {
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
-    val hdrsWithoutKey = request.headers.filterKeys(!_.equalsIgnoreCase(header._1)).toMap // replace existing header
-    request.withHttpHeaders(denormalise(hdrsWithoutKey) :+ header : _*)
+    val hdrsWithoutKey = request.headers.filterKeys(k => !headers.map(_._1.toLowerCase).contains(k.toLowerCase)).toMap // replace existing header
+    request.withHttpHeaders(denormalise(hdrsWithoutKey) ++ headers : _*)
   }
 
-  override def setHeader(header: (String, String)): RequestBuilderImpl =
-    transform(replaceHeaderOnRequest(_, header))
+  override def setHeader(header: (String, String)*): RequestBuilderImpl =
+    transform(replaceHeaderOnRequest(_, header: _*))
 
   override def replaceHeader(header: (String, String)): RequestBuilderImpl =
     setHeader(header)

@@ -61,8 +61,10 @@ trait RequestBuilder {
 
   // support functions
 
-  /** Adds the header. If the header has already been defined (e.g. from HeaderCarrier), it will be replaced. */
-  def setHeader(header: (String, String)): RequestBuilder
+  /** Adds the header. If the header has already been defined (e.g. from HeaderCarrier), it will be replaced.
+    * It does not affect headers not mentioned.
+    */
+  def setHeader(header: (String, String)*): RequestBuilder
 
   @deprecated("Use setHeader", "14.5.0")
   def replaceHeader(header: (String, String)): RequestBuilder
