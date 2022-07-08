@@ -80,11 +80,13 @@ httpClientV2.post(url"$url").withBody(Json.toJson(payload)).addHeaders(headers).
 
 #### Header manipulation
 
-With `HttpClient`, replacing a header can require providing a customised client implementation (e.g. to replace the user-agent header), or updating the `HeaderCarrier` (e.g. to replace the authorisation header). This can now all be done with the `replaceHeader` on `HttpClientV2` per call. e.g.
+With `HttpClient`, replacing a header can require providing a customised client implementation (e.g. to replace the user-agent header), or updating the `HeaderCarrier` (e.g. to replace the authorisation header). This can now all be done with the `setHeader` on `HttpClientV2` per call. e.g.
 
 ```scala
-httpClientV2.get(url"$url").replaceHeader("User-Agent" -> userAgent).replaceHeader("Authorization" -> authorization).execute[ResponseType]
+httpClientV2.get(url"$url").setHeader("User-Agent" -> userAgent).setHeader("Authorization" -> authorization).execute[ResponseType]
 ```
+
+As well as replacing existing header values, `setHeader` can be used to add new headers too, and in most cases should be used in preference to `addHeaders` where the values are merged with any existing ones (e.g. from HeaderCarrier).
 
 #### Using proxy
 
