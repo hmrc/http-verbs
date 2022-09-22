@@ -603,6 +603,8 @@ class HttpClientV2Spec
 
       implicit val mdcEc = ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
 
+      org.slf4j.MDC.clear()
+
       val res: Future[Map[String, String]] =
         for {
           _ <- Future.successful(Mdc.putMdc(mdcData))

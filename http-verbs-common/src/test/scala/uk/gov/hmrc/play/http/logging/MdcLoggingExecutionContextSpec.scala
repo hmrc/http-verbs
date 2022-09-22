@@ -27,7 +27,6 @@ import org.scalatest.matchers.should.Matchers
 import org.slf4j.{LoggerFactory, MDC}
 import play.core.NamedThreadFactory
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -35,20 +34,18 @@ import scala.reflect._
 
 @annotation.nowarn("msg=deprecated")
 class MdcLoggingExecutionContextSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with LoneElement
-    with Inspectors
-    with BeforeAndAfter {
+  extends AnyWordSpecLike
+     with Matchers
+     with LoneElement
+     with Inspectors
+     with BeforeAndAfter {
 
   before {
     MDC.clear()
   }
 
   "The MDC Transporting Execution Context" should {
-
-    "capture the an MDC map with values in it and put it in place when a task is run" in withCaptureOfLoggingFrom[
-      MdcLoggingExecutionContextSpec] { logList =>
+    "capture the MDC map with values in it and put it in place when a task is run" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
       implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map("someKey" -> "something"))
 
       logEventInsideAFutureUsing(ec)
@@ -75,20 +72,18 @@ class MdcLoggingExecutionContextSpec
       logList.loneElement._2 should be(Map("someKey" -> "something"))
     }
 
-    "clear the MDC map after a task throws an exception" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] {
-      logList =>
-        implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map("someKey" -> "something"))
+    "clear the MDC map after a task throws an exception" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map("someKey" -> "something"))
 
-        throwAnExceptionInATaskOn(ec)
+      throwAnExceptionInATaskOn(ec)
 
-        MDC.clear()
-        logEventInsideAFutureUsing(ec)
+      MDC.clear()
+      logEventInsideAFutureUsing(ec)
 
-        logList.loneElement._2 should be(Map("someKey" -> "something"))
+      logList.loneElement._2 should be(Map("someKey" -> "something"))
     }
 
-    "log values from given MDC map when multiple threads are using it concurrently by ensuring each log from each thread has been logged via MDC" in withCaptureOfLoggingFrom[
-      MdcLoggingExecutionContextSpec] { logList =>
+    "log values from given MDC map when multiple threads are using it concurrently by ensuring each log from each thread has been logged via MDC" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
       val threadCount = 10
       val logCount    = 10
 
@@ -131,36 +126,33 @@ class MdcLoggingExecutionContextSpec
     ec
   }
 
-  def logEventInsideAFutureUsingImplicitEc(implicit ec: ExecutionContext) {
+  def logEventInsideAFutureUsingImplicitEc(implicit ec: ExecutionContext): Unit =
     logEventInsideAFutureUsing(ec)
-  }
 
-  def logEventInsideAFutureUsing(ec: ExecutionContext) {
-    Await.ready(Future {
-      LoggerFactory.getLogger(classOf[MdcLoggingExecutionContextSpec]).info("")
-    }(ec), 2.second)
-  }
+  def logEventInsideAFutureUsing(ec: ExecutionContext): Unit =
+    Await.ready(
+      Future.apply(
+        LoggerFactory.getLogger(classOf[MdcLoggingExecutionContextSpec]).info("")
+      )(ec),
+      2.second
+    )
 
-  def doSomethingInsideAFutureButDontLog(ec: ExecutionContext) {
-    Await.ready(Future {}(ec), 2.second)
-  }
+  def doSomethingInsideAFutureButDontLog(ec: ExecutionContext): Unit =
+    Await.ready(Future.apply()(ec), 2.second)
 
-  def throwAnExceptionInATaskOn(ec: ExecutionContext) {
-    ec.execute(new Runnable() {
-      def run(): Unit =
-        throw new RuntimeException("Test what happens when a task running on this EC throws an exception")
-    })
-  }
+  def throwAnExceptionInATaskOn(ec: ExecutionContext): Unit =
+    ec.execute(() => throw new RuntimeException("Test what happens when a task running on this EC throws an exception"))
 
   /** Ensures that a thread is already created in the execution context by running an empty future.
     * Required as otherwise the MDC is transferred to the new thread as it is stored in an inheritable
     * ThreadLocal.
     */
-  def initialise(ec: ExecutionContext) {
-    Await.ready(Future {}(ec), 2.second)
-  }
+  def initialise(ec: ExecutionContext): Unit =
+    Await.ready(Future.apply()(ec), 2.second)
 
-  def withCaptureOfLoggingFrom[T: ClassTag](body: (=> List[(ILoggingEvent, Map[String, String])]) => Any) = {
+  def withCaptureOfLoggingFrom[T: ClassTag](body: (=> List[(ILoggingEvent, Map[String, String])]) => Unit): Unit = {
+    import scala.collection.JavaConverters._
+
     val logger = LoggerFactory.getLogger(classTag[T].runtimeClass).asInstanceOf[LogbackLogger]
     val appender = new AppenderBase[ILoggingEvent]() {
 

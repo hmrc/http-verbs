@@ -193,6 +193,8 @@ class RetriesSpec
 
       val expectedResponse = HttpResponse(404, "")
 
+      org.slf4j.MDC.clear()
+
       val resultF =
         for {
           _   <- Future.successful(Mdc.putMdc(mdcData))
