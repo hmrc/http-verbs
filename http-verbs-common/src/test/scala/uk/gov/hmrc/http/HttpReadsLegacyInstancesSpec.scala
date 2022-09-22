@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.http
 
-import com.github.ghik.silencer.silent
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.Json
 
-@silent("deprecated")
+@annotation.nowarn("msg=deprecated")
 class HttpReadsLegacyInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
   "RawReads" should {
     val reads = HttpReads.readRaw

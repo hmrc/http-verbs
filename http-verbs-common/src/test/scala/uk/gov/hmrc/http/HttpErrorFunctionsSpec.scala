@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import com.github.ghik.silencer.silent
 import org.scalacheck.Gen
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.TryValues
@@ -26,7 +25,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.util.Try
 
-@silent("deprecated")
+@annotation.nowarn("msg=deprecated")
 class HttpErrorFunctionsSpec
     extends AnyWordSpec
     with Matchers

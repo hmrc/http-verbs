@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import com.github.ghik.silencer.silent
 import uk.gov.hmrc.http.HttpExceptions._
 
 private object HttpExceptions {
@@ -131,7 +130,7 @@ sealed trait UpstreamErrorResponse extends Exception {
   def upstreamResponseCode: Int
 
   // final to help migrate away from upstreamResponseCode (i.e. read only - set via UpstreamErrorResponse.apply)
-  @silent("deprecated")
+  @annotation.nowarn("msg=deprecated")
   final def statusCode: Int =
     upstreamResponseCode
 
@@ -176,7 +175,7 @@ object UpstreamErrorResponse {
       headers    = Map.empty
     )
 
-  @silent("deprecated")
+  @annotation.nowarn("msg=deprecated")
   def apply(message: String, statusCode: Int, reportAs: Int, headers: Map[String, Seq[String]]): UpstreamErrorResponse =
     if (HttpErrorFunctions.is4xx(statusCode))
       uk.gov.hmrc.http.Upstream4xxResponse(

@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.play.connectors
 
-import com.github.ghik.silencer.silent
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.test.WsTestClient
 import uk.gov.hmrc.http._
 
-@silent("deprecated")
+@annotation.nowarn("msg=deprecated")
 class ConnectorSpec extends AnyWordSpecLike with Matchers with MockitoSugar {
   WsTestClient.withClient { wsClient =>
 

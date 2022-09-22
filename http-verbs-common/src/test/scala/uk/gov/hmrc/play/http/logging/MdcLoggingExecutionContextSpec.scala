@@ -18,7 +18,6 @@ package uk.gov.hmrc.play.http.logging
 
 import java.util.concurrent.{CountDownLatch, Executors}
 
-import com.github.ghik.silencer.silent
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.AppenderBase
@@ -34,7 +33,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect._
 
-@silent("deprecated")
+@annotation.nowarn("msg=deprecated")
 class MdcLoggingExecutionContextSpec
     extends AnyWordSpecLike
     with Matchers

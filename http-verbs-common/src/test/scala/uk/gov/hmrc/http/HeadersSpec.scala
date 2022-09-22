@@ -17,7 +17,6 @@
 package uk.gov.hmrc.http
 
 import akka.actor.ActorSystem
-import com.github.ghik.silencer.silent
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -44,7 +43,6 @@ class HeadersSpec
 
   private lazy val app: Application = new GuiceApplicationBuilder().build()
 
-  @silent("deprecated")
   private implicit val hc: HeaderCarrier = HeaderCarrier(
     authorization = Some(Authorization("authorization")),
     forwarded     = Some(ForwardedFor("forwarded-for")),
