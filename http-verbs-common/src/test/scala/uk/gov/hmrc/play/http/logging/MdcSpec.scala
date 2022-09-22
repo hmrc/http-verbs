@@ -18,7 +18,7 @@ package uk.gov.hmrc.play.http.logging
 
 import akka.dispatch.ExecutorServiceDelegate
 import org.scalatest.BeforeAndAfter
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.MDC
@@ -31,6 +31,7 @@ class MdcSpec
   extends AnyWordSpecLike
      with Matchers
      with ScalaFutures
+     with IntegrationPatience
      with BeforeAndAfter {
 
   before {
@@ -96,19 +97,16 @@ class MdcSpec
 class MDCPropagatingExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate {
 
   override def execute(command: Runnable): Unit = {
-
     val mdcData = MDC.getCopyOfContextMap
 
-    executor.execute(new Runnable {
-      override def run(): Unit = {
-        val oldMdcData = MDC.getCopyOfContextMap
-        setMDC(mdcData)
-        try {
-          command.run()
-        } finally {
-          // this means any Mdc updates on the ec will not be propagated once it steps out
-          setMDC(oldMdcData)
-        }
+    executor.execute(() => {
+      val oldMdcData = MDC.getCopyOfContextMap
+      setMDC(mdcData)
+      try {
+        command.run()
+      } finally {
+        // this means any Mdc updates on the ec will not be propagated once it steps out
+        setMDC(oldMdcData)
       }
     })
   }

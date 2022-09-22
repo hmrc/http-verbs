@@ -29,13 +29,18 @@ class MdcLoggingExecutionContext(wrapped: ExecutionContext, mdcData: Map[String,
 
   private class RunWithMDC(runnable: Runnable, mdcData: Map[String, String]) extends Runnable {
     def run(): Unit = {
+      val oldMdcData = MDC.getCopyOfContextMap
+      MDC.clear()
       mdcData.foreach {
         case (k, v) => MDC.put(k, v)
       }
       try {
         runnable.run()
       } finally {
-        MDC.clear()
+        if (oldMdcData == null)
+          MDC.clear()
+        else
+          MDC.setContextMap(oldMdcData)
       }
     }
   }

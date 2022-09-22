@@ -18,7 +18,6 @@ package uk.gov.hmrc.http
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
 import play.api.libs.json.{JsValue, Json}
 
 /**
@@ -39,7 +38,7 @@ trait HttpResponse {
   def allHeaders: Map[String, Seq[String]]
 
   // final to help migrate away from allHeaders (i.e. read only - set via HttpResponse.apply)
-  @silent("deprecated")
+  @annotation.nowarn("msg=deprecated")
   final def headers: Map[String, Seq[String]]
     = allHeaders
 
