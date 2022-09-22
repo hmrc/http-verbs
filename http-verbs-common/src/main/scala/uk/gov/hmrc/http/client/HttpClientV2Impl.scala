@@ -25,6 +25,7 @@ import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSCl
 import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
+import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
@@ -175,10 +176,14 @@ final class RequestBuilderImpl(
   // -- Execution --
 
   override def execute[A](implicit r: HttpReads[A], ec: ExecutionContext): Future[A] =
-    executor.execute(request, hookDataF, isStream = false, r)
+    Mdc.preservingMdc(
+      executor.execute(request, hookDataF, isStream = false, r)
+    )
 
   override def stream[A](implicit r: StreamHttpReads[A], ec: ExecutionContext): Future[A] =
-    executor.execute(request, hookDataF, isStream = true, r)
+    Mdc.preservingMdc(
+      executor.execute(request, hookDataF, isStream = true, r)
+    )
 }
 
 class ExecutorImpl(

@@ -33,8 +33,10 @@ import play.api.libs.json.{Json, Reads, Writes}
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpReadsInstances, HttpResponse, Retries, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
+import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.http.test.WireMockSupport
 
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -587,6 +589,37 @@ class HttpClientV2Spec
 
       res.failed.futureValue shouldBe a[UpstreamErrorResponse]
       count.get shouldBe 4
+    }
+
+    "preserve Mdc" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+      )
+
+      val mdcData = Map("key1" -> "value1")
+
+      implicit val mdcEc = ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
+
+      val res: Future[Map[String, String]] =
+        for {
+          _ <- Future.successful(Mdc.putMdc(mdcData))
+          _ <- httpClientV2
+                .put(url"$wireMockUrl/")
+                .withBody(Json.toJson(ReqDomain("req")))
+                .setHeader("User-Agent" -> "ua2")
+                .execute[ResDomain]
+        } yield Mdc.mdcData
+
+      res.futureValue shouldBe mdcData
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withRequestBody(equalTo("\"req\""))
+          .withHeader("User-Agent", equalTo("ua2"))
+      )
     }
   }
 

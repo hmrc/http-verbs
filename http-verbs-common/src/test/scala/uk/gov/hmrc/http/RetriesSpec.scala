@@ -200,7 +200,7 @@ class RetriesSpec
           _   <- Future.successful(Mdc.putMdc(mdcData))
           res <- retries.retryOnSslEngineClosed("GET", "url") {
                   // assert mdc available to block execution
-                  Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+                  Mdc.mdcData shouldBe mdcData
 
                   retries.failFewTimesAndThenSucceed(
                     success   = Future.successful(expectedResponse),
@@ -209,7 +209,7 @@ class RetriesSpec
                 }
         } yield {
           // assert mdc available to continuation
-          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap).getOrElse(Map.empty) shouldBe mdcData
+          Mdc.mdcData shouldBe mdcData
           res
         }
 
