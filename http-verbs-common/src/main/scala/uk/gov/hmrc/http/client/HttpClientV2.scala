@@ -77,5 +77,5 @@ trait RequestBuilder {
   /** `withBody` should be called rather than `transform(_.withBody)`.
     * Failure to do so will lead to a runtime exception
     */
-  def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilder
+  def withBody[B : BodyWritable : TypeTag](body: B)(implicit ec: ExecutionContext): RequestBuilder
 }

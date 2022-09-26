@@ -34,14 +34,15 @@ trait ConnectionTracing {
     f
   }
 
-  def logResult[A](ld: LoggingDetails, method: String, uri: String, startAge: Long)(result: Try[A]): Unit = result match {
-    case Success(_) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
-    case Failure(ex: HttpException) if ex.responseCode == 404 =>
-      connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
-    case Failure(ex: UpstreamErrorResponse) if ex.statusCode == 404 =>
-      connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.message}"))
-    case Failure(ex) => connectionLogger.warn(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
-  }
+  def logResult[A](ld: LoggingDetails, method: String, uri: String, startAge: Long)(result: Try[A]): Unit =
+    result match {
+      case Success(_) => connectionLogger.debug(formatMessage(ld, method, uri, startAge, "ok"))
+      case Failure(ex: HttpException) if ex.responseCode == 404 =>
+        connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
+      case Failure(ex: UpstreamErrorResponse) if ex.statusCode == 404 =>
+        connectionLogger.info(formatMessage(ld, method, uri, startAge, s"failed ${ex.message}"))
+      case Failure(ex) => connectionLogger.warn(formatMessage(ld, method, uri, startAge, s"failed ${ex.getMessage}"))
+    }
 
   import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 
