@@ -137,7 +137,7 @@ final class RequestBuilderImpl(
       }
   }
 
-  override def withBody[B : BodyWritable : TypeTag](body: B): RequestBuilderImpl = {
+  override def withBody[B : BodyWritable : TypeTag](body: B)(implicit ec: ExecutionContext): RequestBuilderImpl = {
     val hookDataP      = Promise[Option[Data[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
     transform { req =>
@@ -170,7 +170,7 @@ final class RequestBuilderImpl(
                                       case _                 => req2.withBody(src2)
                                     }
       }
-    }.withHookData(hookDataP.future)
+    }.withHookData(Mdc.preservingMdc(hookDataP.future))
   }
 
   // -- Execution --
@@ -239,7 +239,7 @@ class ExecutorImpl(
     responseF: Future[WSResponse]
   )(implicit ec: ExecutionContext
   ): (Future[HttpResponse], Future[ResponseData]) = {
-    val auditResponseF = Promise[ResponseData]()
+    val auditResponseP = Promise[ResponseData]()
 
     // play returns scala.collection, but default for Scala 2.13 is scala.collection.immutable
     def forScala2_13(m: scala.collection.Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
@@ -257,7 +257,7 @@ class ExecutorImpl(
               .alsoTo(
                 BodyCaptor.sink(
                   maxBodyLength    = maxBodyLength,
-                  withCapturedBody = body => auditResponseF.success(ResponseData(
+                  withCapturedBody = body => auditResponseP.success(ResponseData(
                                                body    = body.map(_.utf8String),
                                                status  = response.status,
                                                headers = headers
@@ -265,7 +265,7 @@ class ExecutorImpl(
                 )
               )
               .recover {
-                case e => auditResponseF.failure(e); throw e
+                case e => auditResponseP.failure(e); throw e
               }
           HttpResponse(
             status       = response.status,
@@ -273,7 +273,7 @@ class ExecutorImpl(
             headers      = headers
           )
         } else {
-          auditResponseF.success(ResponseData(
+          auditResponseP.success(ResponseData(
             body    = BodyCaptor.bodyUpto(ByteString(response.body), maxBodyLength).map(_.utf8String),
             status  = response.status,
             headers = headers
@@ -285,7 +285,7 @@ class ExecutorImpl(
           )
         }
       }
-    (httpResponseF, auditResponseF.future)
+    (httpResponseF, Mdc.preservingMdc(auditResponseP.future))
   }
 
   private def executeHooks(
