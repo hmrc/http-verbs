@@ -30,7 +30,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.play.http.logging.{Mdc, MdcPropagatingExecutionContext}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -189,11 +189,9 @@ class RetriesSpec
 
       val mdcData = Map("key1" -> "value1")
 
-      implicit val mdcEc = ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
+      implicit val mdcEc = new MdcPropagatingExecutionContext(ExecutionContext.fromExecutor(Executors.newFixedThreadPool(2)))
 
       val expectedResponse = HttpResponse(404, "")
-
-      org.slf4j.MDC.clear()
 
       val resultF =
         for {

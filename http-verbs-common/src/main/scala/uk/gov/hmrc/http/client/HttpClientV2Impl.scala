@@ -25,7 +25,6 @@ import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSCl
 import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
-import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
@@ -170,20 +169,16 @@ final class RequestBuilderImpl(
                                       case _                 => req2.withBody(src2)
                                     }
       }
-    }.withHookData(Mdc.preservingMdc(hookDataP.future))
+    }.withHookData(hookDataP.future)
   }
 
   // -- Execution --
 
   override def execute[A](implicit r: HttpReads[A], ec: ExecutionContext): Future[A] =
-    Mdc.preservingMdc(
-      executor.execute(request, hookDataF, isStream = false, r)
-    )
+    executor.execute(request, hookDataF, isStream = false, r)
 
   override def stream[A](implicit r: StreamHttpReads[A], ec: ExecutionContext): Future[A] =
-    Mdc.preservingMdc(
-      executor.execute(request, hookDataF, isStream = true, r)
-    )
+    executor.execute(request, hookDataF, isStream = true, r)
 }
 
 class ExecutorImpl(
@@ -285,7 +280,7 @@ class ExecutorImpl(
           )
         }
       }
-    (httpResponseF, Mdc.preservingMdc(auditResponseP.future))
+    (httpResponseF, auditResponseP.future)
   }
 
   private def executeHooks(
