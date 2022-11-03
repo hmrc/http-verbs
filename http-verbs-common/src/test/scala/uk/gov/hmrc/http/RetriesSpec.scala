@@ -27,11 +27,13 @@ import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.MDC
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import uk.gov.hmrc.play.http.logging.{Mdc, MdcPropagatingExecutionContext}
+import uk.gov.hmrc.play.http.logging.MdcPropagatingExecutionContext
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
@@ -195,10 +197,10 @@ class RetriesSpec
 
       val resultF =
         for {
-          _   <- Future.successful(Mdc.putMdc(mdcData))
+          _   <- Future.successful(MDC.setContextMap(mdcData.asJava))
           res <- retries.retryOnSslEngineClosed("GET", "url") {
                   // assert mdc available to block execution
-                  Mdc.mdcData shouldBe mdcData
+                  Option(MDC.getCopyOfContextMap).map(_.asScala.toMap) shouldBe Some(mdcData)
 
                   retries.failFewTimesAndThenSucceed(
                     success   = Future.successful(expectedResponse),
@@ -207,7 +209,7 @@ class RetriesSpec
                 }
         } yield {
           // assert mdc available to continuation
-          Mdc.mdcData shouldBe mdcData
+          Option(MDC.getCopyOfContextMap).map(_.asScala.toMap) shouldBe Some(mdcData)
           res
         }
 

@@ -27,6 +27,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
+@annotation.nowarn("msg=deprecated")
 class MdcSpec
   extends AnyWordSpecLike
      with Matchers
