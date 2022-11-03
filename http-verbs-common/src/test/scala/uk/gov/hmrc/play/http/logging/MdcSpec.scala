@@ -27,6 +27,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
+@annotation.nowarn("msg=deprecated")
 class MdcSpec
   extends AnyWordSpecLike
      with Matchers
@@ -92,8 +93,8 @@ class MdcSpec
 
 }
 
-// This class is copied from bootstrap-play.
-// There is a ticket in the backlog to consider extracting it neatly. For now, it is needed for this test.
+// This is testing with the old bootstrap-play implementation.
+// This test is now obsolete with the new (prepare) implementation (as per MdcPropagatingExecutionContext).
 class MDCPropagatingExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate {
 
   override def execute(command: Runnable): Unit = {

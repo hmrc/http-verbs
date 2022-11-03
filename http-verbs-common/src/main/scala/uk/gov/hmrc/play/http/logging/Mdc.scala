@@ -21,6 +21,7 @@ import org.slf4j.MDC
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("You should no longer need to explicitly preserve MDC data. See CHANGELOG for details.", "14.8.0")
 object Mdc {
 
   def mdcData: Map[String, String] =

@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.http.logging.Mdc
 
 trait Retries {
 
@@ -45,6 +44,7 @@ trait Retries {
   def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
     retryOnSslEngineClosed(verb, url)(block)
 
+  @annotation.nowarn("msg=deprecated")
   def retryFor[A](
     label    : String
   )(condition: PartialFunction[Exception, Boolean]
@@ -53,18 +53,17 @@ trait Retries {
     ec: ExecutionContext
   ): Future[A] = {
     def loop(remainingIntervals: Seq[FiniteDuration]): Future[A] = {
-      // scheduling will loose MDC data. Here we explicitly ensure it is available on block.
+      // prepare execution context as scheduler may cross thread boundary
+      val pec = ec.prepare()
       block
         .recoverWith {
           case ex: Exception if condition.lift(ex).getOrElse(false) && remainingIntervals.nonEmpty =>
             val delay = remainingIntervals.head
             logger.warn(s"Retrying $label in $delay due to error: ${ex.getMessage}")
-            val mdcData = Mdc.mdcData
             after(delay, actorSystem.scheduler){
-              Mdc.putMdc(mdcData)
               loop(remainingIntervals.tail)
-            }
-        }
+            }(pec)
+        }(pec)
       }
     loop(intervals)
   }

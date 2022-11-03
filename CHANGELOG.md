@@ -1,3 +1,9 @@
+### Version 14.8.0
+
+Deprecates `uk.gov.hmrc.play.http.logging.Mdc`.
+
+With the latest `bootstrap-play` this is obsolete. This is since MDC is now propagated by `ExecutionContext#prepare` which is called implicitly in many circumstances (e.g. `Promise#onComplete`). If for any reason MDC still needs to be explicitly preserved across an async boundary, `ExecutionContext#prepare` should be called explicitly.
+
 ### Version 14.0.0
 
 Improves hook-data model for auditing.
