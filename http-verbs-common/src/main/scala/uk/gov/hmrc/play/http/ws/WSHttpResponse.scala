@@ -23,7 +23,8 @@ import uk.gov.hmrc.http.HttpResponse
 @deprecated("Use WsHttpResponse.apply and HttpResponse instead", "11.0.0")
 class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
 
-  override def allHeaders: Map[String, Seq[String]] = wsResponse.headers.mapValues(_.toSeq).toMap
+  override def allHeaders: Map[String, Seq[String]] =
+    WSHttpResponse.forScala2_13(wsResponse.headers)
 
   override def status: Int = wsResponse.status
 
@@ -40,6 +41,12 @@ object WSHttpResponse {
     HttpResponse(
       status  = wsResponse.status,
       body    = wsResponse.body,
-      headers = wsResponse.headers.mapValues(_.toSeq).toMap
+      headers = forScala2_13(wsResponse.headers)
     )
+
+  // play returns scala.collection.Seq, but default for Scala 2.13 is scala.collection.immutable.Seq
+  // duplicated from CollectionUtils since WSHttpResponse is not defined within uk.gov.hmrc.http package..
+  private def forScala2_13(m: Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
+    // `m.mapValues(_.toSeq).toMap` by itself strips the ordering away
+    scala.collection.immutable.TreeMap[String, Seq[String]]()(scala.math.Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++ m.mapValues(_.toSeq)
 }
