@@ -1,3 +1,7 @@
+### Version 14.8.0
+
+Fixes case-insensitivity of `HttpResponse#headers` for Scala 2.13
+
 ### Version 14.0.0
 
 Improves hook-data model for auditing.

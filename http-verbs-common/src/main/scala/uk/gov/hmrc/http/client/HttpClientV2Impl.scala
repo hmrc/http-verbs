@@ -23,7 +23,7 @@ import com.typesafe.config.Config
 import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
-import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
+import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, CollectionUtils, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
@@ -240,16 +240,11 @@ class ExecutorImpl(
   )(implicit ec: ExecutionContext
   ): (Future[HttpResponse], Future[ResponseData]) = {
     val auditResponseP = Promise[ResponseData]()
-
-    // play returns scala.collection, but default for Scala 2.13 is scala.collection.immutable
-    def forScala2_13(m: scala.collection.Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
-      m.mapValues(_.toSeq).toMap
-
     val httpResponseF =
       for {
         response <- responseF
         status   =  response.status
-        headers  =  forScala2_13(response.headers)
+        headers  =  CollectionUtils.forScala2_13(response.headers)
       } yield {
         if (isStream) {
           val source =

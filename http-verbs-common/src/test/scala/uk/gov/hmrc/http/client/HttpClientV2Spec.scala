@@ -623,6 +623,28 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("ua2"))
       )
     }
+
+    "return case-insensitive headers" in new Setup {
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200).withHeader("k", "v"))
+      )
+
+      val res: HttpResponse =
+        httpClientV2
+          .get(url"$wireMockUrl/")
+          .withBody(Json.toJson(ReqDomain("req")))
+          .execute[HttpResponse]
+          .futureValue
+
+      res.headers.get("k") shouldBe Some(List("v"))
+      res.headers.get("K") shouldBe Some(List("v"))
+
+      res.header("k") shouldBe Some("v")
+      res.header("K") shouldBe Some("v")
+    }
   }
 
   trait Setup {
