@@ -221,6 +221,35 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
         .authorization shouldBe Some(Authorization("let me in!"))
     }
 
+    "find the GNAP authorization from the session" in {
+      HeaderCarrierConverter
+        .fromHeadersAndSession(headers(), Some(Session(Map(SessionKeys.gnapToken -> "let me in!"))))
+        .gnapAuthorization shouldBe Some(GnapAuthorization("let me in!"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest(),
+          session = Session(Map(SessionKeys.gnapToken -> "let me in!"))
+        )
+        .gnapAuthorization shouldBe Some(GnapAuthorization("let me in!"))
+
+      HeaderCarrierConverter
+        .fromRequestAndSession(
+          request = FakeRequest().withHeaders(HeaderNames.gnapAuthorisation -> "let me in!"),
+          session = Session()
+        )
+        .gnapAuthorization shouldBe None
+
+    }
+
+    "find the GNAP authorization from the headers" in {
+      HeaderCarrierConverter
+        .fromRequest(
+          request = FakeRequest().withHeaders(HeaderNames.gnapAuthorisation -> "let me in!")
+        )
+        .gnapAuthorization shouldBe Some(GnapAuthorization("let me in!"))
+    }
+
     "find the requestId from the headers" in {
       HeaderCarrierConverter
         .fromHeadersAndSession(headers(HeaderNames.xRequestId -> "18476239874162"), Some(Session()))

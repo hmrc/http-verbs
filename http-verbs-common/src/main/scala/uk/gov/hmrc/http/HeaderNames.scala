@@ -27,6 +27,7 @@ object HeaderNames {
    */
 
   val authorisation         = "Authorization"
+  val gnapAuthorisation     = "X-GNAP-Authorization"
   val xForwardedFor         = "x-forwarded-for"
   val xRequestId            = "X-Request-ID"
   val xRequestTimestamp     = "X-Request-Timestamp"
@@ -43,6 +44,7 @@ object HeaderNames {
 
   val explicitlyIncludedHeaders = Seq(
     authorisation,
+    gnapAuthorisation,
     xForwardedFor,
     xRequestId,
     xRequestTimestamp,
@@ -66,6 +68,7 @@ object CookieNames {
 object SessionKeys {
   val sessionId = "sessionId"
   val authToken = "authToken"
+  val gnapToken = "gnapToken"
   val otacToken = "otacToken"
   val lastRequestTimestamp = "ts"
   val redirect             = "login_redirect"
@@ -78,6 +81,8 @@ object SessionKeys {
 }
 
 case class Authorization(value: String) extends AnyVal
+
+case class GnapAuthorization(value: String) extends AnyVal
 
 case class SessionId(value: String) extends AnyVal
 
