@@ -645,6 +645,32 @@ class HttpClientV2Spec
       res.header("k") shouldBe Some("v")
       res.header("K") shouldBe Some("v")
     }
+
+    "not require proxy credentials if enabled but not used" in new Setup {
+      override val httpClientV2 =
+        mkHttpClientV2(
+          s"""|appName = myapp
+              |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+              |http-verbs.proxy.enabled = true
+              |""".stripMargin
+        )
+
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\""))
+      )
+
+      val res: HttpResponse =
+        httpClientV2
+          .get(url"$wireMockUrl/")
+          .withBody(Json.toJson(ReqDomain("req")))
+          .execute[HttpResponse]
+          .futureValue
+
+      res.body shouldBe "\"res\""
+    }
   }
 
   trait Setup {

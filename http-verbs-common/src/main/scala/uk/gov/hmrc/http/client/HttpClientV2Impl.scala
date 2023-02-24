@@ -91,7 +91,7 @@ class HttpClientV2Impl(
 // is final since `transform` (and derived functions) return instances of RequestBuilderImpl, and any overrides would be lost.
 final class RequestBuilderImpl(
   config        : Configuration,
-  optProxyServer: Option[WSProxyServer],
+  optProxyServer: => Option[WSProxyServer],
   executor      : Executor
 )(
   request  : WSRequest,
