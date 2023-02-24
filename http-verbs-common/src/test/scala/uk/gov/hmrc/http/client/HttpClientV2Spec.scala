@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -644,6 +644,32 @@ class HttpClientV2Spec
 
       res.header("k") shouldBe Some("v")
       res.header("K") shouldBe Some("v")
+    }
+
+    "not require proxy credentials if enabled but not used" in new Setup {
+      override val httpClientV2 =
+        mkHttpClientV2(
+          s"""|appName = myapp
+              |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+              |http-verbs.proxy.enabled = true
+              |""".stripMargin
+        )
+
+      implicit val hc = HeaderCarrier()
+
+      wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\""))
+      )
+
+      val res: HttpResponse =
+        httpClientV2
+          .get(url"$wireMockUrl/")
+          .withBody(Json.toJson(ReqDomain("req")))
+          .execute[HttpResponse]
+          .futureValue
+
+      res.body shouldBe "\"res\""
     }
   }
 
