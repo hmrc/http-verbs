@@ -22,7 +22,7 @@ See [README](/README.md) for details.
 
 There are some differences with `WSProxyConfiguration.buildWsProxyServer`:
   * configPrefix is fixed to `proxy`.
-  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `http-verbs.proxy.enabled`, but note, it defaults to false (rather than true). This is appropriate for development and tests, but will need explicitly enabling when deployed.
+  * `proxy.proxyRequiredForThisEnvironment` has been replaced with `http-verbs.proxy.enabled`, but note, it defaults to `false` (rather than `true`). This is appropriate for local development and tests, but will need enabling when deployed (if not already enabled by environmental configuration).
 
 
 ## Version 13.12.0
