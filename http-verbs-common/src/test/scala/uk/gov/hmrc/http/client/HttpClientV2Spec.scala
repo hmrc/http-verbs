@@ -97,6 +97,53 @@ class HttpClientV2Spec
       auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
 
+
+    "Exclude Extra Headers when the destination host does not match the pattern internalServiceHostPatterns in reference.conf" in new Setup {
+      implicit val hc = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+      )
+
+      val res: Future[ResDomain] =
+        httpClientV2
+          .put(url"http://127.0.0.1:$wireMockPort/")
+          .withBody(Json.toJson(ReqDomain("req")))
+          .execute[ResDomain]
+
+      res.futureValue shouldBe ResDomain("res")
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withoutHeader("testHeader")
+      )
+
+    }
+
+    "Include Extra Headers when the destination host matches the pattern internalServiceHostPatterns in reference.conf" in new Setup {
+      implicit val hc = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
+
+      wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/"))
+          .willReturn(aResponse().withBody("\"res\"").withStatus(200))
+      )
+
+      val res: Future[ResDomain] =
+        httpClientV2
+          .put(url"$wireMockUrl/")
+          .withBody(Json.toJson(ReqDomain("req")))
+          .execute[ResDomain]
+
+      res.futureValue shouldBe ResDomain("res")
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo("/"))
+          .withHeader("testHeader", matching("testHeaderValue"))
+      )
+
+    }
+
     "work with streams" in new Setup {
       implicit val hc = HeaderCarrier()
 
