@@ -170,8 +170,8 @@ For external hosts, headers should be provided explicitly to the VERB function (
 client.GET(url"https://externalhost/api", headers = Seq("Authorization" -> "Bearer token"))(hc) //explicit Authorization header for external request
 ```
 
-Internal hosts are identified with the configuration `internalServiceHostPatterns`.
-The headers which are forwarded include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
+Internal hosts are identified with the configuration [internalServiceHostPatterns](/http-verbs-common/src/main/resources/reference.conf) The headers which are forwarded, to _internal hosts_, include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
+For example, if you want to pass headers to stubs, you can use the following override for your service: `internalServiceHostPatterns= "^.*(stubs?).*(\.mdtp)$"`
 
 When providing additional headers to http requests, if it corresponds to an explicit one on the HeaderCarrier, it is recommended to replace it, otherwise you will be sending it twice:
 ```scala

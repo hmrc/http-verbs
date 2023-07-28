@@ -98,7 +98,7 @@ class HttpClientV2Spec
     }
 
 
-    "Exclude Extra Headers when the destination host does not match the pattern internalServiceHostPatterns in reference.conf" in new Setup {
+    "Exclude Headers when the destination host does not match the pattern internalServiceHostPatterns in reference.conf" in new Setup {
       implicit val hc = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
 
       wireMockServer.stubFor(
@@ -116,12 +116,13 @@ class HttpClientV2Spec
 
       wireMockServer.verify(
         putRequestedFor(urlEqualTo("/"))
+          .withHeader("User-Agent", equalTo("myapp"))
           .withoutHeader("testHeader")
       )
 
     }
 
-    "Include Extra Headers when the destination host matches the pattern internalServiceHostPatterns in reference.conf" in new Setup {
+    "Headers sent when the destination host matches the pattern internalServiceHostPatterns in reference.conf" in new Setup {
       implicit val hc = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
 
       wireMockServer.stubFor(
@@ -139,6 +140,7 @@ class HttpClientV2Spec
 
       wireMockServer.verify(
         putRequestedFor(urlEqualTo("/"))
+          .withHeader("User-Agent", equalTo("myapp"))
           .withHeader("testHeader", matching("testHeaderValue"))
       )
 
