@@ -97,7 +97,10 @@ trait HeaderCarrierConverter {
       deviceID         = session.flatMap(_ => cookies.get(CookieNames.deviceID).map(_.value))
                            .orElse(headers.get(HeaderNames.deviceID)),
       akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
-      otherHeaders     = otherHeaders(headers, request)
+      otherHeaders     = otherHeaders(headers, request),
+      gnapAuthorization = session.fold(headers.get(HeaderNames.gnapAuthorisation))(_.get(SessionKeys.gnapToken))
+        .map(GnapAuthorization),
+
     )
   }
 

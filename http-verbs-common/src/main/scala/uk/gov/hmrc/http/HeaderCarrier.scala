@@ -24,20 +24,21 @@ import uk.gov.hmrc.http.logging.LoggingDetails
 import scala.util.matching.Regex
 
 case class HeaderCarrier(
-  authorization   : Option[Authorization]    = None,
-  forwarded       : Option[ForwardedFor]     = None,
-  sessionId       : Option[SessionId]        = None,
-  requestId       : Option[RequestId]        = None,
-  requestChain    : RequestChain             = RequestChain.init,
-  nsStamp         : Long                     = System.nanoTime(),
-  extraHeaders    : Seq[(String, String)]    = Seq(),
-  trueClientIp    : Option[String]           = None,
-  trueClientPort  : Option[String]           = None,
-  gaToken         : Option[String]           = None,
-  gaUserId        : Option[String]           = None,
-  deviceID        : Option[String]           = None,
-  akamaiReputation: Option[AkamaiReputation] = None,
-  otherHeaders    : Seq[(String, String)]    = Seq()
+  authorization     : Option[Authorization]    = None,
+  forwarded         : Option[ForwardedFor]     = None,
+  sessionId         : Option[SessionId]        = None,
+  requestId         : Option[RequestId]        = None,
+  requestChain      : RequestChain             = RequestChain.init,
+  nsStamp           : Long                     = System.nanoTime(),
+  extraHeaders      : Seq[(String, String)]    = Seq(),
+  trueClientIp      : Option[String]           = None,
+  trueClientPort    : Option[String]           = None,
+  gaToken           : Option[String]           = None,
+  gaUserId          : Option[String]           = None,
+  deviceID          : Option[String]           = None,
+  akamaiReputation  : Option[AkamaiReputation] = None,
+  otherHeaders      : Seq[(String, String)]    = Seq(),
+  gnapAuthorization : Option[GnapAuthorization] = None
 ) extends LoggingDetails {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -55,6 +56,7 @@ case class HeaderCarrier(
       HeaderNames.xForwardedFor         -> forwarded.map(_.value),
       HeaderNames.xRequestChain         -> Some(requestChain.value),
       HeaderNames.authorisation         -> authorization.map(_.value),
+      HeaderNames.gnapAuthorisation     -> gnapAuthorization.map(_.value),
       HeaderNames.trueClientIp          -> trueClientIp,
       HeaderNames.trueClientPort        -> trueClientPort,
       HeaderNames.googleAnalyticTokenId -> gaToken,
