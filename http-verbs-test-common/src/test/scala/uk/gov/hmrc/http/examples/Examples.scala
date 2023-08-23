@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.http.examples
 
-import java.time.LocalDate
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.typesafe.config.ConfigFactory
-import org.apache.commons.codec.binary.Base64
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,6 +28,8 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.test.{HttpClientSupport, WireMockSupport}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
+import java.time.LocalDate
+import java.util.Base64
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -113,7 +113,7 @@ class Examples
     "allow the user to set an authorization header using the header carrier for internal hosts" in {
       val username = "user"
       val password = "123"
-      val encodedAuthHeader = Base64.encodeBase64String(s"$username:$password".getBytes("UTF-8"))
+      val encodedAuthHeader = Base64.getEncoder.encodeToString(s"$username:$password".getBytes("UTF-8"))
       implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization(s"Basic $encodedAuthHeader")))
 
       stubFor(

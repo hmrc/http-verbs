@@ -6,12 +6,11 @@ import sbt._
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_12 = "2.12.18"
-val scala2_13 = "2.13.10"
+val scala2_13 = "2.13.11"
 
 lazy val commonSettings = Seq(
-  organization := "uk.gov.hmrc",
   majorVersion := 14,
-  scalaVersion := scala2_12,
+  scalaVersion := scala2_13,
   isPublicArtefact := true,
   scalacOptions ++= Seq("-feature")
 )
@@ -25,7 +24,9 @@ lazy val library = (project in file("."))
   .aggregate(
     httpVerbs,
     httpVerbsPlay28,
-    httpVerbsTestPlay28
+    httpVerbsTestPlay28,
+    httpVerbsPlay29,
+    httpVerbsTestPlay29
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
@@ -49,14 +50,11 @@ def copySources(module: Project) = Seq(
   Test    / resourceDirectory := (module / Test    / resourceDirectory).value
 )
 
-lazy val sharedSources =
-  shareSources("http-verbs-common")
-
 lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
     commonSettings,
-    sharedSources,
+    shareSources("http-verbs-common"),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++=
       AppDependencies.coreCompileCommon(scalaVersion.value) ++
@@ -71,15 +69,40 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
    )
   .dependsOn(httpVerbs)
 
-lazy val sharedTestSources =
-  shareSources("http-verbs-test-common")
+lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-29"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    commonSettings,
+    shareSources("http-verbs-common"),
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++=
+      AppDependencies.coreCompileCommon(scalaVersion.value) ++
+      AppDependencies.coreCompilePlay29 ++
+      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestPlay29,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+  .settings( // https://github.com/sbt/sbt-buildinfo
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "uk.gov.hmrc.http"
+   )
 
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
     commonSettings,
-    sharedTestSources,
+    shareSources("http-verbs-test-common"),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++= AppDependencies.testCompilePlay28,
     Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay28)
+
+lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-verbs-test-play-29"))
+  .settings(
+    commonSettings,
+    shareSources("http-verbs-test-common"),
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++= AppDependencies.testCompilePlay29,
+    Test / fork := true // required to look up wiremock resources
+  )
+  .dependsOn(httpVerbsPlay29)
