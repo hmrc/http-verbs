@@ -39,7 +39,7 @@ object AppDependencies {
   val coreTestPlay28 = Seq(
     "com.typesafe.play"      %% "play-test"       % play28Version % Test,
     "ch.qos.logback"         %  "logback-classic" % "1.2.12"      % Test, // should already provided by play-test, why does it fail without it?
-    "com.github.tomakehurst" %  "wiremock-jre8"   % "2.27.2"      % Test,
+    "com.github.tomakehurst" %  "wiremock-jre8"   % "2.31.0"      % Test,
     "org.slf4j"              %  "slf4j-simple"    % "1.7.30"      % Test
   )
 
