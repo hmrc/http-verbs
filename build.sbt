@@ -7,6 +7,7 @@ Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_12 = "2.12.18"
 val scala2_13 = "2.13.12"
+val scala3    = "3.3.0"
 
 ThisBuild / majorVersion     := 14
 ThisBuild / scalaVersion     := scala2_13
@@ -34,6 +35,7 @@ def shareSources(location: String) = Seq(
   Test    / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/test/scala",
   Test    / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/test/resources"
 )
+
 def copySources(module: Project) = Seq(
   Compile / scalaSource       := (module / Compile / scalaSource      ).value,
   Compile / resourceDirectory := (module / Compile / resourceDirectory).value,
@@ -49,7 +51,7 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
     libraryDependencies ++=
       AppDependencies.coreCompileCommon(scalaVersion.value) ++
       AppDependencies.coreCompilePlay28 ++
-      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestCommon(scalaVersion.value) ++
       AppDependencies.coreTestPlay28,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
@@ -62,11 +64,11 @@ lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-2
   .enablePlugins(BuildInfoPlugin)
   .settings(
     shareSources("http-verbs-common"),
-    crossScalaVersions := Seq(scala2_13),
+    crossScalaVersions := Seq(scala2_13, scala3),
     libraryDependencies ++=
       AppDependencies.coreCompileCommon(scalaVersion.value) ++
       AppDependencies.coreCompilePlay29 ++
-      AppDependencies.coreTestCommon ++
+      AppDependencies.coreTestCommon(scalaVersion.value) ++
       AppDependencies.coreTestPlay29,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
@@ -87,7 +89,7 @@ lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-ver
 lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-verbs-test-play-29"))
   .settings(
     shareSources("http-verbs-test-common"),
-    crossScalaVersions := Seq(scala2_13),
+    crossScalaVersions := Seq(scala2_13, scala3),
     libraryDependencies ++= AppDependencies.testCompilePlay29,
     Test / fork := true // required to look up wiremock resources
   )

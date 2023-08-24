@@ -29,12 +29,18 @@ object AppDependencies {
     "com.typesafe.play" %% "play-ahc-ws" % play29Version
   )
 
-  val coreTestCommon = Seq(
+  def coreTestCommon(scalaVersion: String) = Seq(
     "org.scalatest"          %% "scalatest"                % "3.2.15"      % Test,
     "org.scalatestplus"      %% "scalacheck-1-17"          % "3.2.16.0"    % Test,
-    "org.mockito"            %% "mockito-scala-scalatest"  % "1.17.14"     % Test,
     "com.vladsch.flexmark"   %  "flexmark-all"             % "0.62.2"      % Test
-  )
+    // mockito-scala is not available for Scala 3 https://github.com/mockito/mockito-scala/issues/364
+    // use java build + scalatestplus:mockito
+    //"org.scalatestplus"      %% "mockito-3-4"              % "3.2.10.0"    % Test
+  ) ++
+    (CrossVersion.partialVersion(scalaVersion) match {
+      case Some((3, _)) => Seq(("org.mockito" %% "mockito-scala-scalatest" % "1.17.14" % Test).cross(CrossVersion.for3Use2_13).exclude("org.scalactic","scalactic_2.13"))
+      case _            => Seq(("org.mockito" %% "mockito-scala-scalatest" % "1.17.14" % Test).cross(CrossVersion.for3Use2_13)) // the cross version is unnecessary here
+    })
 
   val coreTestPlay28 = Seq(
     "com.typesafe.play"      %% "play-test"       % play28Version % Test,
