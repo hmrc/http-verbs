@@ -6,20 +6,18 @@ import sbt._
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_12 = "2.12.18"
-val scala2_13 = "2.13.11"
+val scala2_13 = "2.13.12"
 
-lazy val commonSettings = Seq(
-  majorVersion := 14,
-  scalaVersion := scala2_13,
-  isPublicArtefact := true,
-  scalacOptions ++= Seq("-feature")
-)
+ThisBuild / majorVersion     := 14
+ThisBuild / scalaVersion     := scala2_13
+ThisBuild / isPublicArtefact := true
+ThisBuild / scalacOptions    := Seq("-feature")
+
 
 lazy val library = (project in file("."))
   .settings(
-    commonSettings,
     publish / skip := true,
-    crossScalaVersions := Seq.empty
+    crossScalaVersions := Seq.empty,
   )
   .aggregate(
     httpVerbs,
@@ -33,7 +31,6 @@ lazy val library = (project in file("."))
 // empty artefact, exists to ensure eviction of previous http-verbs jar which has now moved into http-verbs-play-xx
 lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
   .settings(
-    commonSettings,
     crossScalaVersions := Seq(scala2_12, scala2_13)
   )
 
@@ -53,7 +50,6 @@ def copySources(module: Project) = Seq(
 lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    commonSettings,
     shareSources("http-verbs-common"),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++=
@@ -72,7 +68,6 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
 lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-29"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    commonSettings,
     shareSources("http-verbs-common"),
     crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++=
@@ -89,7 +84,6 @@ lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-2
 
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
-    commonSettings,
     shareSources("http-verbs-test-common"),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++= AppDependencies.testCompilePlay28,
@@ -99,7 +93,6 @@ lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-ver
 
 lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-verbs-test-play-29"))
   .settings(
-    commonSettings,
     shareSources("http-verbs-test-common"),
     crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++= AppDependencies.testCompilePlay29,
