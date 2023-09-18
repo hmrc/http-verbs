@@ -44,7 +44,7 @@ trait HttpReadsLegacyJson extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
   implicit def readFromJson[O](implicit rds: Reads[O], mf: Manifest[O]): HttpReads[O] =
     (method: String, url: String, response: HttpResponse) =>
-      readJson(method, url, handleResponse(method, url)(response).json)
+      readJson(method, url, TypeUtil.typeOf[O], handleResponse(method, url)(response).json)
 
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
   def readSeqFromJsonProperty[O](name: String)(implicit rds: Reads[O], mf: Manifest[O]): HttpReads[Seq[O]] =
@@ -52,14 +52,16 @@ trait HttpReadsLegacyJson extends HttpErrorFunctions {
       response.status match {
         case 204 | 404 => Seq.empty
         case _ =>
-          readJson[Seq[O]](method, url, (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
+          readJson[Seq[O]](method, url, TypeUtil.typeOf[Seq[O]], (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
       }
 
-  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: Reads[A], mf: Manifest[A]): A =
+  private def readJson[A](method: String, url: String, className: String, jsValue: JsValue)(implicit rds: Reads[A]): A =
     jsValue
       .validate[A]
       .fold(
-        errs => throw new JsValidationException(method, url, mf.runtimeClass, errs.toString()),
+        errs => throw new JsValidationException(method, url, className, errs.toString()),
         valid => valid
       )
+
+
 }

@@ -118,7 +118,7 @@ trait LowPriorityHttpReadsJson {
       .flatMap {
         case Left(err)                  => throw err
         case Right(JsError(errors))     => HttpReads.ask.map { case (method, url, response) =>
-                                             throw new JsValidationException(method, url, mf.runtimeClass, errors.toString)
+                                             throw new JsValidationException(method, url, TypeUtil.typeOf[A], errors.toString)
                                            }
         case Right(JsSuccess(value, _)) => HttpReads.pure(value)
       }

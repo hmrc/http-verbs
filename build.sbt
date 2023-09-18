@@ -12,7 +12,12 @@ val scala3    = "3.3.0"
 ThisBuild / majorVersion     := 14
 ThisBuild / scalaVersion     := scala2_13
 ThisBuild / isPublicArtefact := true
-ThisBuild / scalacOptions    := Seq("-feature")
+ThisBuild / scalacOptions    ++= Seq("-feature") ++
+                                 (CrossVersion.partialVersion(scalaVersion.value) match {
+                                   case Some((3, _ )) => Seq("-explain")
+                                   case _             => Seq.empty
+                                 })
+
 
 
 lazy val library = (project in file("."))
@@ -21,7 +26,6 @@ lazy val library = (project in file("."))
     crossScalaVersions := Seq.empty,
   )
   .aggregate(
-    httpVerbs,
     httpVerbsPlay28,
     httpVerbsTestPlay28,
     httpVerbsPlay29,

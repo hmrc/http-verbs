@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.http
 
-class JsValidationException(val method: String, val url: String, val readingAs: Class[_], val errors: String)
+class JsValidationException(val method: String, val url: String, val className: String, val errors: String)
     extends Exception {
 
   override def getMessage: String =
-    s"$method of '$url' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
+    s"$method of '$url' returned invalid json. Attempting to convert to $className gave errors: $errors"
 }
