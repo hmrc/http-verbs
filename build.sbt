@@ -20,19 +20,12 @@ lazy val library = (project in file("."))
     crossScalaVersions := Seq.empty,
   )
   .aggregate(
-    httpVerbs,
     httpVerbsPlay28,
     httpVerbsTestPlay28,
     httpVerbsPlay29,
     httpVerbsTestPlay29
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
-
-// empty artefact, exists to ensure eviction of previous http-verbs jar which has now moved into http-verbs-play-xx
-lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
-  .settings(
-    crossScalaVersions := Seq(scala2_12, scala2_13)
-  )
 
 def shareSources(location: String) = Seq(
   Compile / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/main/scala",
@@ -63,7 +56,6 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "uk.gov.hmrc.http"
    )
-  .dependsOn(httpVerbs)
 
 lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-29"))
   .enablePlugins(BuildInfoPlugin)
