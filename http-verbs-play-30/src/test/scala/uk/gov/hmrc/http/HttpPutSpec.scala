@@ -101,14 +101,14 @@ class HttpPutSpec
       val payload = HttpResponse(200, testBody)
       val response = Future.successful(payload)
       val testPut  = new StubbedHttpPut(response)
-      testPut.PUT[TestRequestClass, HttpResponse](url, testObject).futureValue shouldBe payload
+      testPut.PUT[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty).futureValue shouldBe payload
     }
 
     "return objects deserialised from JSON" in {
       val payload = HttpResponse(200, """{"foo":"t","bar":10}""")
       val response = Future.successful(payload)
       val testPut = new StubbedHttpPut(response)
-      testPut.PUT[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
+      testPut.PUT[TestRequestClass, TestClass](url, testObject, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     "return a url with encoded param pairs with url builder" in {
@@ -149,8 +149,8 @@ class HttpPutSpec
       testPut.lastUrl shouldBe expected
     }
 
-    behave like anErrorMappingHttpCall("PUT", (url, responseF) => new StubbedHttpPut(responseF).PUT[TestRequestClass, HttpResponse](url, testObject))
-    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT[TestRequestClass, HttpResponse](url, testObject) }
+    behave like anErrorMappingHttpCall("PUT", (url, responseF) => new StubbedHttpPut(responseF).PUT[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty))
+    behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) { _.PUT[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty) }
 
     "be able to pass additional headers on request" in {
       val outcome = HttpResponse(200, testBody)
@@ -165,7 +165,7 @@ class HttpPutSpec
       val testPut             = new StubbedHttpPut(dummyResponseFuture)
       val testJson            = Json.stringify(trcreads.writes(testObject))
 
-      testPut.PUT[TestRequestClass, HttpResponse](url, testObject).futureValue
+      testPut.PUT[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty).futureValue
 
       val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
       val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
@@ -204,12 +204,13 @@ class HttpPutSpec
       val response = HttpResponse(200, testBody)
       val eventualResponse = Future.successful(response)
       val testPUT = new StubbedHttpPut(eventualResponse)
-      testPUT.PUTString[HttpResponse](url, testRequestBody, Seq.empty).futureValue shouldBe response
+      testPUT.PUTString[HttpResponse](url, testRequestBody, headers = Seq.empty).futureValue shouldBe response
     }
+
     "be able to return objects deserialised from JSON" in {
       val eventualResponse = Future.successful(HttpResponse(200, """{"foo":"t","bar":10}"""))
       val testPUT = new StubbedHttpPut(eventualResponse)
-      testPUT.PUTString[TestClass](url, testRequestBody, Seq.empty).futureValue should be(TestClass("t", 10))
+      testPUT.PUTString[TestClass](url, testRequestBody, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(
@@ -217,7 +218,7 @@ class HttpPutSpec
       (url, responseF) => new StubbedHttpPut(responseF).PUTString[HttpResponse](url, testRequestBody, Seq.empty)
     )
     behave like aTracingHttpCall("PUT", "PUT", new StubbedHttpPut(defaultHttpResponse)) {
-      _.PUTString[HttpResponse](url, testRequestBody, Seq.empty)
+      _.PUTString[HttpResponse](url, testRequestBody, headers = Seq.empty)
     }
 
     "Invoke any hooks provided" in {

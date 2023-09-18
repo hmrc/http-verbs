@@ -83,37 +83,37 @@ class HttpGetSpec
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET[HttpResponse](url, Seq("header" -> "foo")).futureValue shouldBe response
+      testGet.GET[HttpResponse](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue shouldBe response
     }
 
     "be able to return objects deserialised from JSON" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testGet.GET[TestClass](url, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
+      testGet.GET[TestClass](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
     }
 
     "be able to return Some[T] when deserialising as an option of object from JSON" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue should be(Some(TestClass("t", 10)))
+      testGet.GET[Option[TestClass]](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue should be(Some(TestClass("t", 10)))
     }
 
     // By adding an Option to your case class, the 404 is translated into None
     "return None when 404 returned for GET as an option of object" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(404, "This is an expected Not Found")))
-      testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue should be(None)
+      testGet.GET[Option[TestClass]](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue should be(None)
     }
 
     "throw expected exception when JSON deserialisation fails for option of an object" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, "Not JSON")))
       an[Exception] shouldBe thrownBy {
-        testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue
+        testGet.GET[Option[TestClass]](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue
       }
     }
 
     behave like anErrorMappingHttpCall(
       "GET",
-      (url, responseF) => new StubbedHttpGet(responseF).GET[HttpResponse](url, Seq("header" -> "foo")))
+      (url, responseF) => new StubbedHttpGet(responseF).GET[HttpResponse](url, queryParams = Seq.empty, Seq("header" -> "foo")))
     behave like aTracingHttpCall("GET", "GET", new StubbedHttpGet(defaultHttpResponse)) {
-      _.GET[HttpResponse](url, Seq("header" -> "foo"))
+      _.GET[HttpResponse](url, queryParams = Seq.empty, headers = Seq("header" -> "foo"))
     }
 
     "Invoke any hooks provided" in {
@@ -121,7 +121,7 @@ class HttpGetSpec
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testGet = new StubbedHttpGet(dummyResponseFuture)
 
-      testGet.GET[HttpResponse](url).futureValue
+      testGet.GET[HttpResponse](url, queryParams = Seq.empty, headers = Seq.empty).futureValue
 
       val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
       val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
@@ -160,14 +160,14 @@ class HttpGetSpec
     "return an empty string if the query parameters is empty" in {
       val expected = Some("http://test.net")
       val testGet = new UrlTestingHttpGet()
-      testGet.GET[HttpResponse]("http://test.net", Seq())
+      testGet.GET[HttpResponse]("http://test.net", Seq.empty, headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
     "return a url with a single param pair" in {
       val expected = Some("http://test.net?one=1")
       val testGet = new UrlTestingHttpGet()
-      testGet.GET[HttpResponse]("http://test.net", Seq(("one", "1")))
+      testGet.GET[HttpResponse]("http://test.net", queryParams = Seq("one" -> "1"), headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
@@ -175,7 +175,7 @@ class HttpGetSpec
       val expected = Some("http://test.net?one=1&two=2&three=3")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("three", "3")))
+        .GET[HttpResponse]("http://test.net", queryParams = Seq("one" -> "1", "two" -> "2", "three" -> "3"), headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
@@ -186,7 +186,9 @@ class HttpGetSpec
       testGet
         .GET[HttpResponse](
           "http://test.net",
-          Seq(("email", "test+alias@email.com"), ("data", "{\"message\":\"in json format\"}")))
+          queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}"),
+          headers     = Seq.empty
+        )
       testGet.lastUrl shouldBe expected
     }
 
@@ -232,7 +234,7 @@ class HttpGetSpec
       val expected = Some("http://test.net?one=1&two=2&one=11")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")))
+        .GET[HttpResponse]("http://test.net", queryParams = Seq("one" -> "1", "two" -> "2", "one" -> "11"), headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
@@ -240,13 +242,13 @@ class HttpGetSpec
       val testGet = new UrlTestingHttpGet()
 
       a[UrlValidationException] should be thrownBy testGet
-        .GET[HttpResponse]("http://test.net?should=not=be+here", Seq(("one", "1")))
+        .GET[HttpResponse]("http://test.net?should=not=be+here", queryParams = Seq("one" -> "1"), headers = Seq.empty)
     }
 
     "be able to return plain responses provided already has Query and Header String" in {
       val response = HttpResponse(200, testBody)
       val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET[HttpResponse](url, Seq(("one", "1")), Seq("header" -> "foo")).futureValue shouldBe response
+      testGet.GET[HttpResponse](url, queryParams = Seq("one" -> "1"), headers = Seq("header" -> "foo")).futureValue shouldBe response
     }
   }
 }

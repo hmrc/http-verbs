@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http.ws.default
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.{CorePut, HttpResponse, PutHttpTransport}
 import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
+import play.api.libs.ws.{writeableOf_JsValue, writeableOf_String}
 
 import scala.concurrent.{ExecutionContext, Future}
 

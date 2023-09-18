@@ -16,13 +16,21 @@
 
 package uk.gov.hmrc.http
 
-class JsValidationException(
-  val method   : String,
-  val url      : String,
-  val readingAs: Class[_],
-  val errors   : String
-) extends Exception {
+import izumi.reflect.Tag
 
-  override def getMessage: String =
-    s"$method of '$url' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
+object TypeUtil {
+  object IsMap {
+    def unapply[B: Tag](b: B): Option[Map[String, Seq[String]]] =
+      if (Tag[B].tag =:= Tag[Map[String, String]].tag)
+        Some(
+          b.asInstanceOf[Map[String, String]]
+            .map { case (k, v) => k -> Seq(v) }
+        )
+      else if (Tag[B].tag =:= Tag[Map[String, Seq[String]]].tag)
+        Some(
+          b.asInstanceOf[Map[String, Seq[String]]]
+        )
+      else
+        None
+  }
 }

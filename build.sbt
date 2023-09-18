@@ -7,11 +7,16 @@ Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_12 = "2.12.18"
 val scala2_13 = "2.13.12"
+val scala3    = "3.3.3"
 
 ThisBuild / majorVersion     := 14
 ThisBuild / scalaVersion     := scala2_13
 ThisBuild / isPublicArtefact := true
-ThisBuild / scalacOptions    := Seq("-feature")
+ThisBuild / scalacOptions    ++= Seq("-feature") ++
+                                 (CrossVersion.partialVersion(scalaVersion.value) match {
+                                   case Some((3, _ )) => Seq("-explain")
+                                   case _             => Seq.empty
+                                 })
 
 
 lazy val library = (project in file("."))
@@ -70,7 +75,7 @@ lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-2
 lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-30"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    crossScalaVersions := Seq(scala2_13),
+    crossScalaVersions := Seq(scala2_13, scala3),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
       LibDependencies.coreCompilePlay30 ++
@@ -103,7 +108,7 @@ lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-ver
 
 lazy val httpVerbsTestPlay30 = Project("http-verbs-test-play-30", file("http-verbs-test-play-30"))
   .settings(
-    crossScalaVersions := Seq(scala2_13),
+    crossScalaVersions := Seq(scala2_13, scala3),
     libraryDependencies ++= LibDependencies.testCompilePlay30,
     Test / fork := true // required to look up wiremock resources
   )

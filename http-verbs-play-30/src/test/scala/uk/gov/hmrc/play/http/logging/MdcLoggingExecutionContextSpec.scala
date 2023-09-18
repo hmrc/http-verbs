@@ -46,11 +46,12 @@ class MdcLoggingExecutionContextSpec
 
   "The MDC Transporting Execution Context" should {
     "capture the MDC map with values in it and put it in place when a task is run" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
-      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map("someKey" -> "something"))
+      val x: (String, String) = "someKey" -> "something"
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(x))
 
       logEventInsideAFutureUsing(ec)
 
-      logList.loneElement._2 should contain("someKey" -> "something")
+      logList.loneElement._2 should contain(x)
     }
 
     "ignore an null MDC map" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
@@ -62,25 +63,27 @@ class MdcLoggingExecutionContextSpec
     }
 
     "clear the MDC map after a task is run" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
-      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map("someKey" -> "something"))
+      val x: (String, String) = "someKey" -> "something"
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(x))
 
       doSomethingInsideAFutureButDontLog(ec)
 
       MDC.clear()
       logEventInsideAFutureUsing(ec)
 
-      logList.loneElement._2 should be(Map("someKey" -> "something"))
+      logList.loneElement._2 should be(Map(x))
     }
 
     "clear the MDC map after a task throws an exception" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
-      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map("someKey" -> "something"))
+      val x: (String, String) = "someKey" -> "something"
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(x))
 
       throwAnExceptionInATaskOn(ec)
 
       MDC.clear()
       logEventInsideAFutureUsing(ec)
 
-      logList.loneElement._2 should be(Map("someKey" -> "something"))
+      logList.loneElement._2 should be(Map(x))
     }
 
     "log values from given MDC map when multiple threads are using it concurrently by ensuring each log from each thread has been logged via MDC" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
@@ -138,7 +141,7 @@ class MdcLoggingExecutionContextSpec
     )
 
   def doSomethingInsideAFutureButDontLog(ec: ExecutionContext): Unit =
-    Await.ready(Future.apply()(ec), 2.second)
+    Await.ready(Future.apply(())(ec), 2.second)
 
   def throwAnExceptionInATaskOn(ec: ExecutionContext): Unit =
     ec.execute(() => throw new RuntimeException("Test what happens when a task running on this EC throws an exception"))
@@ -148,25 +151,26 @@ class MdcLoggingExecutionContextSpec
     * ThreadLocal.
     */
   def initialise(ec: ExecutionContext): Unit =
-    Await.ready(Future.apply()(ec), 2.second)
+    Await.ready(Future.apply(())(ec), 2.second)
 
   def withCaptureOfLoggingFrom[T: ClassTag](body: (=> List[(ILoggingEvent, Map[String, String])]) => Unit): Unit = {
-    import scala.collection.JavaConverters._
-
     val logger = LoggerFactory.getLogger(classTag[T].runtimeClass).asInstanceOf[LogbackLogger]
-    val appender = new AppenderBase[ILoggingEvent]() {
-
-      val list = mutable.ListBuffer[(ILoggingEvent, Map[String, String])]()
-
-      override def append(e: ILoggingEvent): Unit =
-        list.append((e, e.getMDCPropertyMap().asScala.toMap))
-    }
+    val appender = new InspectableAppender
     appender.setContext(logger.getLoggerContext)
     appender.start()
     logger.addAppender(appender)
     logger.setLevel(Level.ALL)
     logger.setAdditive(true)
-    import scala.language.reflectiveCalls
     body(appender.list.toList)
   }
+}
+
+class InspectableAppender extends AppenderBase[ILoggingEvent]() {
+  import scala.collection.JavaConverters._
+
+  val list =
+    mutable.ListBuffer[(ILoggingEvent, Map[String, String])]()
+
+  override def append(e: ILoggingEvent): Unit =
+    list.append((e, e.getMDCPropertyMap.asScala.toMap))
 }

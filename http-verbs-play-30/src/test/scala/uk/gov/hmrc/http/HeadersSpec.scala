@@ -67,7 +67,7 @@ class HeadersSpec
         )
 
         httpClient
-          .POST[JsValue, HttpResponse](s"$wireMockUrl/arbitrary", Json.obj())
+          .POST[JsValue, HttpResponse](url = s"$wireMockUrl/arbitrary", body = Json.obj(), headers = Seq.empty)
           .futureValue
 
         verify(
@@ -114,8 +114,9 @@ class HeadersSpec
 
         httpClient
           .POSTString[HttpResponse](
-            url  = s"$wireMockUrl/string",
-            body = "foo"
+            url     = s"$wireMockUrl/string",
+            body    = "foo",
+            headers = Seq.empty
           ).futureValue
 
         verify(
@@ -161,7 +162,7 @@ class HeadersSpec
         )
 
         httpClient
-          .POSTEmpty[HttpResponse](s"$wireMockUrl/empty")
+          .POSTEmpty[HttpResponse](s"$wireMockUrl/empty", headers = Seq.empty)
           .futureValue
 
         verify(
@@ -185,7 +186,7 @@ class HeadersSpec
       )
 
       httpClient
-        .GET[HttpResponse](s"$wireMockUrl/")
+        .GET[HttpResponse](s"$wireMockUrl/", queryParams = Seq.empty, headers = Seq.empty)
         .futureValue
 
       verify(
@@ -260,8 +261,9 @@ class HeadersSpec
 
       httpClient
         .PUT[JsValue, HttpResponse](
-          url  = s"$wireMockUrl/",
-          body = Json.obj()
+          url     = s"$wireMockUrl/",
+          body    = Json.obj(),
+          headers = Seq.empty
         ).futureValue
 
       verify(

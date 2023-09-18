@@ -133,12 +133,12 @@ class HttpPostSpec
     "return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POST[TestRequestClass, HttpResponse](url, testObject).futureValue shouldBe response
+      testPOST.POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty).futureValue shouldBe response
     }
 
     "return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POST[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
+      testPOST.POST[TestRequestClass, TestClass](url, testObject, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     "return a url with encoded param pairs with url builder" in {
@@ -179,15 +179,15 @@ class HttpPostSpec
       testPost.lastUrl shouldBe expected
     }
 
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POST[TestRequestClass, HttpResponse](url, testObject))
-    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POST[TestRequestClass, HttpResponse](url, testObject) }
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty))
+    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty) }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost           = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POST[TestRequestClass, HttpResponse](url, testObject)
+      testPost.POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty)
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
@@ -280,18 +280,19 @@ class HttpPostSpec
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POSTString[HttpResponse](url, testRequestBody).futureValue shouldBe response
+      testPOST.POSTString[HttpResponse](url, testRequestBody, headers = Seq.empty).futureValue shouldBe response
     }
+
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POSTString[TestClass](url, testRequestBody).futureValue should be(TestClass("t", 10))
+      testPOST.POSTString[TestClass](url, testRequestBody, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(
       "POST",
-      (url, responseF) => new StubbedHttpPost(responseF).POSTString[HttpResponse](url, testRequestBody))
+      (url, responseF) => new StubbedHttpPost(responseF).POSTString[HttpResponse](url, testRequestBody, headers = Seq.empty))
     behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) {
-      _.POSTString[HttpResponse](url, testRequestBody)
+      _.POSTString[HttpResponse](url, testRequestBody, headers = Seq.empty)
     }
 
     "Invoke any hooks provided" in {
@@ -300,7 +301,7 @@ class HttpPostSpec
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost            = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POSTString[TestClass](url, testRequestBody).futureValue
+      testPost.POSTString[TestClass](url, testRequestBody, headers = Seq.empty).futureValue
 
       val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
       val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
@@ -338,15 +339,15 @@ class HttpPostSpec
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POSTEmpty[HttpResponse](url).futureValue shouldBe response
+      testPOST.POSTEmpty[HttpResponse](url, headers = Seq.empty).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POSTEmpty[TestClass](url).futureValue should be(TestClass("t", 10))
+      testPOST.POSTEmpty[TestClass](url, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url))
-    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTEmpty[HttpResponse](url) }
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url, headers = Seq.empty))
+    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTEmpty[HttpResponse](url, headers = Seq.empty) }
 
     "Invoke any hooks provided" in {
       val testBody            = """{"foo":"t","bar":10}"""
@@ -354,7 +355,7 @@ class HttpPostSpec
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost            = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POSTEmpty[TestClass](url).futureValue
+      testPost.POSTEmpty[TestClass](url, headers = Seq.empty).futureValue
 
       val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
       val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
@@ -389,9 +390,9 @@ class HttpPostSpec
   }
 
   "POSTEmpty" should {
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url))
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url, headers = Seq.empty))
     behave like aTracingHttpCall[StubbedHttpPost]("POST", "POSTEmpty", new StubbedHttpPost(defaultHttpResponse)) {
-      _.POSTEmpty[HttpResponse](url)
+      _.POSTEmpty[HttpResponse](url, headers = Seq.empty)
     }
   }
 }
