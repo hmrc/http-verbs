@@ -32,7 +32,6 @@ class HeaderCarrierSpec
      with LoneElement {
 
   "headersForUrl" should {
-
     val internalUrls = List(
       "http://test.public.service/bar",
       "http://test.public.mdtp/bar",

@@ -78,7 +78,7 @@ class Examples
     val writes: Writes[User] =
       ( (__ \ "email"   ).write[String]
       ~ (__ \ "fullName").write[String]
-      )(unlift(User.unapply))
+      )(u => (u.email, u.fullName))
   }
 
   case class UserIdentifier(id: String)
@@ -190,7 +190,7 @@ class Examples
           .willReturn(aResponse().withStatus(200).withBodyFile("bankHolidays.json"))
       )
 
-      httpClient.GET[BankHolidays](s"$wireMockUrl/bank-holidays.json").futureValue
+      httpClient.GET[BankHolidays](s"$wireMockUrl/bank-holidays.json", queryParams = Seq.empty, headers = Seq.empty).futureValue
 
       verify(getRequestedFor(urlEqualTo("/bank-holidays.json")))
     }

@@ -23,6 +23,9 @@ object CopySources {
     }
 
     Seq(
+      // we really need `unmanagedSourceDirectories` rather than `scalaSource` to include scala-2.13, scala-2, scala-3 etc.
+      // but it gets complicated when the target module will support different ones
+      // for now, duplicate scala specific code in each module as required
       Compile / sourceGenerators   += transformWith(module / Compile / scalaSource      , Compile / sourceManaged  , transformSource  ).taskValue,
       Compile / resourceGenerators += transformWith(module / Compile / resourceDirectory, Compile / resourceManaged, transformResource).taskValue,
       Test    / sourceGenerators   += transformWith(module / Test    / scalaSource      , Test    / sourceManaged  , transformSource  ).taskValue,

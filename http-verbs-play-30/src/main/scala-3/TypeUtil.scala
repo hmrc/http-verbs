@@ -16,13 +16,24 @@
 
 package uk.gov.hmrc.http
 
-class JsValidationException(
-  val method   : String,
-  val url      : String,
-  val readingAs: Class[_],
-  val errors   : String
-) extends Exception {
+// https://dotty.epfl.ch/docs/reference/metaprogramming/macros.html
+// https://docs.scala-lang.org/scala3/reference/other-new-features/type-test.html#
+object TypeUtil {
+  type TypeTag[A] = A
 
-  override def getMessage: String =
-    s"$method of '$url' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
+  import scala.reflect.TypeTest
+
+  object IsMap {
+    def unapply[T](
+      t: T
+    )(using
+      tt1: TypeTest[T, Map[String, Seq[String]]],
+      tt2: TypeTest[T, Map[String, String]]
+    ): Option[Map[String, Seq[String]]] =
+      t match {
+        case tt1(x) => Some(x)
+        case tt2(x) => Some(x.map { case (k, v) => k -> Seq(v) })
+        case _      => None
+      }
+  }
 }
