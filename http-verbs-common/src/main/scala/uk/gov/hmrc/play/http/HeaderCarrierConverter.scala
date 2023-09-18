@@ -81,12 +81,12 @@ trait HeaderCarrierConverter {
     HeaderCarrier(
       authorization    = // Note, if a session is provided, any Authorization header in the request will be ignored
                          session.fold(headers.get(HeaderNames.authorisation))(_.get(SessionKeys.authToken))
-                           .map(Authorization),
+                           .map(Authorization.apply),
       forwarded        = forwardedFor(headers),
       sessionId        = session.flatMap(_.get(SessionKeys.sessionId))
                            .orElse(headers.get(HeaderNames.xSessionId))
-                           .map(SessionId),
-      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId),
+                           .map(SessionId.apply),
+      requestId        = headers.get(HeaderNames.xRequestId).map(RequestId.apply),
       requestChain     = buildRequestChain(headers.get(HeaderNames.xRequestChain)),
       nsStamp          = requestTimestamp(headers),
       extraHeaders     = Seq.empty,
@@ -96,7 +96,7 @@ trait HeaderCarrierConverter {
       gaUserId         = headers.get(HeaderNames.googleAnalyticUserId),
       deviceID         = session.flatMap(_ => cookies.get(CookieNames.deviceID).map(_.value))
                            .orElse(headers.get(HeaderNames.deviceID)),
-      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation),
+      akamaiReputation = headers.get(HeaderNames.akamaiReputation).map(AkamaiReputation.apply),
       otherHeaders     = otherHeaders(headers, request)
     )
   }
@@ -115,7 +115,7 @@ trait HeaderCarrierConverter {
       case (None | Some(""), xff)                          => xff
       case (Some(tcip), Some(xff)) if xff.startsWith(tcip) => Some(xff)
       case (Some(tcip), Some(xff))                         => Some(s"$tcip, $xff")
-    }).map(ForwardedFor)
+    }).map(ForwardedFor.apply)
 }
 
 object HeaderCarrierConverter extends HeaderCarrierConverter
