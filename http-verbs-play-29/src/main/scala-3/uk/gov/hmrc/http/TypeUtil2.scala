@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.http
+ package uk.gov.hmrc.http
 
 // https://dotty.epfl.ch/docs/reference/metaprogramming/macros.html
 // https://docs.scala-lang.org/scala3/reference/other-new-features/type-test.html#
-object TypeUtil {
+object TypeUtil2 {
   import scala.quoted.{Expr, Type, Quotes, quotes}
 
   import scala.reflect.TypeTest
@@ -32,6 +32,31 @@ object TypeUtil {
     val tpr = TypeRepr.of[T]
     Expr(tpr.show)
   }
+
+
+
+
+  object IsMap1 {
+    inline def unapply[T](t: T): Option[Map[String, Seq[String]]] =
+      ${unapplyImpl[T]('{t})}
+
+    def unapplyImpl[T: Type](t: Expr[T])(using Quotes): Expr[Option[Map[String, Seq[String]]]] = {
+      import quotes.reflect.*
+
+      val tpr = TypeRepr.of[T]
+
+      println(s"t=$t")
+      println(s"tpr=${tpr.show}")
+
+
+      t match {
+        case '{$x: Map[String, String]}      => '{Some($x.map { case (k, v) => k -> Seq(v) })}
+        case '{$x: Map[String, Seq[String]]} => '{Some($x)}
+        case _                               => '{None}
+      }
+    }
+  }
+
 
   object IsMap {
     def unapply[T](
