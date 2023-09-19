@@ -40,20 +40,14 @@ trait HttpReadsLegacyOption extends HttpErrorFunctions {
       }
 }
 
-// Using:
-//  Compiler synthesis of Manifest and OptManifest is deprecated, instead
-//  |replace with the type `scala.reflect.ClassTag[Seq[String]]`.
-//  |Alternatively, consider using the new metaprogramming features of Scala 3,
-//  |see https://docs.scala-lang.org/scala3/reference/metaprogramming.html
-
 trait HttpReadsLegacyJson extends HttpErrorFunctions {
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  implicit def readFromJson[O](implicit rds: Reads[O], mf: Manifest[O]): HttpReads[O] =
+  implicit def readFromJson[O](implicit rds: Reads[O], ct: scala.reflect.ClassTag[O]): HttpReads[O] =
     (method: String, url: String, response: HttpResponse) =>
       readJson(method, url, handleResponse(method, url)(response).json)
 
   @deprecated("Use uk.gov.hmrc.http.HttpReads.Implicits instead. See README for differences.", "11.0.0")
-  def readSeqFromJsonProperty[O](name: String)(implicit rds: Reads[O], mf: Manifest[Seq[O]]): HttpReads[Seq[O]] =
+  def readSeqFromJsonProperty[O](name: String)(implicit rds: Reads[O], ct: scala.reflect.ClassTag[O]): HttpReads[Seq[O]] =
     (method: String, url: String, response: HttpResponse) =>
       response.status match {
         case 204 | 404 => Seq.empty
@@ -61,12 +55,11 @@ trait HttpReadsLegacyJson extends HttpErrorFunctions {
           readJson[Seq[O]](method, url, (handleResponse(method, url)(response).json \ name).getOrElse(JsNull)) //Added JsNull here to force validate to fail - replicates existing behaviour
       }
 
-  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: Reads[A], mf: Manifest[A]): A =
+  private def readJson[A](method: String, url: String, jsValue: JsValue)(implicit rds: Reads[A], ct: scala.reflect.ClassTag[A]): A =
     jsValue
       .validate[A]
       .fold(
-        errs => throw new JsValidationException(method, url, mf.runtimeClass, errs.toString()),
+        errs => throw new JsValidationException(method, url, ct.runtimeClass, errs.toString()),
         valid => valid
       )
-
 }

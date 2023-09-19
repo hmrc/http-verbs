@@ -19,19 +19,9 @@ package uk.gov.hmrc.http
 // https://dotty.epfl.ch/docs/reference/metaprogramming/macros.html
 // https://docs.scala-lang.org/scala3/reference/other-new-features/type-test.html#
 object TypeUtil {
-  import scala.quoted.{Expr, Type, Quotes, quotes}
+  type TypeTag[A] = A
 
   import scala.reflect.TypeTest
-
-  inline def typeOf[T]: String =
-    ${typeOfImpl[T]}
-
-  private def typeOfImpl[T: Type](using Quotes): Expr[String] = {
-    import quotes.reflect.*
-
-    val tpr = TypeRepr.of[T]
-    Expr(tpr.show)
-  }
 
   object IsMap {
     def unapply[T](

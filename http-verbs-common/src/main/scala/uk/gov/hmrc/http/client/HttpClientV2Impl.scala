@@ -128,7 +128,7 @@ final class RequestBuilderImpl(
   private def withHookData(hookDataF: Future[Option[Data[HookData]]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
-  override def withBody[B : BodyWritable/* : TypeTag*/](body: B)(implicit ec: ExecutionContext): RequestBuilderImpl = {
+  override def withBody[B : BodyWritable : TypeUtil.TypeTag](body: B)(implicit ec: ExecutionContext): RequestBuilderImpl = {
     val hookDataP      = Promise[Option[Data[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
     transform { req =>

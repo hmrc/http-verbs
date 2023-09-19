@@ -17,11 +17,10 @@
 package uk.gov.hmrc.http.client
 
 import play.api.libs.ws.{BodyWritable, WSRequest}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReads}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, TypeUtil}
 
 import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
-//import scala.reflect.runtime.universe.TypeTag
 
 /** This client centralises the execution of the request to ensure that the common concerns (e.g. auditing, logging,
   * retries) occur, but makes building the request more flexible (by exposing play-ws).
@@ -77,5 +76,5 @@ trait RequestBuilder {
   /** `withBody` should be called rather than `transform(_.withBody)`.
     * Failure to do so will lead to a runtime exception
     */
-  def withBody[B : BodyWritable/* : TypeTag*/](body: B)(implicit ec: ExecutionContext): RequestBuilder
+  def withBody[B : BodyWritable : TypeUtil.TypeTag](body: B)(implicit ec: ExecutionContext): RequestBuilder
 }
