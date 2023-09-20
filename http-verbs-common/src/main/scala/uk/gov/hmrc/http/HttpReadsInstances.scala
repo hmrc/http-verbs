@@ -17,6 +17,7 @@
 package uk.gov.hmrc.http
 
 import play.api.libs.json.{JsValue, JsError, JsResult, JsSuccess, Reads => JsonReads}
+import scala.reflect.ClassTag
 import scala.util.Try
 
 trait HttpReadsInstances
@@ -113,12 +114,12 @@ trait LowPriorityHttpReadsJson {
     */
   @throws(classOf[UpstreamErrorResponse])
   @throws(classOf[JsValidationException])
-  implicit def readFromJson[A](implicit rds: JsonReads[A], mf: Manifest[A]): HttpReads[A] =
+  implicit def readFromJson[A](implicit rds: JsonReads[A], ct: ClassTag[A]): HttpReads[A] =
     HttpReads[Either[UpstreamErrorResponse, JsResult[A]]]
       .flatMap {
         case Left(err)                  => throw err
         case Right(JsError(errors))     => HttpReads.ask.map { case (method, url, response) =>
-                                             throw new JsValidationException(method, url, mf.runtimeClass, errors.toString)
+                                             throw new JsValidationException(method, url, ct.runtimeClass, errors.toString)
                                            }
         case Right(JsSuccess(value, _)) => HttpReads.pure(value)
       }
