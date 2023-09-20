@@ -415,12 +415,12 @@ class HeaderCarrierConverterSpec extends AnyWordSpecLike with Matchers with Befo
   lazy val fakeApplication =
     GuiceApplicationBuilder(configuration = Configuration("play.allowGlobalApplication" -> true)).build()
 
-  override def beforeAll() {
+  override def beforeAll(): Unit = {
     super.beforeAll()
     Play.start(fakeApplication)
   }
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     super.afterAll()
     Play.stop(fakeApplication)
   }

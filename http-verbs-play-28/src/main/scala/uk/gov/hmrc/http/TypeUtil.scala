@@ -19,8 +19,7 @@ package uk.gov.hmrc.http
 import scala.reflect.runtime.universe
 
 object TypeUtil {
-  def typeOf[A](implicit mf: Manifest[A]): String =
-    mf.runtimeClass.getName
+  type TypeTag[A] = universe.TypeTag[A]
 
   object IsMap {
     def unapply[B: universe.TypeTag](b: B): Option[Map[String, Seq[String]]] =
