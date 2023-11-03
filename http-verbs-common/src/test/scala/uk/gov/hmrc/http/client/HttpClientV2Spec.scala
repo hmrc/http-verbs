@@ -56,7 +56,7 @@ class HttpClientV2Spec
   import uk.gov.hmrc.http.HttpReads.Implicits._
 
   after {
-    // since we're initally adding MDC data on the test execution thread, we need to clean up to avoid affecting other tests
+    // since we're initially adding MDC data on the test execution thread, we need to clean up to avoid affecting other tests
     org.slf4j.MDC.clear()
   }
 

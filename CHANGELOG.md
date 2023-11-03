@@ -1,3 +1,7 @@
+### Version 14.11.0
+
+Adds support for Play 2.9
+
 ### Version 14.8.0
 
 Fixes case-insensitivity of `HttpResponse#headers` for Scala 2.13

@@ -35,7 +35,7 @@ class MdcSpec
      with BeforeAndAfter {
 
   after {
-    // since we're initally adding MDC data on the test execution thread, we need to clean up to avoid affecting other tests
+    // since we're initially adding MDC data on the test execution thread, we need to clean up to avoid affecting other tests
     MDC.clear()
   }
 
