@@ -6,35 +6,24 @@ import sbt._
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_12 = "2.12.18"
-val scala2_13 = "2.13.10"
+val scala2_13 = "2.13.12"
 
-lazy val commonSettings = Seq(
-  organization := "uk.gov.hmrc",
-  majorVersion := 14,
-  scalaVersion := scala2_12,
-  isPublicArtefact := true,
-  scalacOptions ++= Seq("-feature")
-)
+ThisBuild / majorVersion     := 14
+ThisBuild / scalaVersion     := scala2_13
+ThisBuild / isPublicArtefact := true
+ThisBuild / scalacOptions    := Seq("-feature")
+
 
 lazy val library = (project in file("."))
   .settings(
-    commonSettings,
     publish / skip := true,
     crossScalaVersions := Seq.empty
   )
   .aggregate(
-    httpVerbs,
-    httpVerbsPlay28,
-    httpVerbsTestPlay28
+    httpVerbsPlay28, httpVerbsTestPlay28,
+    httpVerbsPlay29, httpVerbsTestPlay29
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
-
-// empty artefact, exists to ensure eviction of previous http-verbs jar which has now moved into http-verbs-play-xx
-lazy val httpVerbs = Project("http-verbs", file("http-verbs"))
-  .settings(
-    commonSettings,
-    crossScalaVersions := Seq(scala2_12, scala2_13)
-  )
 
 def shareSources(location: String) = Seq(
   Compile / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/main/scala",
@@ -49,37 +38,54 @@ def copySources(module: Project) = Seq(
   Test    / resourceDirectory := (module / Test    / resourceDirectory).value
 )
 
-lazy val sharedSources =
-  shareSources("http-verbs-common")
-
 lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    commonSettings,
-    sharedSources,
+    shareSources("http-verbs-common"),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++=
-      AppDependencies.coreCompileCommon(scalaVersion.value) ++
-      AppDependencies.coreCompilePlay28 ++
-      AppDependencies.coreTestCommon ++
-      AppDependencies.coreTestPlay28,
+      LibDependencies.coreCompileCommon(scalaVersion.value) ++
+      LibDependencies.coreCompilePlay28 ++
+      LibDependencies.coreTestCommon ++
+      LibDependencies.coreTestPlay28,
     Test / fork := true // akka is not unloaded properly, which can affect other tests
   )
   .settings( // https://github.com/sbt/sbt-buildinfo
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "uk.gov.hmrc.http"
    )
-  .dependsOn(httpVerbs)
 
-lazy val sharedTestSources =
-  shareSources("http-verbs-test-common")
+lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-29"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    shareSources("http-verbs-common"),
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++=
+      LibDependencies.coreCompileCommon(scalaVersion.value) ++
+      LibDependencies.coreCompilePlay29 ++
+      LibDependencies.coreTestCommon ++
+      LibDependencies.coreTestPlay29,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+  .settings( // https://github.com/sbt/sbt-buildinfo
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "uk.gov.hmrc.http"
+   )
 
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
-    commonSettings,
-    sharedTestSources,
+    shareSources("http-verbs-test-common"),
     crossScalaVersions := Seq(scala2_12, scala2_13),
-    libraryDependencies ++= AppDependencies.testCompilePlay28,
+    libraryDependencies ++= LibDependencies.testCompilePlay28,
     Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay28)
+
+lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-verbs-test-play-29"))
+  .settings(
+    shareSources("http-verbs-test-common"),
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++= LibDependencies.testCompilePlay29,
+    Test / fork := true // required to look up wiremock resources
+  )
+  .dependsOn(httpVerbsPlay29)

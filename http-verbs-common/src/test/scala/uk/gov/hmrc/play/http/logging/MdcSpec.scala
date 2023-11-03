@@ -34,7 +34,8 @@ class MdcSpec
      with IntegrationPatience
      with BeforeAndAfter {
 
-  before {
+  after {
+    // since we're initially adding MDC data on the test execution thread, we need to clean up to avoid affecting other tests
     MDC.clear()
   }
 

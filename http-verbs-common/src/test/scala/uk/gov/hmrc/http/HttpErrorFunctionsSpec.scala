@@ -23,6 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
+import scala.reflect.ClassTag
 import scala.util.Try
 
 @annotation.nowarn("msg=deprecated")
@@ -35,7 +36,7 @@ class HttpErrorFunctionsSpec
 
   "HttpErrorFunctions" should {
     "return the response if the status code is between 200 and 299" in new HttpErrorFunctions {
-      forAll(Gen.choose(200, 299)) { statusCode: Int =>
+      forAll(Gen.choose(200, 299)) { (statusCode: Int) =>
         val expectedResponse = HttpResponse(statusCode, "")
         handleResponse(exampleVerb, exampleUrl)(expectedResponse) should be(expectedResponse)
       }
@@ -61,14 +62,14 @@ class HttpErrorFunctionsSpec
   val exampleUrl  = "http://example.com/something"
   val exampleBody = "this is the string body"
 
-  def expectA[T: Manifest](forStatus: Int, reportStatus: Option[Int] = None): Unit = new HttpErrorFunctions {
+  def expectA[T : ClassTag](forStatus: Int, reportStatus: Option[Int] = None): Unit = new HttpErrorFunctions {
     val e =
       Try(handleResponse(exampleVerb, exampleUrl)(HttpResponse(forStatus, exampleBody))).failure.exception
     e            should be(a[T])
     e.getMessage should (include(exampleUrl) and include(exampleVerb) and include(exampleBody))
     reportStatus.map { s =>
-      e should have('upstreamResponseCode (forStatus))
-      e should have('reportAs (s))
+      e should have(Symbol("upstreamResponseCode") (forStatus))
+      e should have(Symbol("reportAs") (s))
     }
   }
 }

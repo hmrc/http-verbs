@@ -25,6 +25,7 @@ import com.typesafe.config.ConfigFactory
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.captor.ArgCaptor
 import org.mockito.scalatest.MockitoSugar
+import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -49,9 +50,15 @@ class HttpClientV2Spec
      with ScalaFutures
      with IntegrationPatience
      with MockitoSugar
-     with ArgumentMatchersSugar {
+     with ArgumentMatchersSugar
+     with BeforeAndAfter {
 
   import uk.gov.hmrc.http.HttpReads.Implicits._
+
+  after {
+    // since we're initially adding MDC data on the test execution thread, we need to clean up to avoid affecting other tests
+    org.slf4j.MDC.clear()
+  }
 
   "HttpClientV2" should {
     "work with json" in new Setup {
