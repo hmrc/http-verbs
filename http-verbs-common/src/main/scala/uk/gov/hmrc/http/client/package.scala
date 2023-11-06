@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.http
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import stream.{ByteString, Materializer, Source}
 
 import scala.annotation.implicitNotFound
 

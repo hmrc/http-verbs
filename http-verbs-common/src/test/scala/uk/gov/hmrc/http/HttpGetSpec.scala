@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.captor.ArgCaptor
@@ -25,6 +24,7 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.hooks.{Data, HttpHook, RequestData, ResponseData}
+import stream.ActorSystem
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpReads.Implicits._

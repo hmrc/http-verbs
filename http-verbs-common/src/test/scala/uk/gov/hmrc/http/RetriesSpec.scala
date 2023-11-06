@@ -19,7 +19,6 @@ package uk.gov.hmrc.http
 import java.time.Instant
 import java.util.concurrent.Executors
 
-import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.net.ssl.SSLException
 import org.mockito.ArgumentMatchersSugar
@@ -30,6 +29,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
+import stream.ActorSystem
 import uk.gov.hmrc.play.http.logging.Mdc
 
 import scala.concurrent.duration._

@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.http.test
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.client.{HttpClientV2, HttpClientV2Impl}
+import uk.gov.hmrc.http.stream.ActorSystem
 
 trait HttpClientV2Support {
 

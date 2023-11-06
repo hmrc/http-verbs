@@ -16,9 +16,8 @@
 
 package uk.gov.hmrc.http
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import play.api.libs.json.{JsValue, Json}
+import stream.{ByteString, Source}
 
 /**
   * The ws.Response class is very hard to dummy up as it wraps a concrete instance of

@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.play.http.logging
 
-import akka.dispatch.ExecutorServiceDelegate
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.MDC
+import uk.gov.hmrc.play.http.stream.{ActorSystem, ExecutorServiceDelegate, scheduleAfter}
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.duration.DurationInt
@@ -83,8 +83,8 @@ class MdcSpec
   }
 
   private def runActionWhichLosesMdc(fail: Boolean = false): Future[Any] = {
-    val as = akka.actor.ActorSystem("as")
-    akka.pattern.after(10.millis, as.scheduler)(Future(())(as.dispatcher))(as.dispatcher)
+    val as = ActorSystem("as")
+    scheduleAfter(10.millis, as.scheduler)(Future(())(as.dispatcher))(as.dispatcher)
       .map(a => if (fail) sys.error("expected test exception") else a)(as.dispatcher)
   }
 

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.http
 
-import akka.stream.Materializer
+import stream.Materializer
 
 import scala.concurrent.{Await, TimeoutException}
 import scala.concurrent.duration.{Duration, DurationInt}

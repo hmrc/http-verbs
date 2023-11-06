@@ -16,9 +16,6 @@
 
 package uk.gov.hmrc.http.client
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import com.typesafe.config.Config
 import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
@@ -29,6 +26,7 @@ import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
+import uk.gov.hmrc.http.stream.{ActorSystem, ByteString, Source}
 
 import java.net.{ConnectException, URL}
 import java.util.concurrent.TimeoutException

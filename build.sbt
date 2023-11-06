@@ -21,7 +21,8 @@ lazy val library = (project in file("."))
   )
   .aggregate(
     httpVerbsPlay28, httpVerbsTestPlay28,
-    httpVerbsPlay29, httpVerbsTestPlay29
+    httpVerbsPlay29, httpVerbsTestPlay29,
+    httpVerbsPlay30, httpVerbsTestPlay30
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
@@ -72,6 +73,23 @@ lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-2
     buildInfoPackage := "uk.gov.hmrc.http"
    )
 
+lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-30"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    shareSources("http-verbs-common"),
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++=
+      LibDependencies.coreCompileCommon(scalaVersion.value) ++
+      LibDependencies.coreCompilePlay30 ++
+      LibDependencies.coreTestCommon ++
+      LibDependencies.coreTestPlay30,
+    Test / fork := true // akka is not unloaded properly, which can affect other tests
+  )
+  .settings( // https://github.com/sbt/sbt-buildinfo
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "uk.gov.hmrc.http"
+   )
+
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
     shareSources("http-verbs-test-common"),
@@ -89,3 +107,12 @@ lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-ver
     Test / fork := true // required to look up wiremock resources
   )
   .dependsOn(httpVerbsPlay29)
+
+lazy val httpVerbsTestPlay30 = Project("http-verbs-test-play-30", file("http-verbs-test-play-30"))
+  .settings(
+    shareSources("http-verbs-test-common"),
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++= LibDependencies.testCompilePlay30,
+    Test / fork := true // required to look up wiremock resources
+  )
+  .dependsOn(httpVerbsPlay30)

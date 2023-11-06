@@ -16,15 +16,14 @@
 
 package uk.gov.hmrc.http
 
-import java.net.ConnectException
-import java.util.concurrent.TimeoutException
-
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.logging.{ConnectionTracing, LoggingDetails}
 
+import java.net.ConnectException
+import java.util.concurrent.TimeoutException
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 

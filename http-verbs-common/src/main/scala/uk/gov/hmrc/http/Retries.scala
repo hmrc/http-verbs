@@ -16,16 +16,16 @@
 
 package uk.gov.hmrc.http
 
-import akka.actor.ActorSystem
-import akka.pattern.after
 import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
+import stream.{ActorSystem, scheduleAfter}
+import uk.gov.hmrc.play.http.logging.Mdc
+
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
-import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.http.logging.Mdc
 
 trait Retries {
 
@@ -60,7 +60,7 @@ trait Retries {
             val delay = remainingIntervals.head
             logger.warn(s"Retrying $label in $delay due to error: ${ex.getMessage}")
             val mdcData = Mdc.mdcData
-            after(delay, actorSystem.scheduler){
+            scheduleAfter(delay, actorSystem.scheduler){
               Mdc.putMdc(mdcData)
               loop(remainingIntervals.tail)
             }

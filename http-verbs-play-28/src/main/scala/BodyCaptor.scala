@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.play.http
 
+import akka.NotUsed
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.scaladsl.{Flow, Sink}
-import akka.stream.stage._
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import uk.gov.hmrc.http.hooks.Data
 
@@ -63,7 +64,7 @@ object BodyCaptor {
   def flow(
     maxBodyLength   : Int,
     withCapturedBody: Data[ByteString] => Unit // provide a callback since a Materialized value would be not be available until the flow has been run
-  ): Flow[ByteString, ByteString, akka.NotUsed] =
+  ): Flow[ByteString, ByteString, NotUsed] =
     Flow.fromGraph(new BodyCaptorFlow(
       maxBodyLength    = maxBodyLength,
       withCapturedBody = withCapturedBody
@@ -72,7 +73,7 @@ object BodyCaptor {
   def sink(
     maxBodyLength   : Int,
     withCapturedBody: Data[ByteString] => Unit
-  ): Sink[ByteString, akka.NotUsed] =
+  ): Sink[ByteString, NotUsed] =
     flow(maxBodyLength, withCapturedBody)
       .to(Sink.ignore)
 

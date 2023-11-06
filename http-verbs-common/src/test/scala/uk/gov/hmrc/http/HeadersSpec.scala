@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.http
 
-import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.typesafe.config.Config
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -28,8 +27,9 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.play.http.ws.WSHttp
+import stream.ActorSystem
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
