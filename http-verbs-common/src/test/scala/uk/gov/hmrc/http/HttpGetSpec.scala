@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.ArgumentMatchersSugar
+import org.mockito.{ArgumentMatchersSugar, Strictness}
 import org.mockito.captor.ArgCaptor
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -45,8 +45,8 @@ class HttpGetSpec
   ) extends HttpGet
        with ConnectionTracingCapturing {
 
-    val testHook1: HttpHook = mock[HttpHook](withSettings.lenient)
-    val testHook2: HttpHook = mock[HttpHook](withSettings.lenient)
+    val testHook1: HttpHook = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
+    val testHook2: HttpHook = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
 
     override val configuration: Config = ConfigFactory.load()
 

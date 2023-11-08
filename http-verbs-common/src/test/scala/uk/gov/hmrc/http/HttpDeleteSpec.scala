@@ -17,7 +17,7 @@
 package uk.gov.hmrc.http
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.mockito.ArgumentMatchersSugar
+import org.mockito.{ArgumentMatchersSugar, Strictness}
 import org.mockito.captor.ArgCaptor
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
@@ -46,8 +46,8 @@ class HttpDeleteSpec
        with DeleteHttpTransport
        with ConnectionTracingCapturing {
 
-    val testHook1: HttpHook                         = mock[HttpHook](withSettings.lenient)
-    val testHook2: HttpHook                         = mock[HttpHook](withSettings.lenient)
+    val testHook1: HttpHook                         = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
+    val testHook2: HttpHook                         = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")

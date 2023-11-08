@@ -21,7 +21,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.TryValues
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.{__, Json, JsError, JsResult, JsSuccess}
+import play.api.libs.json.{__, Json, JsError, JsResult, JsSuccess, Reads}
 import scala.util.{Failure, Success, Try}
 
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -124,7 +124,7 @@ class HttpReadsInstancesSpec
     }
   }
 
-  implicit val r = Json.reads[Example]
+  implicit val r: Reads[Example] = Json.reads[Example]
 
   "HttpReads[JsResult[A]]" should {
     val reads = HttpReads[JsResult[Example]]

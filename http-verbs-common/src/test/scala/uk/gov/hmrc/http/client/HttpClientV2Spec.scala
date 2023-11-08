@@ -19,7 +19,7 @@ package uk.gov.hmrc.http.client
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{verify => _, _}
 import com.typesafe.config.ConfigFactory
-import org.mockito.ArgumentMatchersSugar
+import org.mockito.{ArgumentMatchersSugar, Strictness}
 import org.mockito.captor.ArgCaptor
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.BeforeAndAfter
@@ -60,7 +60,7 @@ class HttpClientV2Spec
 
   "HttpClientV2" should {
     "work with json" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
@@ -104,7 +104,7 @@ class HttpClientV2Spec
 
 
     "Exclude Headers when the destination host does not match the pattern internalServiceHostPatterns in reference.conf" in new Setup {
-      implicit val hc = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
+      implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
 
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
@@ -128,7 +128,7 @@ class HttpClientV2Spec
     }
 
     "Headers sent when the destination host matches the pattern internalServiceHostPatterns in reference.conf" in new Setup {
-      implicit val hc = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
+      implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
 
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
@@ -152,7 +152,7 @@ class HttpClientV2Spec
     }
 
     "work with streams" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       val requestBody  = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
       val responseBody = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
@@ -200,7 +200,7 @@ class HttpClientV2Spec
     }
 
     "handled failed requests with streams" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       val requestBody  = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
       val responseBody = Random.alphanumeric.take(maxAuditBodyLength - 1).mkString
@@ -252,7 +252,7 @@ class HttpClientV2Spec
     }
 
     "truncate stream payloads for auditing if too long" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
       val responseBody = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
@@ -300,7 +300,7 @@ class HttpClientV2Spec
     }
 
     "truncate strict payloads for auditing if too long" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       val requestBody  = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
       val responseBody = Random.alphanumeric.take(maxAuditBodyLength * 2).mkString
@@ -345,7 +345,7 @@ class HttpClientV2Spec
     }
 
     "work with form data" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.post(urlEqualTo("/"))
@@ -393,7 +393,7 @@ class HttpClientV2Spec
     }
 
     "work with form data - custom writeable for content-type" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.post(urlEqualTo("/"))
@@ -455,7 +455,7 @@ class HttpClientV2Spec
     }
 
     "work with form data - custom writeable for map type" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.post(urlEqualTo("/"))
@@ -518,7 +518,7 @@ class HttpClientV2Spec
 
     /* Note, using non-form-encoding and a non immutable Map implementation will not be escaped properly
     "work with any form data" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.post(urlEqualTo("/"))
@@ -581,7 +581,7 @@ class HttpClientV2Spec
     */
 
     "fail if call withBody on the wsRequest itself" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       a[RuntimeException] should be thrownBy
         httpClientV2
@@ -592,7 +592,7 @@ class HttpClientV2Spec
     }
 
     "allow overriding user-agent" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
@@ -623,7 +623,7 @@ class HttpClientV2Spec
                                         .withFallback(ConfigFactory.load())
       }
 
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
@@ -646,7 +646,7 @@ class HttpClientV2Spec
     }
 
     "preserve Mdc" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.put(urlEqualTo("/"))
@@ -655,7 +655,8 @@ class HttpClientV2Spec
 
       val mdcData = Map("key1" -> "value1")
 
-      implicit val mdcEc = ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
+      implicit val global: ExecutionContext = // named global to override Implicit.global
+        ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
 
       org.slf4j.MDC.clear()
 
@@ -679,7 +680,7 @@ class HttpClientV2Spec
     }
 
     "return case-insensitive headers" in new Setup {
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.get(urlEqualTo("/"))
@@ -709,7 +710,7 @@ class HttpClientV2Spec
               |""".stripMargin
         )
 
-      implicit val hc = HeaderCarrier()
+      implicit val hc: HeaderCarrier = HeaderCarrier()
 
       wireMockServer.stubFor(
         WireMock.get(urlEqualTo("/"))
@@ -730,7 +731,7 @@ class HttpClientV2Spec
   trait Setup {
     implicit val as: ActorSystem = ActorSystem("test-actor-system")
 
-    val mockHttpHook = mock[HttpHook](withSettings.lenient)
+    val mockHttpHook = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
 
     val maxAuditBodyLength = 30
 

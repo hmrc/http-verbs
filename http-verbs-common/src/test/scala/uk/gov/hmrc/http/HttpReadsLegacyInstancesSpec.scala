@@ -20,7 +20,7 @@ import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Reads}
 
 @annotation.nowarn("msg=deprecated")
 class HttpReadsLegacyInstancesSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
@@ -63,7 +63,7 @@ class HttpReadsLegacyInstancesSpec extends AnyWordSpec with ScalaCheckDrivenProp
     }
   }
 
-  implicit val r = Json.reads[Example]
+  implicit val r: Reads[Example] = Json.reads[Example]
   "JsonHttpReads.readFromJson" should {
     val reads = HttpReads.readFromJson[Example]
     "convert a successful response body to the given class" in {
