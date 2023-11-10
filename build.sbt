@@ -26,23 +26,17 @@ lazy val library = (project in file("."))
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
-def shareSources(location: String) = Seq(
-  Compile / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/main/scala",
-  Compile / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/main/resources",
-  Test    / unmanagedSourceDirectories   += baseDirectory.value / s"../$location/src/test/scala",
-  Test    / unmanagedResourceDirectories += baseDirectory.value / s"../$location/src/test/resources"
-)
-def copySources(module: Project) = Seq(
-  Compile / scalaSource       := (module / Compile / scalaSource      ).value,
-  Compile / resourceDirectory := (module / Compile / resourceDirectory).value,
-  Test    / scalaSource       := (module / Test    / scalaSource      ).value,
-  Test    / resourceDirectory := (module / Test    / resourceDirectory).value
-)
+def copyPlay30Sources(module: Project) =
+  CopySources.copySources(
+    module,
+    transformSource   = _.replace("org.apache.pekko", "akka"),
+    transformResource = _.replace("pekko", "akka")
+  )
 
 lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    shareSources("http-verbs-common"),
+    copyPlay30Sources(httpVerbsPlay30),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
@@ -54,12 +48,12 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
   .settings( // https://github.com/sbt/sbt-buildinfo
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "uk.gov.hmrc.http"
-   )
+  )
 
 lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-29"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    shareSources("http-verbs-common"),
+    copyPlay30Sources(httpVerbsPlay30),
     crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
@@ -71,28 +65,27 @@ lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-2
   .settings( // https://github.com/sbt/sbt-buildinfo
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "uk.gov.hmrc.http"
-   )
+  )
 
 lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-30"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    shareSources("http-verbs-common"),
     crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
       LibDependencies.coreCompilePlay30 ++
       LibDependencies.coreTestCommon ++
       LibDependencies.coreTestPlay30,
-    Test / fork := true // akka is not unloaded properly, which can affect other tests
+    Test / fork := true // pekko is not unloaded properly, which can affect other tests
   )
   .settings( // https://github.com/sbt/sbt-buildinfo
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "uk.gov.hmrc.http"
-   )
+  )
 
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
-    shareSources("http-verbs-test-common"),
+    copyPlay30Sources(httpVerbsTestPlay30),
     crossScalaVersions := Seq(scala2_12, scala2_13),
     libraryDependencies ++= LibDependencies.testCompilePlay28,
     Test / fork := true // required to look up wiremock resources
@@ -101,7 +94,7 @@ lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-ver
 
 lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-verbs-test-play-29"))
   .settings(
-    shareSources("http-verbs-test-common"),
+    copyPlay30Sources(httpVerbsTestPlay30),
     crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++= LibDependencies.testCompilePlay29,
     Test / fork := true // required to look up wiremock resources
@@ -110,7 +103,6 @@ lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-ver
 
 lazy val httpVerbsTestPlay30 = Project("http-verbs-test-play-30", file("http-verbs-test-play-30"))
   .settings(
-    shareSources("http-verbs-test-common"),
     crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++= LibDependencies.testCompilePlay30,
     Test / fork := true // required to look up wiremock resources
