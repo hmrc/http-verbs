@@ -19,7 +19,7 @@ object CopySources {
 
     def include(location: File) = {
       val files = (location ** "*").get.filterNot(_.isDirectory)
-      files.map(file => file -> file.getPath.stripPrefix(location.getPath))
+      files.map(file => file -> file.getPath.stripPrefix(location.getPath + "/"))
     }
 
     Seq(
