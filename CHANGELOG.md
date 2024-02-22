@@ -1,3 +1,7 @@
+### Version 14.12.0
+
+Adds support for Play 3.0
+
 ### Version 14.11.0
 
 Adds support for Play 2.9
