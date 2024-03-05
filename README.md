@@ -193,6 +193,44 @@ For all other headers, provide them to the VERB function:
 client.GET(url = url"https://internalhost/api", headers = Seq("AdditionHeader" -> "AdditionalValue"))(hc)
 ```
 
+### Deserialising Response
+
+The Response is deserialised by an instance of [HttpReads](http-verbs-play-30/src/main/scala/uk/gov/hmrc/http/HttpReads.scala).
+
+You can either create your own instances or use the provided instances with
+
+```scala
+import uk.gov.hmrc.http.HttpReads.Implicits._
+```
+
+The default implicits (without explicit import) have been deprecated. See [here](CHANGELOG.md#version-1100) for more details.
+
+The `HttpReads` describes how to convert a `HttpResponse` into your model using the status code and response body.
+
+The [provided instances](http-verbs-play-30/src/main/scala/uk/gov/hmrc/http/HttpReadsInstances.scala), brought into scope with the above import, allow you to:
+
+  - Request raw HttpResponse:
+    ```scala
+    client.GET[HttpResponse](url)
+    ```
+  - Convert the response body from Json using a play json reads:
+    ```scala
+    implicit val reads: Reads[MyModel] = ???
+    client.get[MyModel](url)
+    ```
+    Note this instance will return failed Futures with `UpstreamErrorResponse` for non-success status codes. Json parsing failures will similarly be returned as `JsValidationException` These exceptions can be recovered from if required.
+  - Handle 404s with `None`
+    ```scala
+    implict val reads: Reads[MyModel] = ???
+    client.get[Option[MyModel]](url)
+    ```
+  - Return non-success status codes as `UpstreamErrorResponse` in `Either`
+    ```scala
+    implict val reads: Reads[MyModel] = ???
+    client.get[Either[UpstreamErrorResponse, MyModel]](url)
+    ```
+
+
 ## Testing
 
 In your SBT build add the following in your test dependencies:
