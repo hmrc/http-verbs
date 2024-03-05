@@ -18,7 +18,7 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 ## Migration
 
-See [CHANGELOG](https://github.com/hmrc/http-verbs/blob/master/CHANGELOG.md) for changes and migrations.
+See [CHANGELOG](CHANGELOG.md) for changes and migrations.
 
 ## Adding to your build
 
@@ -37,7 +37,7 @@ There are two HttpClients available.
 
 ### uk.gov.hmrc.http.HttpClient
 
-Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-test-common/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
+Examples can be found [here](http-verbs-test-play-30/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
 
 URLs can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` and using the provided [URL interpolator](#url-interpolator) for correct escaping of query and path parameters.
 
@@ -51,7 +51,7 @@ In addition, it:
 - Exposes the underlying `play.api.libs.ws.WSRequest` with `transform`, making it easier to customise the request.
 - Only accepts the URL as `java.net.URL`; you can make use of the provided [URL interpolator](#url-interpolator).
 
-Examples can be found in [here](/http-verbs-common/src/test/scala/uk/gov/hmrc/http/client/HttpClientV2Spec.scala)
+Examples can be found in [here](http-verbs-play-30/src/test/scala/uk/gov/hmrc/http/client/HttpClientV2Spec.scala)
 
 To migrate:
 
@@ -180,7 +180,7 @@ For external hosts, headers should be provided explicitly to the VERB function (
 client.GET(url"https://externalhost/api", headers = Seq("Authorization" -> "Bearer token"))(hc) //explicit Authorization header for external request
 ```
 
-Internal hosts are identified with the configuration [internalServiceHostPatterns](/http-verbs-common/src/main/resources/reference.conf) The headers which are forwarded, to _internal hosts_, include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
+Internal hosts are identified with the configuration [internalServiceHostPatterns](http-verbs-play-30/src/main/resources/reference.conf) The headers which are forwarded, to _internal hosts_, include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
 For example, if you want to pass headers to stubs, you can use the following override for your service: `internalServiceHostPatterns= "^.*(stubs?).*(\.mdtp)$"`
 
 When providing additional headers to http requests, if it corresponds to an explicit one on the HeaderCarrier, it is recommended to replace it, otherwise you will be sending it twice:
