@@ -127,7 +127,7 @@ The default implicits for `HttpReads` have been deprecated. There are new implic
 ```scala
 import uk.gov.hmrc.http.HttpReads.Implicits._
 ```
-The behaviour of the predefined implicits are not quite the same as the deprecated ones, and you are encouraged to define your own HttpReads if none are apropriate. The differences are:
+The behaviour of the predefined implicits are not quite the same as the deprecated ones, and you are encouraged to define your own HttpReads if none are appropriate. The differences are:
 * You will have to explicitly state the type of the response - it will not resolve to `HttpResponse` if none is specified. (i.e. `GET(url)` will now be `GET[HttpResponse](url)`). It is deemed better to be explicit since the type will dictate how errors are handled.
 * The default `HttpRead[HttpResponse]` will no longer throw an exception if there is a non-2xx status code. Since the HttpResponse already encodes errors, it expects you will handle this yourself. To get the behaviour similar to previous (see Exceptions for differences), use:
 ```scala

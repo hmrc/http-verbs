@@ -18,7 +18,7 @@ It encapsulates some common concerns for calling other HTTP services on the HMRC
 
 ## Migration
 
-See [CHANGELOG](https://github.com/hmrc/http-verbs/blob/master/CHANGELOG.md) for changes and migrations.
+See [CHANGELOG](CHANGELOG.md) for changes and migrations.
 
 ## Adding to your build
 
@@ -37,7 +37,7 @@ There are two HttpClients available.
 
 ### uk.gov.hmrc.http.HttpClient
 
-Examples can be found [here](https://github.com/hmrc/http-verbs/blob/master/http-verbs-test-common/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
+Examples can be found [here](http-verbs-test-play-30/src/test/scala/uk/gov/hmrc/http/examples/Examples.scala)
 
 URLs can be supplied as either `java.net.URL` or `String`. We recommend supplying `java.net.URL` and using the provided [URL interpolator](#url-interpolator) for correct escaping of query and path parameters.
 
@@ -51,7 +51,7 @@ In addition, it:
 - Exposes the underlying `play.api.libs.ws.WSRequest` with `transform`, making it easier to customise the request.
 - Only accepts the URL as `java.net.URL`; you can make use of the provided [URL interpolator](#url-interpolator).
 
-Examples can be found in [here](/http-verbs-common/src/test/scala/uk/gov/hmrc/http/client/HttpClientV2Spec.scala)
+Examples can be found in [here](http-verbs-play-30/src/test/scala/uk/gov/hmrc/http/client/HttpClientV2Spec.scala)
 
 To migrate:
 
@@ -180,7 +180,7 @@ For external hosts, headers should be provided explicitly to the VERB function (
 client.GET(url"https://externalhost/api", headers = Seq("Authorization" -> "Bearer token"))(hc) //explicit Authorization header for external request
 ```
 
-Internal hosts are identified with the configuration [internalServiceHostPatterns](/http-verbs-common/src/main/resources/reference.conf) The headers which are forwarded, to _internal hosts_, include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
+Internal hosts are identified with the configuration [internalServiceHostPatterns](http-verbs-play-30/src/main/resources/reference.conf) The headers which are forwarded, to _internal hosts_, include all the headers modelled explicitly in the `HeaderCarrier`, plus any that are listed with the configuration `bootstrap.http.headersAllowlist`.
 For example, if you want to pass headers to stubs, you can use the following override for your service: `internalServiceHostPatterns= "^.*(stubs?).*(\.mdtp)$"`
 
 When providing additional headers to http requests, if it corresponds to an explicit one on the HeaderCarrier, it is recommended to replace it, otherwise you will be sending it twice:
@@ -192,6 +192,44 @@ For all other headers, provide them to the VERB function:
 ```scala
 client.GET(url = url"https://internalhost/api", headers = Seq("AdditionHeader" -> "AdditionalValue"))(hc)
 ```
+
+### Deserialising Response
+
+The Response is deserialised by an instance of [HttpReads](http-verbs-play-30/src/main/scala/uk/gov/hmrc/http/HttpReads.scala).
+
+You can either create your own instances or use the provided instances with
+
+```scala
+import uk.gov.hmrc.http.HttpReads.Implicits._
+```
+
+The default implicits (without explicit import) have been deprecated. See [here](CHANGELOG.md#version-1100) for more details.
+
+The `HttpReads` describes how to convert a `HttpResponse` into your model using the status code and response body.
+
+The [provided instances](http-verbs-play-30/src/main/scala/uk/gov/hmrc/http/HttpReadsInstances.scala), brought into scope with the above import, allow you to:
+
+  - Request raw HttpResponse:
+    ```scala
+    client.GET[HttpResponse](url)
+    ```
+  - Convert the response body from Json using a play json reads:
+    ```scala
+    implicit val reads: Reads[MyModel] = ???
+    client.get[MyModel](url)
+    ```
+    Note this instance will return failed Futures with `UpstreamErrorResponse` for non-success status codes. Json parsing failures will similarly be returned as `JsValidationException` These exceptions can be recovered from if required.
+  - Handle 404s with `None`
+    ```scala
+    implict val reads: Reads[MyModel] = ???
+    client.get[Option[MyModel]](url)
+    ```
+  - Return non-success status codes as `UpstreamErrorResponse` in `Either`
+    ```scala
+    implict val reads: Reads[MyModel] = ???
+    client.get[Either[UpstreamErrorResponse, MyModel]](url)
+    ```
+
 
 ## Testing
 

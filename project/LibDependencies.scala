@@ -2,9 +2,9 @@ import sbt._
 
 object LibDependencies {
 
-  val play28Version     = "2.8.20"
-  val play29Version     = "2.9.0"
-  val play30Version     = "3.0.0"
+  val play28Version     = "2.8.21"
+  val play29Version     = "2.9.2"
+  val play30Version     = "3.0.2"
 
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
   def coreCompileCommon(scalaVersion: String) = Seq(
@@ -25,13 +25,13 @@ object LibDependencies {
   )
 
   val coreCompilePlay29 = Seq(
-    "com.typesafe.play" %% "play-json"   % "2.10.2", // version provided by play29Version
+    "com.typesafe.play" %% "play-json"   % "2.10.4", // version provided by play29Version
     "org.slf4j"         %  "slf4j-api"   % "2.0.9",
     "com.typesafe.play" %% "play-ahc-ws" % play29Version
   )
 
   val coreCompilePlay30 = Seq(
-    "org.playframework" %% "play-json"   % "3.0.0", // version provided by play30Version
+    "org.playframework" %% "play-json"   % "3.0.2", // version provided by play30Version
     "org.slf4j"         %  "slf4j-api"   % "2.0.9",
     "org.playframework" %% "play-ahc-ws" % play30Version
   )
