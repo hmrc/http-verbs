@@ -17,10 +17,13 @@
 package uk.gov.hmrc.http.client
 
 import com.typesafe.config.Config
+import com.typesafe.sslconfig.ssl.{KeyStoreConfig, TrustStoreConfig}
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
+import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, CollectionUtils, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
@@ -30,11 +33,13 @@ import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
 
+import java.io.{File, FileOutputStream}
 import java.net.{ConnectException, URL}
+import java.util.Base64
 import java.util.concurrent.TimeoutException
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 
 trait Executor {
@@ -85,6 +90,64 @@ class HttpClientV2Impl(
         .withHttpHeaders(hc.headersForUrl(hcConfig)(url.toString) :+ clientVersionHeader : _*),
       None
     )
+
+  override def withSsl(keystoreName: Option[String], truststoreName: Option[String]): HttpClientV2 = {
+    val keystore: Option[KeyStoreConfig] = keystoreName.map { name =>
+      val data = config.get[String](s"http-verbs.ssl.keystore.$name.data")
+      val pass = config.getOptional[String](s"http-verbs.ssl.keystore.$name.password")
+      val file = createTempFileFromBase64(data, name)
+      KeyStoreConfig(data = None, filePath = Some(file.getAbsolutePath)).withPassword(pass)
+    }
+
+    val truststore: Option[TrustStoreConfig] = truststoreName.map { name =>
+      val data = config.get[String](s"http-verbs.ssl.truststore.$name.data")
+      val pass = config.getOptional[String](s"http-verbs.ssl.truststore.$name.password")
+      val file = createTempFileFromBase64(data, name)
+      TrustStoreConfig(data = None, filePath = Some(file.getAbsolutePath), password = pass)
+    }
+
+    val ahcConfig = {
+      val ahc = AhcWSClientConfigFactory.forConfig()
+
+      val keystoreConfigs = keystore.fold(ahc.wsClientConfig.ssl.keyManagerConfig.keyStoreConfigs) { ksc =>
+        ahc.wsClientConfig.ssl.keyManagerConfig.keyStoreConfigs :+ ksc
+      }
+
+      val truststoreConfigs = truststore.fold(ahc.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs) { tsc =>
+        ahc.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs :+ tsc
+      }
+
+      ahc
+        .copy(wsClientConfig = ahc.wsClientConfig
+          .copy(
+            ssl = ahc.wsClientConfig.ssl
+              .withKeyManagerConfig(ahc.wsClientConfig.ssl.keyManagerConfig.withKeyStoreConfigs(keystoreConfigs))
+              .withTrustManagerConfig(ahc.wsClientConfig.ssl.trustManagerConfig.withTrustStoreConfigs(truststoreConfigs))
+          )
+        )
+    }
+
+    implicit val mat: Materializer = Materializer(actorSystem)
+    val newClient = AhcWSClient(ahcConfig)
+
+    new HttpClientV2Impl(newClient, actorSystem, config, hooks)
+  }
+
+  private def createTempFileFromBase64(base64Data: String, prefix: String): File = {
+    val decodedBytes =
+      Try(Base64.getDecoder.decode(base64Data)).getOrElse(throw new Exception("Invalid Base64 string"))
+
+    val file = File.createTempFile(prefix, ".tmp")
+    val os = new FileOutputStream(file)
+    try {
+      os.write(decodedBytes)
+      os.flush()
+    }finally {
+      os.close()
+    }
+
+    file
+  }
 }
 
 

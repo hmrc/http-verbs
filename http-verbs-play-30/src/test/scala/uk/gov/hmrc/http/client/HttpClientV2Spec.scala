@@ -37,6 +37,8 @@ import org.apache.pekko.util.ByteString
 import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.play.http.logging.Mdc
 
+import java.nio.file.{Files, Paths}
+import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
@@ -727,6 +729,41 @@ class HttpClientV2Spec
           .futureValue
 
       res.body shouldBe "\"res\""
+    }
+
+    "dynamically configure ssl" in new Setup {
+      sslWireMockServer.start()
+
+      sslWireMockServer.stubFor(
+        get(urlPathEqualTo("/ssl-test"))
+          .willReturn(aResponse().withStatus(200))
+      )
+
+      val base64encodedClientKeystore: String =
+        Base64.getEncoder.encodeToString(
+          Files.readAllBytes(Paths.get("test/resources/tls/client-keystore.jks"))
+        )
+
+      override val httpClientV2 =
+        mkHttpClientV2(
+          s"""|appName = myapp
+              |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
+              |http-verbs.ssl.keystore.client-keystore.data = $base64encodedClientKeystore
+              |http-verbs.ssl.keystore.client-keystore.password = password
+              |""".stripMargin
+        )
+
+      implicit val hc: HeaderCarrier = HeaderCarrier()
+      val res: HttpResponse =
+        httpClientV2
+          .withSsl(keystoreName = Some("client-keystore"), truststoreName = None)
+          .get(url"${sslWireMockServer.baseUrl()}/ssl-test")
+          .execute[HttpResponse]
+          .futureValue
+
+      res.status shouldBe 200
+
+      sslWireMockServer.stop()
     }
   }
 

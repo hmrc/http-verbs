@@ -30,6 +30,8 @@ import scala.reflect.runtime.universe.TypeTag
 trait HttpClientV2 {
   protected def mkRequestBuilder(url: URL, method: String)(implicit hc: HeaderCarrier): RequestBuilder
 
+  def withSsl(keystoreName: Option[String], truststoreName: Option[String]): HttpClientV2
+
   def get(url: URL)(implicit hc: HeaderCarrier): RequestBuilder =
     mkRequestBuilder(url, "GET")
 
