@@ -96,7 +96,7 @@ class HttpClientV2Impl(
       val data = config.get[String](s"http-verbs.ssl.keystore.$name.data")
       val pass = config.getOptional[String](s"http-verbs.ssl.keystore.$name.password")
       val file = createTempFileFromBase64(data, name)
-      KeyStoreConfig(data = None, filePath = Some(file.getAbsolutePath)).withPassword(pass)
+      KeyStoreConfig(data = None, filePath = Some(file.getAbsolutePath)).withStoreType("PKCS12").withPassword(pass)
     }
 
     val truststore: Option[TrustStoreConfig] = truststoreName.map { name =>

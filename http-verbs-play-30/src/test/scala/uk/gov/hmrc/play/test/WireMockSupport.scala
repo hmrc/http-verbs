@@ -47,8 +47,8 @@ trait WireMockSupport
     new WireMockServer(
       WireMockConfiguration.wireMockConfig()
         .dynamicHttpsPort()
-        .keystorePath("tls/server-keystore.p12")
-        .trustStorePath("tls/server-truststore.p12")
+        .keystorePath("src/test/resources/tls/server-keystore.p12")
+        .trustStorePath("src/test/resources/tls/server-truststore.p12")
         .httpDisabled(true)
         .needClientAuth(true)
     )

@@ -740,23 +740,30 @@ class HttpClientV2Spec
       )
 
       val base64encodedClientKeystore: String =
-        Base64.getEncoder.encodeToString(
-          Files.readAllBytes(Paths.get("test/resources/tls/client-keystore.jks"))
-        )
-
+        Base64.getEncoder.encodeToString {
+          //Files.readAllBytes(Paths.get("tls/client-keystore.jks"))
+          Files.readAllBytes(java.nio.file.Path.of(getClass.getResource("/tls/client-keystore.p12").toURI))
+        }
       override val httpClientV2 =
         mkHttpClientV2(
           s"""|appName = myapp
               |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
-              |http-verbs.ssl.keystore.client-keystore.data = $base64encodedClientKeystore
-              |http-verbs.ssl.keystore.client-keystore.password = password
+              |#http-verbs.ssl.keystore.client-keystore.data = "$base64encodedClientKeystore"
+              |#http-verbs.ssl.keystore.client-keystore.password = password
+              |
+              |play.ws.ssl.trustManager.stores.0.type: "PEM"
+              |play.ws.ssl.trustManager.stores.0.path: "src/test/resources/tls/client-truststore.pem"
+              |play.ws.ssl.keyManager.stores.0.type = "pkcs12",
+              |play.ws.ssl.keyManager.stores.0.password = "password",
+              |play.ws.ssl.keyManager.stores.0.path = "src/test/resources/tls/client-keystore.p12"
               |""".stripMargin
         )
 
       implicit val hc: HeaderCarrier = HeaderCarrier()
+
       val res: HttpResponse =
         httpClientV2
-          .withSsl(keystoreName = Some("client-keystore"), truststoreName = None)
+          //.withSsl(keystoreName = Some("client-keystore"), truststoreName = None)
           .get(url"${sslWireMockServer.baseUrl()}/ssl-test")
           .execute[HttpResponse]
           .futureValue
