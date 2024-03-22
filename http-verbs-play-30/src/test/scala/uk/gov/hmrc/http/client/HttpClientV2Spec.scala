@@ -37,7 +37,7 @@ import org.apache.pekko.util.ByteString
 import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.play.http.logging.Mdc
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -744,18 +744,22 @@ class HttpClientV2Spec
           //Files.readAllBytes(Paths.get("tls/client-keystore.jks"))
           Files.readAllBytes(java.nio.file.Path.of(getClass.getResource("/tls/client-keystore.p12").toURI))
         }
+
+      val base64encodedClientTruststore: String =
+        Base64.getEncoder.encodeToString{
+          Files.readAllBytes(java.nio.file.Path.of(getClass.getResource("/tls/client-truststore.pem").toURI))
+        }
+
       override val httpClientV2 =
         mkHttpClientV2(
           s"""|appName = myapp
               |http-verbs.auditing.maxBodyLength = $maxAuditBodyLength
-              |#http-verbs.ssl.keystore.client-keystore.data = "$base64encodedClientKeystore"
-              |#http-verbs.ssl.keystore.client-keystore.password = password
+              |http-verbs.ssl.keystore.client-keystore.data = "$base64encodedClientKeystore"
+              |http-verbs.ssl.keystore.client-keystore.password = "password"
+              |http-verbs.ssl.keystore.client-keystore.type = "pkcs12"
               |
-              |play.ws.ssl.trustManager.stores.0.type: "PEM"
-              |play.ws.ssl.trustManager.stores.0.path: "src/test/resources/tls/client-truststore.pem"
-              |play.ws.ssl.keyManager.stores.0.type = "pkcs12",
-              |play.ws.ssl.keyManager.stores.0.password = "password",
-              |play.ws.ssl.keyManager.stores.0.path = "src/test/resources/tls/client-keystore.p12"
+              |http-verbs.ssl.truststore.client-truststore.data = "$base64encodedClientTruststore"
+              |http-verbs.ssl.truststore.client-truststore.type: "PEM"
               |""".stripMargin
         )
 
@@ -763,7 +767,7 @@ class HttpClientV2Spec
 
       val res: HttpResponse =
         httpClientV2
-          //.withSsl(keystoreName = Some("client-keystore"), truststoreName = None)
+          .withSsl(keystoreName = Some("client-keystore"), truststoreName = Some("client-truststore"))
           .get(url"${sslWireMockServer.baseUrl()}/ssl-test")
           .execute[HttpResponse]
           .futureValue
