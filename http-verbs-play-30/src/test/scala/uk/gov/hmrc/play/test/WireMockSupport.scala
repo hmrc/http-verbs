@@ -43,6 +43,16 @@ trait WireMockSupport
   lazy val wireMockServer =
     new WireMockServer(WireMockConfiguration.wireMockConfig().port(wireMockPort))
 
+  lazy val sslWireMockServer =
+    new WireMockServer(
+      WireMockConfiguration.wireMockConfig()
+        .dynamicHttpsPort()
+        .keystorePath(java.nio.file.Path.of(getClass.getResource("/tls/server-keystore.p12").toURI).toString)
+        .trustStorePath(java.nio.file.Path.of(getClass.getResource("/tls/server-truststore.p12").toURI).toString)
+        .httpDisabled(true)
+        .needClientAuth(true)
+    )
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     wireMockServer.start()

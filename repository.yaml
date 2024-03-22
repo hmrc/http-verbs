@@ -1,3 +1,15 @@
 repoVisibility: public_0C3F0CE3E6E6448FAD341E7BFA50FCD333E06A20CFF05FCACE61154DDBBADF71
 type: library
 description: Library which encapsulates common concerns for calling other HTTP services
+leakDetectionExemptions:
+  - ruleId: 'filename_private_key_1'
+    filePaths:
+      - '/http-verbs-play-30/src/test/resources/tls/client-keystore.p12'
+      - '/http-verbs-play-30/src/test/resources/tls/server-keystore.p12'
+      - '/http-verbs-play-30/src/test/resources/tls/server-truststore.p12'
+  - ruleId: 'filename_private_key_5'
+    filePaths:
+      - '/http-verbs-play-30/src/test/resources/tls/client-truststore.pem'
+  - ruleId: 'filename_private_key_11'
+    filePaths:
+      - '/http-verbs-play-30/src/test/resources/tls/client-keystore.jks'
