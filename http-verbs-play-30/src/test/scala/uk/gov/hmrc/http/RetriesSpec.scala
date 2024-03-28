@@ -16,22 +16,20 @@
 
 package uk.gov.hmrc.http
 
-import java.time.Instant
-import java.util.concurrent.Executors
-
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.net.ssl.SSLException
 import org.apache.pekko.actor.ActorSystem
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
 import uk.gov.hmrc.play.http.logging.Mdc
 
+import java.time.Instant
+import java.util.concurrent.Executors
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
@@ -40,7 +38,6 @@ class RetriesSpec
   extends AnyWordSpecLike
      with Matchers
      with MockitoSugar
-     with ArgumentMatchersSugar
      with ScalaFutures
      with IntegrationPatience {
   import ExecutionContext.Implicits.global
@@ -232,7 +229,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.GET[Option[String]](url = "http://doesnt-matter", Seq("header" -> "foo")).futureValue shouldBe None
+      http.GET[Option[String]](url = "http://doesnt-matter", queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -288,7 +285,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.PUT[JsValue, Option[String]](url = "https://www.google.co.uk", Json.obj()).futureValue shouldBe None
+      http.PUT[JsValue, Option[String]](url = "https://www.google.co.uk", body = Json.obj(), headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -307,7 +304,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POST[JsValue, Option[String]](url = "https://www.google.co.uk", Json.obj()).futureValue shouldBe None
+      http.POST[JsValue, Option[String]](url = "https://www.google.co.uk", body = Json.obj(), headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -325,7 +322,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTString[Option[String]](url = "https://www.google.co.uk", "posted-string").futureValue shouldBe None
+      http.POSTString[Option[String]](url = "https://www.google.co.uk", body = "posted-string", headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -346,7 +343,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTForm[Option[String]](url = "https://www.google.co.uk", Map.empty[String, Seq[String]], Seq.empty[(String, String)]).futureValue shouldBe None
+      http.POSTForm[Option[String]](url = "https://www.google.co.uk", body = Map.empty[String, Seq[String]], headers = Seq.empty[(String, String)]).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -366,7 +363,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTEmpty[Option[String]](url = "https://www.google.co.uk").futureValue shouldBe None
+      http.POSTEmpty[Option[String]](url = "https://www.google.co.uk", headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }

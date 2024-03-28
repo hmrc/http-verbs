@@ -46,12 +46,11 @@ class MdcLoggingExecutionContextSpec
 
   "The MDC Transporting Execution Context" should {
     "capture the MDC map with values in it and put it in place when a task is run" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
-      val x: (String, String) = "someKey" -> "something"
-      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(x))
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(("someKey", "something")))
 
       logEventInsideAFutureUsing(ec)
 
-      logList.loneElement._2 should contain(x)
+      logList.loneElement._2 should contain("someKey" -> "something")
     }
 
     "ignore an null MDC map" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
@@ -63,27 +62,25 @@ class MdcLoggingExecutionContextSpec
     }
 
     "clear the MDC map after a task is run" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
-      val x: (String, String) = "someKey" -> "something"
-      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(x))
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(("someKey", "something")))
 
       doSomethingInsideAFutureButDontLog(ec)
 
       MDC.clear()
       logEventInsideAFutureUsing(ec)
 
-      logList.loneElement._2 should be(Map(x))
+      logList.loneElement._2 should be(Map("someKey" -> "something"))
     }
 
     "clear the MDC map after a task throws an exception" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>
-      val x: (String, String) = "someKey" -> "something"
-      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(x))
+      implicit val ec = createAndInitialiseMdcTransportingExecutionContext(Map(("someKey", "something")))
 
       throwAnExceptionInATaskOn(ec)
 
       MDC.clear()
       logEventInsideAFutureUsing(ec)
 
-      logList.loneElement._2 should be(Map(x))
+      logList.loneElement._2 should be(Map("someKey" -> "something"))
     }
 
     "log values from given MDC map when multiple threads are using it concurrently by ensuring each log from each thread has been logged via MDC" in withCaptureOfLoggingFrom[MdcLoggingExecutionContextSpec] { logList =>

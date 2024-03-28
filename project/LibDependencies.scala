@@ -43,13 +43,9 @@ object LibDependencies {
     "com.vladsch.flexmark"   %  "flexmark-all"             % "0.64.8"      % Test,
     // mockito-scala is not available for Scala 3 https://github.com/mockito/mockito-scala/issues/364
     // use java build + scalatestplus:mockito
-    //"org.scalatestplus"      %% "mockito-3-4"              % "3.2.10.0"    % Test // recommended by play docs https://www.playframework.com/documentation/3.0.x/ScalaTestingWithScalaTest
+    "org.scalatestplus"      %% "mockito-3-4"              % "3.2.10.0"    % Test // recommended by play docs https://www.playframework.com/documentation/3.0.x/ScalaTestingWithScalaTest
     // or https://mvnrepository.com/artifact/eu.monniot/scala3mock
-  ) ++
-    (CrossVersion.partialVersion(scalaVersion) match {
-      case Some((3, _)) => Seq(("org.mockito" %% "mockito-scala-scalatest" % "1.17.14" % Test).cross(CrossVersion.for3Use2_13).exclude("org.scalactic","scalactic_2.13"))
-      case _            => Seq(("org.mockito" %% "mockito-scala-scalatest" % "1.17.14" % Test).cross(CrossVersion.for3Use2_13)) // the cross version is unnecessary here
-    })
+  )
 
   val coreTestPlay28 = Seq(
     "com.typesafe.play"      %% "play-test"       % play28Version % Test,

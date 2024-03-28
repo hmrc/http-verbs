@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.play.connectors
 
-import org.mockito.scalatest.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.test.WsTestClient

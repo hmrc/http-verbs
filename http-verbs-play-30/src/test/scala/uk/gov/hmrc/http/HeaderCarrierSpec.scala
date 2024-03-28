@@ -17,18 +17,16 @@
 package uk.gov.hmrc.http
 
 import com.typesafe.config.ConfigFactory
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.scalatest.MockitoSugar
 import org.scalactic.StringNormalizations.lowerCased
 import org.scalatest.LoneElement
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatestplus.mockito.MockitoSugar
 
 class HeaderCarrierSpec
   extends AnyWordSpecLike
      with Matchers
      with MockitoSugar
-     with ArgumentMatchersSugar
      with LoneElement {
 
   "headersForUrl" should {
