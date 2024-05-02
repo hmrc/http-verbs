@@ -123,40 +123,12 @@ class InsufficientStorageException(message: String) extends HttpException(messag
 /** Represent unhandled status codes returned from upstream */
 // The concrete instances are deprecated, so we can eventually just replace with a case class.
 // They should be created via UpstreamErrorResponse.apply and deconstructed via the UpstreamErrorResponse.unapply functions
-sealed trait UpstreamErrorResponse extends Exception {
-  def message: String
-
-  @deprecated("Use statusCode instead", "11.0.0")
-  def upstreamResponseCode: Int
-
-  // final to help migrate away from upstreamResponseCode (i.e. read only - set via UpstreamErrorResponse.apply)
-  @annotation.nowarn("msg=deprecated")
-  final def statusCode: Int =
-    upstreamResponseCode
-
-  def reportAs: Int
-
-  def headers: Map[String, Seq[String]]
-
-  override def getMessage = message
-}
-
-@deprecated("Use UpstreamErrorResponse.apply or UpstreamErrorResponse.Upstream4xxResponse.unapply instead.", "11.0.0")
-case class Upstream4xxResponse(
-  message             : String,
-  upstreamResponseCode: Int,
-  reportAs            : Int,
-  headers             : Map[String, Seq[String]] = Map.empty
-) extends UpstreamErrorResponse
-
-@deprecated("Use UpstreamErrorResponse.apply or UpstreamErrorResponse.Upstream5xxResponse.unapply instead.", "11.0.0")
-case class Upstream5xxResponse(
-  message             : String,
-  upstreamResponseCode: Int,
-  reportAs            : Int,
-  headers             : Map[String, Seq[String]] = Map.empty
-) extends UpstreamErrorResponse
-
+case class UpstreamErrorResponse(
+  message   : String,
+  statusCode: Int,
+  reportAs  : Int,
+  headers   : Map[String, Seq[String]]
+) extends Exception(message)
 
 object UpstreamErrorResponse {
   def apply(message: String, statusCode: Int): UpstreamErrorResponse =
@@ -174,27 +146,6 @@ object UpstreamErrorResponse {
       reportAs   = reportAs,
       headers    = Map.empty
     )
-
-  @annotation.nowarn("msg=deprecated")
-  def apply(message: String, statusCode: Int, reportAs: Int, headers: Map[String, Seq[String]]): UpstreamErrorResponse =
-    if (HttpErrorFunctions.is4xx(statusCode))
-      uk.gov.hmrc.http.Upstream4xxResponse(
-        message              = message,
-        upstreamResponseCode = statusCode,
-        reportAs             = reportAs,
-        headers              = headers
-      )
-    else if (HttpErrorFunctions.is5xx(statusCode))
-      uk.gov.hmrc.http.Upstream5xxResponse(
-        message              = message,
-        upstreamResponseCode = statusCode,
-        reportAs             = reportAs,
-        headers              = headers
-      )
-    else throw new IllegalArgumentException(s"Unsupported statusCode $statusCode")
-
-  def unapply(e: UpstreamErrorResponse): Option[(String, Int, Int, Map[String, Seq[String]])] =
-    Some((e.message, e.statusCode, e.reportAs, e.headers))
 
   object Upstream4xxResponse {
     def unapply(e: UpstreamErrorResponse): Option[UpstreamErrorResponse] =
