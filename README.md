@@ -29,7 +29,7 @@ resolvers += MavenRepository("HMRC-open-artefacts-maven2", "https://open.artefac
 
 libraryDependencies += "uk.gov.hmrc" %% "http-verbs-play-xx" % "x.x.x"
 ```
-Where `play-xx` is your version of Play (e.g. `play-28`).
+Where `play-xx` is your version of Play (e.g. `play-30`).
 
 ## Usage
 

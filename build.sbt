@@ -9,14 +9,10 @@ val scala2_12 = "2.12.18"
 val scala2_13 = "2.13.12"
 val scala3    = "3.3.3"
 
-ThisBuild / majorVersion     := 14
+ThisBuild / majorVersion     := 15
 ThisBuild / scalaVersion     := scala2_13
 ThisBuild / isPublicArtefact := true
-ThisBuild / scalacOptions    ++= Seq("-feature") ++
-                                 (CrossVersion.partialVersion(scalaVersion.value) match {
-                                   case Some((3, _ )) => Seq("-explain")
-                                   case _             => Seq.empty
-                                 })
+ThisBuild / scalacOptions    ++= Seq("-feature")
 
 
 lazy val library = (project in file("."))
