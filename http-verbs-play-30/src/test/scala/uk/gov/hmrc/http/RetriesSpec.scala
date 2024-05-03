@@ -34,6 +34,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
 
+@annotation.nowarn("msg=deprecated")
 class RetriesSpec
   extends AnyWordSpecLike
      with Matchers

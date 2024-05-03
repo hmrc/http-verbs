@@ -16,4 +16,5 @@
 
 package uk.gov.hmrc.http
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait Request

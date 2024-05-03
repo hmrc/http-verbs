@@ -24,6 +24,7 @@ import play.api.libs.ws.{writeableOf_JsValue, writeableOf_String, writeableOf_ur
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSPost extends CorePost with PostHttpTransport with WSRequestBuilder with WSExecute {
 
   def withEmptyBody(request: WSRequest): WSRequest

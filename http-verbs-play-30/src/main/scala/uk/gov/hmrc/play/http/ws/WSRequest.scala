@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http.ws
 import play.api.Configuration
 import play.api.libs.ws.{DefaultWSProxyServer, WSProxyServer, WSRequest => PlayWSRequest}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSRequest extends WSRequestBuilder {
 
   override def buildRequest(
@@ -29,6 +30,7 @@ trait WSRequest extends WSRequestBuilder {
       .withHttpHeaders(headers: _*)
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSProxy extends WSRequest {
 
   def wsProxyServer: Option[WSProxyServer]

@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.ws.{WSClient, WSRequest => PlayWSRequest}
 import uk.gov.hmrc.http.Request
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSRequestBuilder extends Request {
 
   protected def wsClient: WSClient

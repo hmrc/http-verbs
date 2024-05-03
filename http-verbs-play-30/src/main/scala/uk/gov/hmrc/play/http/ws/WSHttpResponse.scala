@@ -19,6 +19,7 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.http.HttpResponse
 
+@deprecated("Use HttpClientV2", "15.0.0")
 object WSHttpResponse {
   def apply(wsResponse: WSResponse): HttpResponse =
     HttpResponse(

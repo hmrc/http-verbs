@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait HttpVerb extends Request {
 
   def mapErrors(

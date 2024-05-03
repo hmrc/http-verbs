@@ -34,6 +34,7 @@ import uk.gov.hmrc.play.http.ws.WSHttp
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
+@annotation.nowarn("msg=deprecated")
 class HeadersSpec
   extends AnyWordSpecLike
      with Matchers
