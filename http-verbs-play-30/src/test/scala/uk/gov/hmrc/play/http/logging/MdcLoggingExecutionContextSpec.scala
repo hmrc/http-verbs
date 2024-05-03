@@ -163,7 +163,7 @@ class MdcLoggingExecutionContextSpec
 }
 
 class InspectableAppender extends AppenderBase[ILoggingEvent]() {
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   val list =
     mutable.ListBuffer[(ILoggingEvent, Map[String, String])]()

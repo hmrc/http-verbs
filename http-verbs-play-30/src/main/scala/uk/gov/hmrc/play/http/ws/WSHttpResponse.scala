@@ -48,5 +48,5 @@ object WSHttpResponse {
   // duplicated from CollectionUtils since WSHttpResponse is not defined within uk.gov.hmrc.http package..
   private def forScala2_13(m: Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
     // `m.mapValues(_.toSeq).toMap` by itself strips the ordering away
-    scala.collection.immutable.TreeMap[String, Seq[String]]()(scala.math.Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++ m.mapValues(_.toSeq)
+    scala.collection.immutable.TreeMap[String, Seq[String]]()(scala.math.Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++ m.view.mapValues(_.toSeq)
 }

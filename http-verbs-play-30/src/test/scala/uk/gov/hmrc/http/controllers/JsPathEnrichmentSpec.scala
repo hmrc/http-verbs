@@ -22,52 +22,48 @@ import play.api.libs.json._
 
 class JsPathEnrichmentSpec extends AnyWordSpecLike with Matchers {
 
-  "Parsing json when the path does not exist prior to the structure being parsed" should {
-
-    "result in None without failure when early sections of path are not present" in new Setup {
-      pathDoesNotExistJson.validate[Option[BigDecimal]] shouldBe JsSuccess(None)
-    }
-
-    "result in None without failure when the patch exists but the value does not" in new Setup {
-      pathDoesNotExistJson.validate[Option[BigDecimal]] shouldBe JsSuccess(None)
-    }
-
-    "result in value when path exists" in new Setup {
-      pathAndValueExistsJson.validate[Option[BigDecimal]] match {
-        case s: JsSuccess[Option[BigDecimal]] => s.value shouldBe Some(BigDecimal("899.80"))
-        case e: JsError                       => fail(s"Should have parsed bigDecimal, failed with $e")
-      }
-    }
-  }
-
-  class Setup {
-
     import JsPathEnrichment.RichJsPath
 
     implicit val reads: Reads[Option[BigDecimal]] = (JsPath \ "rti" \ "balance").tolerantReadNullable[BigDecimal]
 
-    val pathDoesNotExistJson = Json.parse("""
-        |{
-        |	"nonRti": {
-        |		"paidToDate": 200.25
-        |	}
-        |}
-      """.stripMargin)
+    val pathDoesNotExistJson =
+      Json.parse(
+        """{
+          "nonRti": {
+            "paidToDate": 200.25
+          }
+        }"""
+      )
 
-    val pathExistsAndValueMissingJson = Json.parse("""
-        |{
-        |	"rti": {
-        |		"notTheBalance": 123.45
-        |	}
-        |}
-      """.stripMargin)
+    val pathExistsAndValueMissingJson =
+      Json.parse(
+        """{
+          "rti": {
+            "notTheBalance": 123.45
+          }
+        }"""
+      )
 
-    val pathAndValueExistsJson = Json.parse("""
-        |{
-        |	"rti": {
-        |		"balance": 899.80
-        |	}
-        |}
-      """.stripMargin)
+    val pathAndValueExistsJson =
+      Json.parse(
+        """{
+          "rti": {
+            "balance": 899.80
+          }
+        }"""
+      )
+
+  "Parsing json when the path does not exist prior to the structure being parsed" should {
+    "result in None without failure when early sections of path are not present" in {
+      pathDoesNotExistJson.validate[Option[BigDecimal]] shouldBe JsSuccess(None)
+    }
+
+    "result in None without failure when the patch exists but the value does not" in {
+      pathExistsAndValueMissingJson.validate[Option[BigDecimal]] shouldBe JsSuccess(None)
+    }
+
+    "result in value when path exists" in {
+      pathAndValueExistsJson.validate[Option[BigDecimal]] shouldBe JsSuccess(Some(BigDecimal("899.80")), __ \ "rti" \ "balance")
+    }
   }
 }

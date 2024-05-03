@@ -5,7 +5,6 @@ import sbt._
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
-val scala2_12 = "2.12.18"
 val scala2_13 = "2.13.12"
 val scala3    = "3.3.3"
 
@@ -38,7 +37,7 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
   .enablePlugins(BuildInfoPlugin)
   .settings(
     copyPlay30Sources(httpVerbsPlay30),
-    crossScalaVersions := Seq(scala2_12, scala2_13),
+    crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
       LibDependencies.coreCompilePlay28 ++
@@ -87,7 +86,7 @@ lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-3
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
     copyPlay30Sources(httpVerbsTestPlay30),
-    crossScalaVersions := Seq(scala2_12, scala2_13),
+    crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++= LibDependencies.testCompilePlay28,
     Test / fork := true // required to look up wiremock resources
   )

@@ -18,8 +18,8 @@ package uk.gov.hmrc.play.http.logging
 
 import org.slf4j.MDC
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
 object Mdc {
 

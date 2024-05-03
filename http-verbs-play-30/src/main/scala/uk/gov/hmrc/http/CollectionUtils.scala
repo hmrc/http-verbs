@@ -20,6 +20,6 @@ object CollectionUtils {
   // play returns scala.collection.Seq, but default for Scala 2.13 is scala.collection.immutable.Seq
   private [http] def forScala2_13(m: Map[String, scala.collection.Seq[String]]): Map[String, Seq[String]] =
     // `m.mapValues(_.toSeq).toMap` by itself strips the ordering away
-    scala.collection.immutable.TreeMap[String, Seq[String]]()(scala.math.Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++ m.mapValues(_.toSeq)
+    scala.collection.immutable.TreeMap[String, Seq[String]]()(scala.math.Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++ m.view.mapValues(_.toSeq)
 
 }

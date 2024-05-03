@@ -24,9 +24,9 @@ import uk.gov.hmrc.play.http.logging.Mdc
 
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
 trait Retries {
 
