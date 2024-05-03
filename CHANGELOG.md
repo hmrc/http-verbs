@@ -2,6 +2,8 @@
 
 - Built for Scala 3 in addition to 2.13.
 - Scala 2.12 has been dropped.
+- `HttpClient` has been deprecated in favour of `HttpClientV2`
+- Some old deprecations relating to `UpstreamErrorResponse` and `HttpResponse` have been removed.
 
 ### Version 14.12.0
 

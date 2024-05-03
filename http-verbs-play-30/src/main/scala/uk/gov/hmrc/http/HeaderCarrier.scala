@@ -93,8 +93,8 @@ case class HeaderCarrier(
 object HeaderCarrier {
 
   def headersForUrl(
-    config: Config,
-    url: String,
+    config      : Config,
+    url         : String,
     extraHeaders: Seq[(String, String)] = Seq()
   )(
     implicit hc: HeaderCarrier

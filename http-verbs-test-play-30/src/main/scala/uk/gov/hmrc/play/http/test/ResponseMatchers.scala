@@ -31,10 +31,10 @@ trait ResponseMatchers extends ScalaFutures with IntegrationPatience {
    */
   def status(expected: Int) = new HavePropertyMatcher[Future[WSResponse], Int] {
     def apply(response: Future[WSResponse]) = HavePropertyMatchResult(
-      matches = response.futureValue.status == expected,
-      propertyName = "Response HTTP Status",
+      matches       = response.futureValue.status == expected,
+      propertyName  = "Response HTTP Status",
       expectedValue = expected,
-      actualValue = response.futureValue.status
+      actualValue   = response.futureValue.status
     )
   }
 
@@ -44,10 +44,10 @@ trait ResponseMatchers extends ScalaFutures with IntegrationPatience {
    */
   def body(expected: String) = new HavePropertyMatcher[Future[WSResponse], String] {
     def apply(response: Future[WSResponse]) = HavePropertyMatchResult(
-      matches = response.futureValue.body == expected,
-      propertyName = "Response Body",
+      matches       = response.futureValue.body == expected,
+      propertyName  = "Response Body",
       expectedValue = expected,
-      actualValue = response.futureValue.body
+      actualValue   = response.futureValue.body
     )
   }
 
@@ -60,10 +60,10 @@ trait ResponseMatchers extends ScalaFutures with IntegrationPatience {
 
     def apply(response: Future[WSResponse]) = {
       HavePropertyMatchResult(
-        matches = response.futureValue.json == expectedAsJson,
-        propertyName = "Response Content JSON",
+        matches       = response.futureValue.json == expectedAsJson,
+        propertyName  = "Response Content JSON",
         expectedValue = expectedAsJson,
-        actualValue = response.futureValue.json
+        actualValue   = response.futureValue.json
       )
     }
   }
@@ -75,10 +75,10 @@ trait ResponseMatchers extends ScalaFutures with IntegrationPatience {
    */
   def jsonProperty[E](path: JsPath, expected: E)(implicit eReads: Reads[E]) = new HavePropertyMatcher[Future[WSResponse], String] {
     def apply(response: Future[WSResponse]) = HavePropertyMatchResult(
-      matches = response.futureValue.json.validate(path.read[E]).map(_ == expected).getOrElse(false),
-      propertyName = "Response JSON at path " + path,
+      matches       = response.futureValue.json.validate(path.read[E]).map(_ == expected).getOrElse(false),
+      propertyName  = "Response JSON at path " + path,
       expectedValue = expected.toString,
-      actualValue = {
+      actualValue   = {
         val json = response.futureValue.json
         json.validate(path.read[E]).map(_.toString).getOrElse(json.toString)
       }
@@ -92,10 +92,10 @@ trait ResponseMatchers extends ScalaFutures with IntegrationPatience {
    */
   def jsonProperty(path: JsPath) = new HavePropertyMatcher[Future[WSResponse], JsValue] {
     def apply(response: Future[WSResponse]) = HavePropertyMatchResult(
-      matches = response.futureValue.json.validate(path.readNullable[JsValue]).get.isDefined,
-      propertyName = "Response JSON at path " + path,
+      matches       = response.futureValue.json.validate(path.readNullable[JsValue]).get.isDefined,
+      propertyName  = "Response JSON at path " + path,
       expectedValue = JsString("defined"),
-      actualValue = response.futureValue.json.validate(path.readNullable[JsValue]).get.getOrElse(JsNull)
+      actualValue   = response.futureValue.json.validate(path.readNullable[JsValue]).get.getOrElse(JsNull)
     )
   }
 }
