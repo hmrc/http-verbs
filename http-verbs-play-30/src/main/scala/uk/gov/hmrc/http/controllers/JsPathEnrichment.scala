@@ -18,29 +18,13 @@ package uk.gov.hmrc.http.controllers
 
 import play.api.libs.json._
 
+@deprecated("Use JsPath.readNullable", "15.0.0")
 object JsPathEnrichment {
 
   implicit class RichJsPath(jsPath: JsPath) {
 
-    // Same as JsPath.readNullable but does not fail if the path does not exist up to the read point,
-    // which is how the now deprecated readOpt usefully behaves.
-    def tolerantReadNullable[T](implicit r: Reads[T]): Reads[Option[T]] = tolerantReadNullable(jsPath)(r)
-
-    private def tolerantReadNullable[A](path: JsPath)(implicit reads: Reads[A]) = Reads[Option[A]] { json =>
-      path
-        .applyTillLast(json)
-        .fold(
-          jsError => JsSuccess(None),
-          jsResult =>
-            jsResult.fold(
-              _ => JsSuccess(None),
-              a =>
-                a match {
-                  case JsNull => JsSuccess(None)
-                  case js     => reads.reads(js).repath(path).map(Some(_))
-              }
-          )
-        )
-    }
+    // Existed since (the deprecated) JsPath.readOpt would fail if the path did notexist up to the read point.
+    def tolerantReadNullable[T](implicit r: Reads[T]): Reads[Option[T]] =
+      JsPath.readNullable
   }
 }

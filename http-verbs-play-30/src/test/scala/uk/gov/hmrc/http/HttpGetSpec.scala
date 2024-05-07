@@ -30,6 +30,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
+@annotation.nowarn("msg=deprecated")
 class HttpGetSpec
   extends AnyWordSpecLike
      with Matchers

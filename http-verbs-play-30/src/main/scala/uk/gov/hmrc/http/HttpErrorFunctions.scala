@@ -49,24 +49,6 @@ trait HttpErrorFunctions {
 
   def is5xx(status: Int) = status >= 500 && status < 600
 
-  @deprecated("Use handleReponseEither instead.", "11.0.0")
-  def handleResponse(httpMethod: String, url: String)(response: HttpResponse): HttpResponse =
-    response.status match {
-      case status if is2xx(status) => response
-      case 400                     => throw new BadRequestException(badRequestMessage(httpMethod, url, response.body))
-      case 404                     => throw new NotFoundException(notFoundMessage(httpMethod, url, response.body))
-      case status if is4xx(status) =>
-        throw new Upstream4xxResponse(
-          upstreamResponseMessage(httpMethod, url, status, response.body),
-          status,
-          500,
-          response.allHeaders)
-      case status if is5xx(status) =>
-        throw new Upstream5xxResponse(upstreamResponseMessage(httpMethod, url, status, response.body), status, 502)
-      case status =>
-        throw new Exception(s"$httpMethod to $url failed with status $status. Response body: '${response.body}'")
-    }
-
   // Note, no special handling of BadRequest or NotFound
   // they will be returned as `Left(Upstream4xxResponse(status = 400))` and `Left(Upstream4xxResponse(status = 404))` respectively
   def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =

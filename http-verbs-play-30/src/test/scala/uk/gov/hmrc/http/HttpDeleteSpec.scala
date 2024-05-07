@@ -32,6 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
+@annotation.nowarn("msg=deprecated")
 class HttpDeleteSpec
   extends AnyWordSpecLike
      with Matchers

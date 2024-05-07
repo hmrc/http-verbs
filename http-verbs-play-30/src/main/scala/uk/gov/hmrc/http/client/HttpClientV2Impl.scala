@@ -116,12 +116,6 @@ final class RequestBuilderImpl(
   override def setHeader(header: (String, String)*): RequestBuilderImpl =
     transform(replaceHeaderOnRequest(_, header: _*))
 
-  override def replaceHeader(header: (String, String)): RequestBuilderImpl =
-    setHeader(header)
-
-  override def addHeaders(headers: (String, String)*): RequestBuilderImpl =
-    transform(_.addHttpHeaders(headers: _*))
-
   override def withProxy: RequestBuilderImpl =
     transform(request => optProxyServer.foldLeft(request)(_ withProxyServer _))
 

@@ -16,28 +16,12 @@
 
 package uk.gov.hmrc.play.http.ws
 
-import play.api.libs.json.JsValue
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.http.HttpResponse
 
-@deprecated("Use WsHttpResponse.apply and HttpResponse instead", "11.0.0")
-class WSHttpResponse(wsResponse: WSResponse) extends HttpResponse {
-
-  override def allHeaders: Map[String, Seq[String]] =
-    WSHttpResponse.forScala2_13(wsResponse.headers)
-
-  override def status: Int = wsResponse.status
-
-  override def json: JsValue = wsResponse.json
-
-  override def body: String = wsResponse.body
-}
-
+@deprecated("Use HttpClientV2", "15.0.0")
 object WSHttpResponse {
   def apply(wsResponse: WSResponse): HttpResponse =
-    // Note that HttpResponse defines `def json` as `Json.parse(body)` - this may be different from wsResponse.json depending on version.
-    // https://github.com/playframework/play-ws/commits/master/play-ws-standalone-json/src/main/scala/play/api/libs/ws/JsonBodyReadables.scala shows that is was redefined
-    // to handle an encoding issue, but subsequently reverted.
     HttpResponse(
       status  = wsResponse.status,
       body    = wsResponse.body,

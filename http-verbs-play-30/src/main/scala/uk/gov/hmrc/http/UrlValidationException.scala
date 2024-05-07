@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+@deprecated("Use HttpClientV2", "15.0.0")
 class UrlValidationException(val url: String, val context: String, val message: String) extends Exception {
   override def getMessage: String =
     s"'$url' is invalid for $context. $message"

@@ -21,6 +21,7 @@ import uk.gov.hmrc.play.http.ws.{WSExecute, WSHttpResponse, WSRequestBuilder}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSDelete extends CoreDelete with DeleteHttpTransport with WSRequestBuilder with WSExecute {
 
   override def doDelete(

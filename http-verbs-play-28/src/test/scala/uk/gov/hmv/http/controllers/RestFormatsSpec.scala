@@ -19,7 +19,7 @@ package uk.gov.hmrc.http.controllers
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import play.api.libs.json.{JsSuccess, _}
+import play.api.libs.json._
 
 class RestFormatsSpec extends AnyWordSpecLike with Matchers {
   "localDateTimeRead" should {
@@ -27,8 +27,7 @@ class RestFormatsSpec extends AnyWordSpecLike with Matchers {
       val testDate = new LocalDateTime(0)
       val jsValue  = RestFormats.localDateTimeWrite.writes(testDate)
 
-      val JsSuccess(result, _) = RestFormats.localDateTimeRead.reads(jsValue)
-      result shouldBe testDate
+      RestFormats.localDateTimeRead.reads(jsValue) shouldBe JsSuccess(testDate, __)
     }
 
     "return a JsError for a json value that is not a JsString" in {
@@ -45,8 +44,7 @@ class RestFormatsSpec extends AnyWordSpecLike with Matchers {
       val testDate = new DateTime(0)
       val jsValue  = RestFormats.dateTimeWrite.writes(testDate)
 
-      val JsSuccess(result, _) = RestFormats.dateTimeRead.reads(jsValue)
-      result shouldBe testDate.withZone(DateTimeZone.UTC)
+      RestFormats.dateTimeRead.reads(jsValue) shouldBe JsSuccess(testDate.withZone(DateTimeZone.UTC), __)
     }
 
     "return a JsError for a json value that is not a JsString" in {
@@ -63,8 +61,7 @@ class RestFormatsSpec extends AnyWordSpecLike with Matchers {
       val json         = JsString("1994-05-01")
       val expectedDate = new LocalDate(1994, 5, 1)
 
-      val JsSuccess(result, _) = RestFormats.localDateRead.reads(json)
-      result shouldBe expectedDate
+      RestFormats.localDateRead.reads(json) shouldBe JsSuccess(expectedDate, __)
     }
 
     "return a JsError for a json value that is not a JsString" in {

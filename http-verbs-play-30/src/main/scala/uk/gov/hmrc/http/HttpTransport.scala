@@ -22,6 +22,7 @@ import play.api.libs.json.Writes
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait GetHttpTransport {
   def doGet(
     url: String,
@@ -29,6 +30,7 @@ trait GetHttpTransport {
       implicit ec: ExecutionContext): Future[HttpResponse]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait DeleteHttpTransport {
   def doDelete(
     url: String,
@@ -36,6 +38,7 @@ trait DeleteHttpTransport {
       implicit ec: ExecutionContext): Future[HttpResponse]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait PatchHttpTransport {
   def doPatch[A](
     url: String,
@@ -45,6 +48,7 @@ trait PatchHttpTransport {
       ec: ExecutionContext): Future[HttpResponse]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait PutHttpTransport {
   def doPut[A](
     url: String,
@@ -60,6 +64,7 @@ trait PutHttpTransport {
       implicit ec: ExecutionContext): Future[HttpResponse]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait PostHttpTransport {
   def doPost[A](
     url: String,
@@ -86,13 +91,15 @@ trait PostHttpTransport {
     implicit ec: ExecutionContext): Future[HttpResponse]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait HttpTransport
     extends GetHttpTransport
     with DeleteHttpTransport
     with PatchHttpTransport
     with PutHttpTransport
-    with PostHttpTransport {}
+    with PostHttpTransport
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait CoreGet {
 
   final def GET[A](
@@ -120,6 +127,7 @@ trait CoreGet {
 
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait CoreDelete {
 
   final def DELETE[O](
@@ -145,6 +153,7 @@ trait CoreDelete {
       ec: ExecutionContext): Future[O]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait CorePatch {
 
   final def PATCH[I, O](
@@ -176,6 +185,7 @@ trait CorePatch {
       ec: ExecutionContext): Future[O]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait CorePut {
 
   final def PUT[I, O](
@@ -232,6 +242,7 @@ trait CorePut {
       ec: ExecutionContext): Future[O]
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait CorePost {
 
   final def POST[I, O](

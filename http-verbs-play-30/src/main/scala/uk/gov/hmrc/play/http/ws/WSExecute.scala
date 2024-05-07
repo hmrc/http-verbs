@@ -19,14 +19,14 @@ package uk.gov.hmrc.play.http.ws
 import scala.concurrent.ExecutionContext
 import uk.gov.hmrc.play.http.logging.Mdc
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSExecute {
 
-  private[ws] def execute(req: play.api.libs.ws.WSRequest, method: String)(implicit ec: ExecutionContext) = {
+  private[ws] def execute(req: play.api.libs.ws.WSRequest, method: String)(implicit ec: ExecutionContext) =
     // Since AHC internally uses a different execution context, providing a MDC enabled Execution context
     // will not preserve MDC data for further futures.
     // We will copy over the data manually to preserve them.
     Mdc.preservingMdc {
       req.withMethod(method).execute()
     }
-  }
 }

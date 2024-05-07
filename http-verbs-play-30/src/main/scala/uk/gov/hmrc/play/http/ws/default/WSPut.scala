@@ -23,6 +23,7 @@ import play.api.libs.ws.{writeableOf_JsValue, writeableOf_String}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSPut extends CorePut with PutHttpTransport with WSRequestBuilder with WSExecute{
 
   override def doPut[A](

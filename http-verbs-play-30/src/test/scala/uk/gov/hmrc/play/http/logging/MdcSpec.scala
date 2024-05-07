@@ -77,7 +77,7 @@ class MdcSpec
       (for {
          _ <- Future.successful(org.slf4j.MDC.put("k", "v"))
          _ <- Mdc.preservingMdc(runActionWhichLosesMdc(fail = true))
-       } yield ()
+       } yield None
       ).recover { case _ =>
         Option(MDC.get("k"))
       }.futureValue shouldBe Some("v")

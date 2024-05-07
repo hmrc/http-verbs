@@ -24,6 +24,7 @@ import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws.WSHttp
 
+@annotation.nowarn("msg=deprecated")
 trait HttpClientSupport {
   def mkHttpClient(
     config: Config = ConfigFactory.load()

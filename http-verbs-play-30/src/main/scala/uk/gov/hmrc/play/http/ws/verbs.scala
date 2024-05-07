@@ -19,13 +19,23 @@ package uk.gov.hmrc.play.http.ws
 import play.api.libs.ws.{EmptyBody, WSRequest => PlayWSRequest}
 import play.api.libs.ws.writeableOf_WsBody
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSDelete extends default.WSDelete with WSRequest
+
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSGet    extends default.WSGet    with WSRequest
+
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSPatch  extends default.WSPatch  with WSRequest
+
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSPut    extends default.WSPut    with WSRequest
+
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSPost   extends default.WSPost   with WSRequest {
   override def withEmptyBody(request: PlayWSRequest): PlayWSRequest =
     request.withBody(EmptyBody).addHttpHeaders((play.api.http.HeaderNames.CONTENT_LENGTH -> "0"))
 }
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch

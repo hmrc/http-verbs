@@ -23,6 +23,7 @@ import play.api.libs.ws.writeableOf_JsValue
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait WSPatch extends CorePatch with PatchHttpTransport with WSRequestBuilder with WSExecute {
 
   override def doPatch[A](

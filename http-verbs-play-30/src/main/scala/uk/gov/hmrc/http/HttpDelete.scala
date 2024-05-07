@@ -22,6 +22,7 @@ import uk.gov.hmrc.http.logging.ConnectionTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@deprecated("Use HttpClientV2", "15.0.0")
 trait HttpDelete
   extends CoreDelete
      with DeleteHttpTransport

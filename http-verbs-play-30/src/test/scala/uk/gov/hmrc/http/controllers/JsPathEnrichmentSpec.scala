@@ -20,38 +20,39 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json._
 
+@annotation.nowarn("msg=deprecated")
 class JsPathEnrichmentSpec extends AnyWordSpecLike with Matchers {
 
-    import JsPathEnrichment.RichJsPath
+  import JsPathEnrichment.RichJsPath
 
-    implicit val reads: Reads[Option[BigDecimal]] = (JsPath \ "rti" \ "balance").tolerantReadNullable[BigDecimal]
+  implicit val reads: Reads[Option[BigDecimal]] = (JsPath \ "rti" \ "balance").readNullable[BigDecimal]
 
-    val pathDoesNotExistJson =
-      Json.parse(
-        """{
-          "nonRti": {
-            "paidToDate": 200.25
-          }
-        }"""
-      )
+  val pathDoesNotExistJson =
+    Json.parse(
+      """{
+        "nonRti": {
+          "paidToDate": 200.25
+        }
+      }"""
+    )
 
-    val pathExistsAndValueMissingJson =
-      Json.parse(
-        """{
-          "rti": {
-            "notTheBalance": 123.45
-          }
-        }"""
-      )
+  val pathExistsAndValueMissingJson =
+    Json.parse(
+      """{
+        "rti": {
+          "notTheBalance": 123.45
+        }
+      }"""
+    )
 
-    val pathAndValueExistsJson =
-      Json.parse(
-        """{
-          "rti": {
-            "balance": 899.80
-          }
-        }"""
-      )
+  val pathAndValueExistsJson =
+    Json.parse(
+      """{
+        "rti": {
+          "balance": 899.80
+        }
+      }"""
+    )
 
   "Parsing json when the path does not exist prior to the structure being parsed" should {
     "result in None without failure when early sections of path are not present" in {
