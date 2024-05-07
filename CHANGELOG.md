@@ -1,3 +1,8 @@
+### Version 15.0.0
+
+- Built for Scala 3 in addition to 2.13.
+- Scala 2.12 has been dropped.
+
 ### Version 14.12.0
 
 Adds support for Play 3.0

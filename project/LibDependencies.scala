@@ -9,7 +9,8 @@ object LibDependencies {
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
   def coreCompileCommon(scalaVersion: String) = Seq(
     "com.typesafe"                %  "config"           % "1.4.3",
-    "com.softwaremill.sttp.model" %% "core"             % "1.7.2"
+    "com.softwaremill.sttp.model" %% "core"             % "1.7.2",
+    "dev.zio"                     %% "izumi-reflect"    % "2.3.8"
   ) ++
     (CrossVersion.partialVersion(scalaVersion) match {
       case Some((2, 12)) => // empty http-core added to force eviction
@@ -36,11 +37,14 @@ object LibDependencies {
     "org.playframework" %% "play-ahc-ws" % play30Version
   )
 
-  val coreTestCommon = Seq(
+  def coreTestCommon = Seq(
     "org.scalatest"          %% "scalatest"                % "3.2.17"      % Test,
     "org.scalatestplus"      %% "scalacheck-1-17"          % "3.2.17.0"    % Test,
-    "org.mockito"            %% "mockito-scala-scalatest"  % "1.17.14"     % Test,
-    "com.vladsch.flexmark"   %  "flexmark-all"             % "0.64.8"      % Test
+    "com.vladsch.flexmark"   %  "flexmark-all"             % "0.64.8"      % Test,
+    // mockito-scala is not available for Scala 3 https://github.com/mockito/mockito-scala/issues/364
+    // use java build + scalatestplus:mockito
+    "org.scalatestplus"      %% "mockito-3-4"              % "3.2.10.0"    % Test // recommended by play docs https://www.playframework.com/documentation/3.0.x/ScalaTestingWithScalaTest
+    // or https://mvnrepository.com/artifact/eu.monniot/scala3mock
   )
 
   val coreTestPlay28 = Seq(

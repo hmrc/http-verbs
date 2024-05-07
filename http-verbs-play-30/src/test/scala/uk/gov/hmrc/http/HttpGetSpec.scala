@@ -18,13 +18,14 @@ package uk.gov.hmrc.http
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.actor.ActorSystem
-import org.mockito.{ArgumentMatchersSugar, Strictness}
-import org.mockito.captor.ArgCaptor
-import org.mockito.scalatest.MockitoSugar
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.verify
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.hooks.{Data, HttpHook, RequestData, ResponseData}
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -35,8 +36,7 @@ class HttpGetSpec
      with ScalaFutures
      with CommonHttpBehaviour
      with IntegrationPatience
-     with MockitoSugar
-     with ArgumentMatchersSugar {
+     with MockitoSugar {
 
   import ExecutionContext.Implicits.global
 
@@ -45,8 +45,8 @@ class HttpGetSpec
   ) extends HttpGet
        with ConnectionTracingCapturing {
 
-    val testHook1: HttpHook = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
-    val testHook2: HttpHook = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
+    val testHook1: HttpHook = mock[HttpHook]
+    val testHook2: HttpHook = mock[HttpHook]
 
     override val configuration: Config = ConfigFactory.load()
 
@@ -83,37 +83,37 @@ class HttpGetSpec
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET[HttpResponse](url, Seq("header" -> "foo")).futureValue shouldBe response
+      testGet.GET[HttpResponse](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue shouldBe response
     }
 
     "be able to return objects deserialised from JSON" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testGet.GET[TestClass](url, Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
+      testGet.GET[TestClass](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue should be(TestClass("t", 10))
     }
 
     "be able to return Some[T] when deserialising as an option of object from JSON" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue should be(Some(TestClass("t", 10)))
+      testGet.GET[Option[TestClass]](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue should be(Some(TestClass("t", 10)))
     }
 
     // By adding an Option to your case class, the 404 is translated into None
     "return None when 404 returned for GET as an option of object" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(404, "This is an expected Not Found")))
-      testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue should be(None)
+      testGet.GET[Option[TestClass]](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue should be(None)
     }
 
     "throw expected exception when JSON deserialisation fails for option of an object" in {
       val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, "Not JSON")))
       an[Exception] shouldBe thrownBy {
-        testGet.GET[Option[TestClass]](url, Seq("header" -> "foo")).futureValue
+        testGet.GET[Option[TestClass]](url, queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue
       }
     }
 
     behave like anErrorMappingHttpCall(
       "GET",
-      (url, responseF) => new StubbedHttpGet(responseF).GET[HttpResponse](url, Seq("header" -> "foo")))
+      (url, responseF) => new StubbedHttpGet(responseF).GET[HttpResponse](url, queryParams = Seq.empty, Seq("header" -> "foo")))
     behave like aTracingHttpCall("GET", "GET", new StubbedHttpGet(defaultHttpResponse)) {
-      _.GET[HttpResponse](url, Seq("header" -> "foo"))
+      _.GET[HttpResponse](url, queryParams = Seq.empty, headers = Seq("header" -> "foo"))
     }
 
     "Invoke any hooks provided" in {
@@ -121,35 +121,35 @@ class HttpGetSpec
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testGet = new StubbedHttpGet(dummyResponseFuture)
 
-      testGet.GET[HttpResponse](url).futureValue
+      testGet.GET[HttpResponse](url, queryParams = Seq.empty, headers = Seq.empty).futureValue
 
-      val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
-      val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
+      val responseFCaptor1 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
+      val responseFCaptor2 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
-      val requestCaptor1 = ArgCaptor[RequestData]
-      val requestCaptor2 = ArgCaptor[RequestData]
+      val requestCaptor1 = ArgumentCaptor.forClass(classOf[RequestData])
+      val requestCaptor2 = ArgumentCaptor.forClass(classOf[RequestData])
 
       val config = HeaderCarrier.Config.fromConfig(testGet.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testGet.testHook1).apply(eqTo("GET"), eqTo(url"$url"), requestCaptor1, responseFCaptor1)(any, any)
-      verify(testGet.testHook2).apply(eqTo("GET"), eqTo(url"$url"), requestCaptor2, responseFCaptor2)(any, any)
+      verify(testGet.testHook1).apply(eqTo("GET"), eqTo(url"$url"), requestCaptor1.capture(), responseFCaptor1.capture())(any[HeaderCarrier], any[ExecutionContext])
+      verify(testGet.testHook2).apply(eqTo("GET"), eqTo(url"$url"), requestCaptor2.capture(), responseFCaptor2.capture())(any[HeaderCarrier], any[ExecutionContext])
 
-      val request1 = requestCaptor1.value
+      val request1 = requestCaptor1.getValue
       request1.headers  should contain allElementsOf(headers)
       request1.body     shouldBe None
 
-      val request2 = requestCaptor2.value
+      val request2 = requestCaptor2.getValue
       request2.headers  should contain allElementsOf(headers)
       request2.body     shouldBe None
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      val response1 = responseFCaptor1.value.futureValue
+      val response1 = responseFCaptor1.getValue.futureValue
       response1.status shouldBe 200
       response1.body shouldBe Data.pure(testBody)
 
-      val response2 = responseFCaptor2.value.futureValue
+      val response2 = responseFCaptor2.getValue.futureValue
       response2.status shouldBe 200
       response2.body shouldBe Data.pure(testBody)
     }
@@ -160,14 +160,14 @@ class HttpGetSpec
     "return an empty string if the query parameters is empty" in {
       val expected = Some("http://test.net")
       val testGet = new UrlTestingHttpGet()
-      testGet.GET[HttpResponse]("http://test.net", Seq())
+      testGet.GET[HttpResponse]("http://test.net", Seq.empty, headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
     "return a url with a single param pair" in {
       val expected = Some("http://test.net?one=1")
       val testGet = new UrlTestingHttpGet()
-      testGet.GET[HttpResponse]("http://test.net", Seq(("one", "1")))
+      testGet.GET[HttpResponse]("http://test.net", queryParams = Seq("one" -> "1"), headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
@@ -175,7 +175,7 @@ class HttpGetSpec
       val expected = Some("http://test.net?one=1&two=2&three=3")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("three", "3")))
+        .GET[HttpResponse]("http://test.net", queryParams = Seq("one" -> "1", "two" -> "2", "three" -> "3"), headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
@@ -186,7 +186,9 @@ class HttpGetSpec
       testGet
         .GET[HttpResponse](
           "http://test.net",
-          Seq(("email", "test+alias@email.com"), ("data", "{\"message\":\"in json format\"}")))
+          queryParams = Seq("email" -> "test+alias@email.com", "data" -> "{\"message\":\"in json format\"}"),
+          headers     = Seq.empty
+        )
       testGet.lastUrl shouldBe expected
     }
 
@@ -232,7 +234,7 @@ class HttpGetSpec
       val expected = Some("http://test.net?one=1&two=2&one=11")
       val testGet = new UrlTestingHttpGet()
       testGet
-        .GET[HttpResponse]("http://test.net", Seq(("one", "1"), ("two", "2"), ("one", "11")))
+        .GET[HttpResponse]("http://test.net", queryParams = Seq("one" -> "1", "two" -> "2", "one" -> "11"), headers = Seq.empty)
       testGet.lastUrl shouldBe expected
     }
 
@@ -240,13 +242,13 @@ class HttpGetSpec
       val testGet = new UrlTestingHttpGet()
 
       a[UrlValidationException] should be thrownBy testGet
-        .GET[HttpResponse]("http://test.net?should=not=be+here", Seq(("one", "1")))
+        .GET[HttpResponse]("http://test.net?should=not=be+here", queryParams = Seq("one" -> "1"), headers = Seq.empty)
     }
 
     "be able to return plain responses provided already has Query and Header String" in {
       val response = HttpResponse(200, testBody)
       val testGet = new StubbedHttpGet(Future.successful(response))
-      testGet.GET[HttpResponse](url, Seq(("one", "1")), Seq("header" -> "foo")).futureValue shouldBe response
+      testGet.GET[HttpResponse](url, queryParams = Seq("one" -> "1"), headers = Seq("header" -> "foo")).futureValue shouldBe response
     }
   }
 }

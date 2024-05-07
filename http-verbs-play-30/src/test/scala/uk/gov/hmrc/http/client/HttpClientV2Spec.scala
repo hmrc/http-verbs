@@ -19,15 +19,17 @@ package uk.gov.hmrc.http.client
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{verify => _, _}
 import com.typesafe.config.ConfigFactory
-import org.mockito.{ArgumentMatchersSugar, Strictness}
-import org.mockito.captor.ArgCaptor
-import org.mockito.scalatest.MockitoSugar
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.verify
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
 import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.ws.{writeableOf_JsValue, writableOf_Source, writeableOf_String, writeableOf_urlEncodedForm}
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpReadsInstances, HttpResponse, Retries, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
@@ -50,7 +52,6 @@ class HttpClientV2Spec
      with ScalaFutures
      with IntegrationPatience
      with MockitoSugar
-     with ArgumentMatchersSugar
      with BeforeAndAfter {
 
   import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -85,25 +86,24 @@ class HttpClientV2Spec
           .withHeader("Http-ClientV2-Version", matching(".*"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromString("\"req\"")))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/json")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.pure(HookData.FromString("\"req\"")))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/json")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
-
 
     "Exclude Headers when the destination host does not match the pattern internalServiceHostPatterns in reference.conf" in new Setup {
       implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq("testHeader" -> "testHeaderValue"))
@@ -126,7 +126,6 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
           .withoutHeader("testHeader")
       )
-
     }
 
     "Headers sent when the destination host matches the pattern internalServiceHostPatterns in reference.conf" in new Setup {
@@ -182,21 +181,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromString(requestBody)))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.pure(HookData.FromString(requestBody)))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/octet-stream")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.pure(responseBody)
     }
@@ -234,21 +233,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromString(requestBody)))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.pure(HookData.FromString(requestBody)))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/octet-stream")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 500
       auditedResponse.body   shouldBe Data.pure(responseBody)
     }
@@ -282,21 +281,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/octet-stream")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/octet-stream")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.truncated(responseBody.take(maxAuditBodyLength))
     }
@@ -327,21 +326,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("PUT"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "text/plain")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.truncated(HookData.FromString(requestBody.take(maxAuditBodyLength))))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "text/plain")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.truncated(responseBody.take(maxAuditBodyLength))
     }
@@ -375,21 +374,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("POST"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromMap(body)))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.pure(HookData.FromMap(body)))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
@@ -437,21 +436,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("POST"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromMap(body)))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "nonstandard/x-www-form-urlencoded")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.pure(HookData.FromMap(body)))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "nonstandard/x-www-form-urlencoded")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
@@ -499,21 +498,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("POST"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Some(Data.pure(HookData.FromMap(body.toMap)))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Some(Data.pure(HookData.FromMap(body.toMap)))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Data.pure("\"res\"")
     }
@@ -562,21 +561,21 @@ class HttpClientV2Spec
           .withHeader("User-Agent", equalTo("myapp"))
       )
 
-      val requestCaptor   = ArgCaptor[RequestData]
-      val responseFCaptor = ArgCaptor[Future[ResponseData]]
+      val requestCaptor   = ArgumentCaptor.forClass(classOf[RequestData])
+      val responseFCaptor = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
       verify(mockHttpHook)
         .apply(
           verb      = eqTo("POST"),
           url       = eqTo(url"$wireMockUrl/"),
-          request   = requestCaptor,
-          responseF = responseFCaptor
+          request   = requestCaptor.capture(),
+          responseF = responseFCaptor.capture()
         )(any[HeaderCarrier], any[ExecutionContext])
 
-      requestCaptor.value.body shouldBe Body.Complete(Some(HookData.FromMap(body.toMap)))
-      requestCaptor.value.headers should contain ("User-Agent" -> "myapp")
-      requestCaptor.value.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
-      val auditedResponse = responseFCaptor.value.futureValue
+      requestCaptor.getValue.body shouldBe Body.Complete(Some(HookData.FromMap(body.toMap)))
+      requestCaptor.getValue.headers should contain ("User-Agent" -> "myapp")
+      requestCaptor.getValue.headers should contain ("Content-Type" -> "application/x-www-form-urlencoded")
+      val auditedResponse = responseFCaptor.getValue.futureValue
       auditedResponse.status shouldBe 200
       auditedResponse.body   shouldBe Body.Complete("\"res\"")
     }
@@ -733,7 +732,7 @@ class HttpClientV2Spec
   trait Setup {
     implicit val as: ActorSystem = ActorSystem("test-actor-system")
 
-    val mockHttpHook = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
+    val mockHttpHook = mock[HttpHook]
 
     val maxAuditBodyLength = 30
 

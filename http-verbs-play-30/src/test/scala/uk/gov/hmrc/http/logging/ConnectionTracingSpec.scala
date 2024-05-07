@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.http.logging
 
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.scalatest.MockitoSugar
+import org.mockito.Mockito.{reset, verify}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.Logger
 import uk.gov.hmrc.http._
 
@@ -30,7 +30,6 @@ class ConnectionTracingSpec
   extends AnyWordSpecLike
      with Matchers
      with MockitoSugar
-     with ArgumentMatchersSugar
      with BeforeAndAfterEach {
 
   val mockPlayLogger = mock[Logger]

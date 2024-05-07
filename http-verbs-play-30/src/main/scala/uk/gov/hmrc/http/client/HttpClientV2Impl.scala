@@ -23,17 +23,18 @@ import org.apache.pekko.util.ByteString
 import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
-import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, CollectionUtils, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries}
+import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, CollectionUtils, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries, TypeUtil}
+import izumi.reflect.Tag
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
+import play.api.libs.ws.writableOf_Source
 
 import java.net.{ConnectException, URL}
 import java.util.concurrent.TimeoutException
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.{Failure, Success}
 
 
@@ -108,7 +109,7 @@ final class RequestBuilderImpl(
   private def replaceHeaderOnRequest(request: WSRequest, headers: (String, String)*): WSRequest = {
     def denormalise(hdrs: Map[String, Seq[String]]): Seq[(String, String)] =
       hdrs.toList.flatMap { case (k, vs) => vs.map(k -> _) }
-    val hdrsWithoutKey = request.headers.filterKeys(k => !headers.map(_._1.toLowerCase).contains(k.toLowerCase)).toMap // replace existing header
+    val hdrsWithoutKey = request.headers.view.filterKeys(k => !headers.map(_._1.toLowerCase).contains(k.toLowerCase)).toMap // replace existing header
     request.withHttpHeaders(denormalise(hdrsWithoutKey) ++ headers : _*)
   }
 
@@ -127,17 +128,7 @@ final class RequestBuilderImpl(
   private def withHookData(hookDataF: Future[Option[Data[HookData]]]): RequestBuilderImpl =
     new RequestBuilderImpl(config, optProxyServer, executor)(request, Some(hookDataF))
 
-  // for erasure
-  private object IsMap {
-    def unapply[B: TypeTag](b: B): Option[Map[String, Seq[String]]] =
-      typeOf[B] match {
-        case _ if typeOf[B] =:= typeOf[Map[String, String]]      => Some(b.asInstanceOf[Map[String, String]].map { case (k, v) => k -> Seq(v) })
-        case _ if typeOf[B] =:= typeOf[Map[String, Seq[String]]] => Some(b.asInstanceOf[Map[String, Seq[String]]])
-        case _                                                   => None
-      }
-  }
-
-  override def withBody[B : BodyWritable : TypeTag](body: B)(implicit ec: ExecutionContext): RequestBuilderImpl = {
+  override def withBody[B : BodyWritable : Tag](body: B)(implicit ec: ExecutionContext): RequestBuilderImpl = {
     val hookDataP      = Promise[Option[Data[HookData]]]()
     val maxBodyLength  = config.get[Int]("http-verbs.auditing.maxBodyLength")
     transform { req =>
@@ -148,7 +139,7 @@ final class RequestBuilderImpl(
         case InMemoryBody(bytes) => // we can't guarantee that the default BodyWritables have been used - so rather than relying on content-type alone, we identify form data
                                     // by provided body type (Map) or content-type (e.g. form data as a string)
                                     (body, req2.header("Content-Type")) match {
-                                      case (IsMap(m), _                                        ) => hookDataP.success(Some(Data.pure(HookData.FromMap(m))))
+                                      case (TypeUtil.IsMap(m), _                               ) => hookDataP.success(Some(Data.pure(HookData.FromMap(m))))
                                       case (_       , Some("application/x-www-form-urlencoded")) => hookDataP.success(Some(Data.pure(HookData.FromMap(FormUrlEncodedParser.parse(bytes.utf8String)))))
                                       case _                                                     => val body = BodyCaptor.bodyUpto(bytes, maxBodyLength)
                                                                                                     hookDataP.success(Some(body.map(bytes => HookData.FromString(bytes.utf8String))))

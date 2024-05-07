@@ -5,13 +5,13 @@ import sbt._
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
-val scala2_12 = "2.12.18"
 val scala2_13 = "2.13.12"
+val scala3    = "3.3.3"
 
-ThisBuild / majorVersion     := 14
+ThisBuild / majorVersion     := 15
 ThisBuild / scalaVersion     := scala2_13
 ThisBuild / isPublicArtefact := true
-ThisBuild / scalacOptions    := Seq("-feature")
+ThisBuild / scalacOptions    ++= Seq("-feature")
 
 
 lazy val library = (project in file("."))
@@ -37,7 +37,7 @@ lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-2
   .enablePlugins(BuildInfoPlugin)
   .settings(
     copyPlay30Sources(httpVerbsPlay30),
-    crossScalaVersions := Seq(scala2_12, scala2_13),
+    crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
       LibDependencies.coreCompilePlay28 ++
@@ -70,7 +70,7 @@ lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-2
 lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-30"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
-    crossScalaVersions := Seq(scala2_13),
+    crossScalaVersions := Seq(scala2_13, scala3),
     libraryDependencies ++=
       LibDependencies.coreCompileCommon(scalaVersion.value) ++
       LibDependencies.coreCompilePlay30 ++
@@ -86,7 +86,7 @@ lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-3
 lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
   .settings(
     copyPlay30Sources(httpVerbsTestPlay30),
-    crossScalaVersions := Seq(scala2_12, scala2_13),
+    crossScalaVersions := Seq(scala2_13),
     libraryDependencies ++= LibDependencies.testCompilePlay28,
     Test / fork := true // required to look up wiremock resources
   )
@@ -103,7 +103,7 @@ lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-ver
 
 lazy val httpVerbsTestPlay30 = Project("http-verbs-test-play-30", file("http-verbs-test-play-30"))
   .settings(
-    crossScalaVersions := Seq(scala2_13),
+    crossScalaVersions := Seq(scala2_13, scala3),
     libraryDependencies ++= LibDependencies.testCompilePlay30,
     Test / fork := true // required to look up wiremock resources
   )

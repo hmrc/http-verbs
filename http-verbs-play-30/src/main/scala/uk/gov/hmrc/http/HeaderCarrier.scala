@@ -111,7 +111,7 @@ object HeaderCarrier {
     private val logger: Logger = LoggerFactory.getLogger(getClass)
 
     def fromConfig(config: com.typesafe.config.Config): Config = {
-      import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+      import scala.jdk.CollectionConverters._
 
       if (config.hasPath("httpHeadersWhitelist"))
         logger.warn("Use of configuration key 'httpHeadersWhitelist' will be IGNORED. Use 'bootstrap.http.headersAllowlist' instead")

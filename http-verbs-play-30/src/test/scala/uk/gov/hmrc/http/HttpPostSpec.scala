@@ -18,13 +18,14 @@ package uk.gov.hmrc.http
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.actor.ActorSystem
-import org.mockito.{ArgumentMatchersSugar, Strictness}
-import org.mockito.captor.ArgCaptor
-import org.mockito.scalatest.MockitoSugar
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.verify
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +35,6 @@ class HttpPostSpec
   extends AnyWordSpecLike
      with Matchers
      with MockitoSugar
-     with ArgumentMatchersSugar
      with CommonHttpBehaviour {
   import ExecutionContext.Implicits.global
 
@@ -43,8 +43,8 @@ class HttpPostSpec
   ) extends HttpPost
        with ConnectionTracingCapturing {
 
-    val testHook1: HttpHook                         = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
-    val testHook2: HttpHook                         = mock[HttpHook](withSettings.strictness(Strictness.Lenient))
+    val testHook1: HttpHook                         = mock[HttpHook]
+    val testHook2: HttpHook                         = mock[HttpHook]
     val hooks                                       = Seq(testHook1, testHook2)
     override val configuration: Config              = ConfigFactory.load()
     override protected val actorSystem: ActorSystem = ActorSystem("test-actor-system")
@@ -133,12 +133,12 @@ class HttpPostSpec
     "return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POST[TestRequestClass, HttpResponse](url, testObject).futureValue shouldBe response
+      testPOST.POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty).futureValue shouldBe response
     }
 
     "return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POST[TestRequestClass, TestClass](url, testObject).futureValue should be(TestClass("t", 10))
+      testPOST.POST[TestRequestClass, TestClass](url, testObject, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     "return a url with encoded param pairs with url builder" in {
@@ -179,45 +179,45 @@ class HttpPostSpec
       testPost.lastUrl shouldBe expected
     }
 
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POST[TestRequestClass, HttpResponse](url, testObject))
-    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POST[TestRequestClass, HttpResponse](url, testObject) }
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty))
+    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty) }
 
     "Invoke any hooks provided" in {
       val dummyResponse       = HttpResponse(200, testBody)
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost           = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POST[TestRequestClass, HttpResponse](url, testObject)
+      testPost.POST[TestRequestClass, HttpResponse](url, testObject, headers = Seq.empty)
 
       val testJson = Json.stringify(trcreads.writes(testObject))
 
-      val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
-      val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
+      val responseFCaptor1 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
+      val responseFCaptor2 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
-      val requestCaptor1 = ArgCaptor[RequestData]
-      val requestCaptor2 = ArgCaptor[RequestData]
+      val requestCaptor1 = ArgumentCaptor.forClass(classOf[RequestData])
+      val requestCaptor2 = ArgumentCaptor.forClass(classOf[RequestData])
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1, responseFCaptor1)(any, any)
-      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2, responseFCaptor2)(any, any)
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1.capture(), responseFCaptor1.capture())(any[HeaderCarrier], any[ExecutionContext])
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2.capture(), responseFCaptor2.capture())(any[HeaderCarrier], any[ExecutionContext])
 
-      val request1 = requestCaptor1.value
+      val request1 = requestCaptor1.getValue
       request1.headers  should contain allElementsOf(headers)
       request1.body     shouldBe Some(Data.pure(HookData.FromString(testJson)))
 
-      val request2 = requestCaptor2.value
+      val request2 = requestCaptor2.getValue
       request2.headers  should contain allElementsOf(headers)
       request2.body     shouldBe Some(Data.pure(HookData.FromString(testJson)))
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      val response1 = responseFCaptor1.value.futureValue
+      val response1 = responseFCaptor1.getValue.futureValue
       response1.status shouldBe 200
       response1.body shouldBe Data.pure(testBody)
 
-      val response2 = responseFCaptor2.value.futureValue
+      val response2 = responseFCaptor2.getValue.futureValue
       response2.status shouldBe 200
       response2.body shouldBe Data.pure(testBody)
     }
@@ -244,33 +244,33 @@ class HttpPostSpec
 
       testPost.POSTForm[HttpResponse](url, Map.empty[String, Seq[String]], Seq.empty).futureValue
 
-      val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
-      val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
+      val responseFCaptor1 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
+      val responseFCaptor2 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
-      val requestCaptor1 = ArgCaptor[RequestData]
-      val requestCaptor2 = ArgCaptor[RequestData]
+      val requestCaptor1 = ArgumentCaptor.forClass(classOf[RequestData])
+      val requestCaptor2 = ArgumentCaptor.forClass(classOf[RequestData])
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1, responseFCaptor1)(any, any)
-      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2, responseFCaptor2)(any, any)
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1.capture(), responseFCaptor1.capture())(any[HeaderCarrier], any[ExecutionContext])
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2.capture(), responseFCaptor2.capture())(any[HeaderCarrier], any[ExecutionContext])
 
-      val request1 = requestCaptor1.value
+      val request1 = requestCaptor1.getValue
       request1.headers  should contain allElementsOf(headers)
       request1.body     shouldBe Some(Data.pure(HookData.FromMap(Map())))
 
-      val request2 = requestCaptor2.value
+      val request2 = requestCaptor2.getValue
       request2.headers  should contain allElementsOf(headers)
       request2.body     shouldBe Some(Data.pure(HookData.FromMap(Map())))
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      val response1 = responseFCaptor1.value.futureValue
+      val response1 = responseFCaptor1.getValue.futureValue
       response1.status shouldBe 200
       response1.body shouldBe Data.pure(testBody)
 
-      val response2 = responseFCaptor2.value.futureValue
+      val response2 = responseFCaptor2.getValue.futureValue
       response2.status shouldBe 200
       response2.body shouldBe Data.pure(testBody)
     }
@@ -280,18 +280,19 @@ class HttpPostSpec
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POSTString[HttpResponse](url, testRequestBody).futureValue shouldBe response
+      testPOST.POSTString[HttpResponse](url, testRequestBody, headers = Seq.empty).futureValue shouldBe response
     }
+
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POSTString[TestClass](url, testRequestBody).futureValue should be(TestClass("t", 10))
+      testPOST.POSTString[TestClass](url, testRequestBody, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
     behave like anErrorMappingHttpCall(
       "POST",
-      (url, responseF) => new StubbedHttpPost(responseF).POSTString[HttpResponse](url, testRequestBody))
+      (url, responseF) => new StubbedHttpPost(responseF).POSTString[HttpResponse](url, testRequestBody, headers = Seq.empty))
     behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) {
-      _.POSTString[HttpResponse](url, testRequestBody)
+      _.POSTString[HttpResponse](url, testRequestBody, headers = Seq.empty)
     }
 
     "Invoke any hooks provided" in {
@@ -300,35 +301,35 @@ class HttpPostSpec
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost            = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POSTString[TestClass](url, testRequestBody).futureValue
+      testPost.POSTString[TestClass](url, testRequestBody, headers = Seq.empty).futureValue
 
-      val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
-      val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
+      val responseFCaptor1 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
+      val responseFCaptor2 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
-      val requestCaptor1 = ArgCaptor[RequestData]
-      val requestCaptor2 = ArgCaptor[RequestData]
+      val requestCaptor1 = ArgumentCaptor.forClass(classOf[RequestData])
+      val requestCaptor2 = ArgumentCaptor.forClass(classOf[RequestData])
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1, responseFCaptor1)(any, any)
-      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2, responseFCaptor2)(any, any)
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1.capture(), responseFCaptor1.capture())(any[HeaderCarrier], any[ExecutionContext])
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2.capture(), responseFCaptor2.capture())(any[HeaderCarrier], any[ExecutionContext])
 
-      val request1 = requestCaptor1.value
+      val request1 = requestCaptor1.getValue
       request1.headers  should contain allElementsOf(headers)
       request1.body     shouldBe Some(Data.pure(HookData.FromString(testRequestBody)))
 
-      val request2 = requestCaptor2.value
+      val request2 = requestCaptor2.getValue
       request2.headers  should contain allElementsOf(headers)
       request2.body     shouldBe Some(Data.pure(HookData.FromString(testRequestBody)))
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      val response1 = responseFCaptor1.value.futureValue
+      val response1 = responseFCaptor1.getValue.futureValue
       response1.status shouldBe 200
       response1.body shouldBe Data.pure(testBody)
 
-      val response2 = responseFCaptor2.value.futureValue
+      val response2 = responseFCaptor2.getValue.futureValue
       response2.status shouldBe 200
       response2.body shouldBe Data.pure(testBody)
     }
@@ -338,15 +339,15 @@ class HttpPostSpec
     "be able to return plain responses" in {
       val response = HttpResponse(200, testBody)
       val testPOST = new StubbedHttpPost(Future.successful(response))
-      testPOST.POSTEmpty[HttpResponse](url).futureValue shouldBe response
+      testPOST.POSTEmpty[HttpResponse](url, headers = Seq.empty).futureValue shouldBe response
     }
     "be able to return objects deserialised from JSON" in {
       val testPOST = new StubbedHttpPost(Future.successful(HttpResponse(200, """{"foo":"t","bar":10}""")))
-      testPOST.POSTEmpty[TestClass](url).futureValue should be(TestClass("t", 10))
+      testPOST.POSTEmpty[TestClass](url, headers = Seq.empty).futureValue should be(TestClass("t", 10))
     }
 
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url))
-    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTEmpty[HttpResponse](url) }
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url, headers = Seq.empty))
+    behave like aTracingHttpCall("POST", "POST", new StubbedHttpPost(defaultHttpResponse)) { _.POSTEmpty[HttpResponse](url, headers = Seq.empty) }
 
     "Invoke any hooks provided" in {
       val testBody            = """{"foo":"t","bar":10}"""
@@ -354,44 +355,44 @@ class HttpPostSpec
       val dummyResponseFuture = Future.successful(dummyResponse)
       val testPost            = new StubbedHttpPost(dummyResponseFuture)
 
-      testPost.POSTEmpty[TestClass](url).futureValue
+      testPost.POSTEmpty[TestClass](url, headers = Seq.empty).futureValue
 
-      val responseFCaptor1 = ArgCaptor[Future[ResponseData]]
-      val responseFCaptor2 = ArgCaptor[Future[ResponseData]]
+      val responseFCaptor1 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
+      val responseFCaptor2 = ArgumentCaptor.forClass(classOf[Future[ResponseData]])
 
-      val requestCaptor1 = ArgCaptor[RequestData]
-      val requestCaptor2 = ArgCaptor[RequestData]
+      val requestCaptor1 = ArgumentCaptor.forClass(classOf[RequestData])
+      val requestCaptor2 = ArgumentCaptor.forClass(classOf[RequestData])
 
       val config = HeaderCarrier.Config.fromConfig(testPost.configuration)
       val headers = HeaderCarrier.headersForUrl(config, url)
 
-      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1, responseFCaptor1)(any, any)
-      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2, responseFCaptor2)(any, any)
+      verify(testPost.testHook1).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor1.capture(), responseFCaptor1.capture())(any[HeaderCarrier], any[ExecutionContext])
+      verify(testPost.testHook2).apply(eqTo("POST"), eqTo(url"$url"), requestCaptor2.capture(), responseFCaptor2.capture())(any[HeaderCarrier], any[ExecutionContext])
 
-      val request1 = requestCaptor1.value
+      val request1 = requestCaptor1.getValue
       request1.headers  should contain allElementsOf(headers)
       request1.body     shouldBe None
 
-      val request2 = requestCaptor2.value
+      val request2 = requestCaptor2.getValue
       request2.headers  should contain allElementsOf(headers)
       request2.body     shouldBe None
 
       // verifying directly without ArgCaptor doesn't work since Futures are different instances
       // e.g. Future.successful(5) != Future.successful(5)
-      val response1 = responseFCaptor1.value.futureValue
+      val response1 = responseFCaptor1.getValue.futureValue
       response1.status shouldBe 200
       response1.body shouldBe Data.pure(testBody)
 
-      val response2 = responseFCaptor2.value.futureValue
+      val response2 = responseFCaptor2.getValue.futureValue
       response2.status shouldBe 200
       response2.body shouldBe Data.pure(testBody)
     }
   }
 
   "POSTEmpty" should {
-    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url))
+    behave like anErrorMappingHttpCall("POST", (url, responseF) => new StubbedHttpPost(responseF).POSTEmpty[HttpResponse](url, headers = Seq.empty))
     behave like aTracingHttpCall[StubbedHttpPost]("POST", "POSTEmpty", new StubbedHttpPost(defaultHttpResponse)) {
-      _.POSTEmpty[HttpResponse](url)
+      _.POSTEmpty[HttpResponse](url, headers = Seq.empty)
     }
   }
 }
