@@ -2,14 +2,14 @@ import sbt._
 
 object LibDependencies {
 
-  val play28Version     = "2.8.21"
-  val play29Version     = "2.9.2"
-  val play30Version     = "3.0.2"
+  val play28Version     = "2.8.22"
+  val play29Version     = "2.9.4"
+  val play30Version     = "3.0.4"
 
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
   def coreCompileCommon(scalaVersion: String) = Seq(
     "com.typesafe"                %  "config"           % "1.4.3",
-    "com.softwaremill.sttp.model" %% "core"             % "1.7.2",
+    "com.softwaremill.sttp.model" %% "core"             % "1.7.10",
     "dev.zio"                     %% "izumi-reflect"    % "2.3.8"
   ) ++
     (CrossVersion.partialVersion(scalaVersion) match {
@@ -26,25 +26,22 @@ object LibDependencies {
   )
 
   val coreCompilePlay29 = Seq(
-    "com.typesafe.play" %% "play-json"   % "2.10.4", // version provided by play29Version
+    "com.typesafe.play" %% "play-json"   % "2.10.6", // version provided by play29Version
     "org.slf4j"         %  "slf4j-api"   % "2.0.9",
     "com.typesafe.play" %% "play-ahc-ws" % play29Version
   )
 
   val coreCompilePlay30 = Seq(
-    "org.playframework" %% "play-json"   % "3.0.2", // version provided by play30Version
+    "org.playframework" %% "play-json"   % "3.0.4", // version provided by play30Version
     "org.slf4j"         %  "slf4j-api"   % "2.0.9",
     "org.playframework" %% "play-ahc-ws" % play30Version
   )
 
   def coreTestCommon = Seq(
-    "org.scalatest"          %% "scalatest"                % "3.2.17"      % Test,
-    "org.scalatestplus"      %% "scalacheck-1-17"          % "3.2.17.0"    % Test,
-    "com.vladsch.flexmark"   %  "flexmark-all"             % "0.64.8"      % Test,
-    // mockito-scala is not available for Scala 3 https://github.com/mockito/mockito-scala/issues/364
-    // use java build + scalatestplus:mockito
-    "org.scalatestplus"      %% "mockito-3-4"              % "3.2.10.0"    % Test // recommended by play docs https://www.playframework.com/documentation/3.0.x/ScalaTestingWithScalaTest
-    // or https://mvnrepository.com/artifact/eu.monniot/scala3mock
+    "org.scalatest"          %% "scalatest"       % "3.2.17"      % Test,
+    "org.scalatestplus"      %% "scalacheck-1-17" % "3.2.17.0"    % Test,
+    "com.vladsch.flexmark"   %  "flexmark-all"    % "0.64.8"      % Test,
+    "org.scalatestplus"      %% "mockito-4-11"    % "3.2.17.0"    % Test
   )
 
   val coreTestPlay28 = Seq(
