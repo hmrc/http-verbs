@@ -25,7 +25,7 @@ import org.mockito.Mockito.verify
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
 import play.api.libs.json.{Json, Reads, Writes}
@@ -46,7 +46,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
 
 class HttpClientV2Spec
-  extends AnyWordSpecLike
+  extends AnyWordSpec
      with Matchers
      with WireMockSupport
      with ScalaFutures

@@ -72,7 +72,7 @@ httpClient.POST[ResponseType](url, payload, headers)
 becomes
 
 ```scala
-httpClientV2.post(url"$url").withBody(Json.toJson(payload)).addHeaders(headers).execute[ResponseType]
+httpClientV2.post(url"$url").withBody(Json.toJson(payload)).setHeader(headers).execute[ResponseType]
 ```
 
 If you were previously creating multiple HttpClients to configure proxies or change the user-agent, this will no-longer be necessary since these can all be controlled with the HttpClientV2 API per call.
