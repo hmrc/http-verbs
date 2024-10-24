@@ -34,6 +34,10 @@ trait HttpResponse {
   def bodyAsSource: Source[ByteString, _] =
     Source.single(ByteString(body))
 
+  /** Converts the body to a JsValue, if possible.
+    * Consider using `HttpReads` instead for converting the body to Json and handling failures.
+    * @throws RuntimeException if the body cannot be converted to JsValue.
+    */
   def json: JsValue =
     Json.parse(body)
 
