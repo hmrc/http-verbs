@@ -17,6 +17,7 @@
 package uk.gov.hmrc.http.client
 
 import com.typesafe.config.Config
+import izumi.reflect.Tag
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -24,12 +25,11 @@ import play.api.Configuration
 import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSClient, WSProxyServer, WSRequest, WSResponse}
 import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, CollectionUtils, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries, TypeUtil}
-import izumi.reflect.Tag
 import uk.gov.hmrc.play.http.BodyCaptor
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
-import uk.gov.hmrc.http.logging.ConnectionTracing
+import uk.gov.hmrc.http.logging.{ConnectionTracing, UrlSanitiser}
 import play.api.libs.ws.writableOf_Source
 
 import java.net.{ConnectException, URL}
@@ -307,7 +307,7 @@ class ExecutorImpl(
     ec: ExecutionContext
   ): Future[HttpResponse] =
     responseF.recoverWith {
-      case e: TimeoutException => Future.failed(new GatewayTimeoutException(s"${request.method} of '${request.url}' timed out with message '${e.getMessage}'"))
-      case e: ConnectException => Future.failed(new BadGatewayException(s"${request.method} of '${request.url}' failed. Caused by: '${e.getMessage}'"))
+      case e: TimeoutException => Future.failed(new GatewayTimeoutException(s"${request.method} of '${UrlSanitiser.sanitiseForLogging(request.url)}' timed out with message '${e.getMessage}'"))
+      case e: ConnectException => Future.failed(new BadGatewayException(s"${request.method} of '${UrlSanitiser.sanitiseForLogging(request.url)}' failed. Caused by: '${e.getMessage}'"))
     }
 }

@@ -47,9 +47,9 @@ class ConnectionTracingSpec
 
       val httpResult = Success("response")
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).debug("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:ok")
+      verify(mockPlayLogger).debug("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:ok")
     }
 
     "log 404 error as INFO" in {
@@ -57,9 +57,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(new NotFoundException("not found"))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed not found")
+      verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed not found")
     }
 
     "log 404 upstream error as INFO" in {
@@ -67,9 +67,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(UpstreamErrorResponse(message = "404 error", statusCode = 404, reportAs = 404))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 404 error")
+      verify(mockPlayLogger).info("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed 404 error")
     }
 
     "log 401 upstream error as WARN" in {
@@ -77,9 +77,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(UpstreamErrorResponse(message = "401 error", statusCode = 401, reportAs = 401))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 401 error")
+      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed 401 error")
     }
 
     "log 400 error as WARN" in {
@@ -87,9 +87,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(UpstreamErrorResponse(message = "400 error", statusCode = 400, reportAs = 400))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 400 error")
+      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed 400 error")
     }
 
     "log 500 upstream error as WARN" in {
@@ -97,9 +97,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(UpstreamErrorResponse(message = "500 error", statusCode = 500, reportAs = 500))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 500 error")
+      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed 500 error")
     }
 
     "log 502 error as WARN" in {
@@ -107,9 +107,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(new BadGatewayException("502 error"))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed 502 error")
+      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed 502 error")
     }
 
     "log unrecognised exception as WARN" in {
@@ -117,9 +117,9 @@ class ConnectionTracingSpec
 
       val httpResult = Failure(new Exception("unknown error"))
 
-      connectionTracing.logResult(ld, "GET", "/url", 1L)(httpResult)
+      connectionTracing.logResult(ld, "GET", "http://host/url", 1L)(httpResult)
 
-      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:/url:failed unknown error")
+      verify(mockPlayLogger).warn("RequestId(rId):GET:1:1ns:0:0ns:requestChain:http://host/url:failed unknown error")
     }
   }
 

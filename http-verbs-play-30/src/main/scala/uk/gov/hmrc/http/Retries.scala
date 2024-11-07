@@ -21,6 +21,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.pattern.after
 import org.slf4j.LoggerFactory
 import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.http.logging.UrlSanitiser
 
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
@@ -40,7 +41,7 @@ trait Retries {
     configuration.getBoolean("http-verbs.retries.ssl-engine-closed-already.enabled")
 
   def retryOnSslEngineClosed[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =
-    retryFor(s"$verb $url") { case ex: SSLException if ex.getMessage == "SSLEngine closed already" => sslRetryEnabled }(block)
+    retryFor(s"$verb ${UrlSanitiser.sanitiseForLogging(url)}") { case ex: SSLException if ex.getMessage == "SSLEngine closed already" => sslRetryEnabled }(block)
 
   @deprecated("Use retryOnSslEngineClosed instead", "14.0.0")
   def retry[A](verb: String, url: String)(block: => Future[A])(implicit ec: ExecutionContext): Future[A] =

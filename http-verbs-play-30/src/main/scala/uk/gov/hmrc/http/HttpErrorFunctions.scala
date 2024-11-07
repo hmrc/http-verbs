@@ -17,31 +17,32 @@
 package uk.gov.hmrc.http
 
 import org.apache.pekko.stream.Materializer
+import uk.gov.hmrc.http.logging.UrlSanitiser
 
 import scala.concurrent.{Await, TimeoutException}
 import scala.concurrent.duration.{Duration, DurationInt}
 
 trait HttpErrorFunctions {
   def notFoundMessage(verbName: String, url: String, responseBody: String): String =
-    s"$verbName of '$url' returned 404 (Not Found). Response body: '$responseBody'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' returned 404 (Not Found). Response body: '$responseBody'"
 
   def preconditionFailedMessage(verbName: String, url: String, responseBody: String): String =
-    s"$verbName of '$url' returned 412 (Precondition Failed). Response body: '$responseBody'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' returned 412 (Precondition Failed). Response body: '$responseBody'"
 
   def upstreamResponseMessage(verbName: String, url: String, status: Int, responseBody: String): String =
-    s"$verbName of '$url' returned $status. Response body: '$responseBody'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' returned $status. Response body: '$responseBody'"
 
   def badRequestMessage(verbName: String, url: String, responseBody: String): String =
-    s"$verbName of '$url' returned 400 (Bad Request). Response body '$responseBody'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' returned 400 (Bad Request). Response body '$responseBody'"
 
   def badGatewayMessage(verbName: String, url: String, status: Int, responseBody: String): String =
-    s"$verbName of '$url' returned status $status. Response body: '$responseBody'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' returned status $status. Response body: '$responseBody'"
 
   def badGatewayMessage(verbName: String, url: String, e: Exception): String =
-    s"$verbName of '$url' failed. Caused by: '${e.getMessage}'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' failed. Caused by: '${e.getMessage}'"
 
   def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String =
-    s"$verbName of '$url' timed out with message '${e.getMessage}'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' timed out with message '${e.getMessage}'"
 
   def is2xx(status: Int) = status >= 200 && status < 300
 

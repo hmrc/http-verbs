@@ -52,7 +52,7 @@ class RetriesSpec
 
       @volatile var counter = 0
       val resultF =
-        retries.retryOnSslEngineClosed("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "http://localhost/url") {
           Future.failed {
             counter += 1
             new SSLException("SSLEngine closed already")
@@ -85,7 +85,7 @@ class RetriesSpec
 
       @volatile var counter = 0
       val resultF =
-        retries.retryOnSslEngineClosed("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "http://localhost/url") {
           Future.successful {
             counter += 1
             counter
@@ -114,7 +114,7 @@ class RetriesSpec
         Future.failed(new SSLException("SSLEngine closed already"))
       }
 
-      val _ = Try(retries.retryOnSslEngineClosed("GET", "url")(failingFuture).futureValue)
+      val _ = Try(retries.retryOnSslEngineClosed("GET", "http://localhost/url")(failingFuture).futureValue)
 
       val actualIntervals: List[Long] =
         timestamps.sliding(2).toList.map {
@@ -139,7 +139,7 @@ class RetriesSpec
       }
 
       val resultF =
-        retries.retryOnSslEngineClosed("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "http://localhost/url") {
           Future.failed {
             new SSLException("SSLEngine closed already")
           }
@@ -163,7 +163,7 @@ class RetriesSpec
 
       val expectedResponse = HttpResponse(404, "")
       val resultF =
-        retries.retryOnSslEngineClosed("GET", "url") {
+        retries.retryOnSslEngineClosed("GET", "http://localhost/url") {
           retries.failFewTimesAndThenSucceed(
             success   = Future.successful(expectedResponse),
             exception = new SSLException("SSLEngine closed already")
@@ -196,7 +196,7 @@ class RetriesSpec
       val resultF =
         for {
           _   <- Future.successful(Mdc.putMdc(mdcData))
-          res <- retries.retryOnSslEngineClosed("GET", "url") {
+          res <- retries.retryOnSslEngineClosed("GET", "http://localhost/url") {
                   // assert mdc available to block execution
                   Mdc.mdcData shouldBe mdcData
 
@@ -230,7 +230,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.GET[Option[String]](url = "http://doesnt-matter", queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue shouldBe None
+      http.GET[Option[String]](url = "http://localhost/url", queryParams = Seq.empty, headers = Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -248,7 +248,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.DELETE[Option[String]](url = "https://www.google.co.uk", headers = Seq("header" -> "foo")).futureValue shouldBe None
+      http.DELETE[Option[String]](url = "http://localhost/url", headers = Seq("header" -> "foo")).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -267,7 +267,7 @@ class RetriesSpec
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
       http
-        .PATCH[JsValue, Option[String]](url = "https://www.google.co.uk", Json.obj(), Seq("header" -> "foo"))
+        .PATCH[JsValue, Option[String]](url = "http://localhost/url", Json.obj(), Seq("header" -> "foo"))
         .futureValue      shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
@@ -286,7 +286,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.PUT[JsValue, Option[String]](url = "https://www.google.co.uk", body = Json.obj(), headers = Seq.empty).futureValue shouldBe None
+      http.PUT[JsValue, Option[String]](url = "http://localhost/url", body = Json.obj(), headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -323,7 +323,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTString[Option[String]](url = "https://www.google.co.uk", body = "posted-string", headers = Seq.empty).futureValue shouldBe None
+      http.POSTString[Option[String]](url = "http://localhost/url", body = "posted-string", headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -344,7 +344,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTForm[Option[String]](url = "https://www.google.co.uk", body = Map.empty[String, Seq[String]], headers = Seq.empty[(String, String)]).futureValue shouldBe None
+      http.POSTForm[Option[String]](url = "http://localhost/url", body = Map.empty[String, Seq[String]], headers = Seq.empty[(String, String)]).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }
@@ -364,7 +364,7 @@ class RetriesSpec
 
       implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
-      http.POSTEmpty[Option[String]](url = "https://www.google.co.uk", headers = Seq.empty).futureValue shouldBe None
+      http.POSTEmpty[Option[String]](url = "http://localhost/url", headers = Seq.empty).futureValue shouldBe None
       http.failureCounter shouldBe http.maxFailures
     }
   }

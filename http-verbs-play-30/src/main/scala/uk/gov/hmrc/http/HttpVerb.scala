@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import uk.gov.hmrc.http.logging.UrlSanitiser
+
 import java.net.ConnectException
 import java.util.concurrent.TimeoutException
-
 import scala.concurrent.{ExecutionContext, Future}
 
 @deprecated("Use HttpClientV2", "15.0.0")
@@ -37,8 +38,8 @@ trait HttpVerb extends Request {
     }
 
   def badGatewayMessage(verbName: String, url: String, e: Exception): String =
-    s"$verbName of '$url' failed. Caused by: '${e.getMessage}'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' failed. Caused by: '${e.getMessage}'"
 
   def gatewayTimeoutMessage(verbName: String, url: String, e: Exception): String =
-    s"$verbName of '$url' timed out with message '${e.getMessage}'"
+    s"$verbName of '${UrlSanitiser.sanitiseForLogging(url)}' timed out with message '${e.getMessage}'"
 }

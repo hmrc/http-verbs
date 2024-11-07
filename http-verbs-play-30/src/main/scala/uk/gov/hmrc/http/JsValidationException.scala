@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.http
 
+import uk.gov.hmrc.http.logging.UrlSanitiser
+
 class JsValidationException(
   val method   : String,
   val url      : String,
@@ -24,5 +26,5 @@ class JsValidationException(
 ) extends Exception {
 
   override def getMessage: String =
-    s"$method of '$url' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
+    s"$method of '${UrlSanitiser.sanitiseForLogging(url)}' returned invalid json. Attempting to convert to ${readingAs.getName} gave errors: $errors"
 }
