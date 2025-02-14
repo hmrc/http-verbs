@@ -5,8 +5,8 @@ import sbt._
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
-val scala2_13 = "2.13.12"
-val scala3    = "3.3.4"
+val scala2_13 = "2.13.16"
+val scala3    = "3.3.5"
 
 ThisBuild / majorVersion     := 15
 ThisBuild / scalaVersion     := scala2_13
@@ -20,7 +20,6 @@ lazy val library = (project in file("."))
     crossScalaVersions := Seq.empty
   )
   .aggregate(
-    httpVerbsPlay28, httpVerbsTestPlay28,
     httpVerbsPlay29, httpVerbsTestPlay29,
     httpVerbsPlay30, httpVerbsTestPlay30
   )
@@ -31,23 +30,6 @@ def copyPlay30Sources(module: Project) =
     module,
     transformSource   = _.replace("org.apache.pekko", "akka"),
     transformResource = _.replace("pekko", "akka")
-  )
-
-lazy val httpVerbsPlay28 = Project("http-verbs-play-28", file("http-verbs-play-28"))
-  .enablePlugins(BuildInfoPlugin)
-  .settings(
-    copyPlay30Sources(httpVerbsPlay30),
-    crossScalaVersions := Seq(scala2_13),
-    libraryDependencies ++=
-      LibDependencies.coreCompileCommon(scalaVersion.value) ++
-      LibDependencies.coreCompilePlay28 ++
-      LibDependencies.coreTestCommon ++
-      LibDependencies.coreTestPlay28,
-    Test / fork := true // akka is not unloaded properly, which can affect other tests
-  )
-  .settings( // https://github.com/sbt/sbt-buildinfo
-    buildInfoKeys := Seq[BuildInfoKey](version),
-    buildInfoPackage := "uk.gov.hmrc.http"
   )
 
 lazy val httpVerbsPlay29 = Project("http-verbs-play-29", file("http-verbs-play-29"))
@@ -82,15 +64,6 @@ lazy val httpVerbsPlay30 = Project("http-verbs-play-30", file("http-verbs-play-3
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "uk.gov.hmrc.http"
   )
-
-lazy val httpVerbsTestPlay28 = Project("http-verbs-test-play-28", file("http-verbs-test-play-28"))
-  .settings(
-    copyPlay30Sources(httpVerbsTestPlay30),
-    crossScalaVersions := Seq(scala2_13),
-    libraryDependencies ++= LibDependencies.testCompilePlay28,
-    Test / fork := true // required to look up wiremock resources
-  )
-  .dependsOn(httpVerbsPlay28)
 
 lazy val httpVerbsTestPlay29 = Project("http-verbs-test-play-29", file("http-verbs-test-play-29"))
   .settings(
