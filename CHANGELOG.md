@@ -1,3 +1,7 @@
+### Version 15.2.0
+
+Drops support for Play 2.8
+
 ### Version 15.0.0
 
 - Built for Scala 3 in addition to 2.13.
