@@ -17,7 +17,7 @@
 package uk.gov.hmrc.play.http.ws
 
 import scala.concurrent.ExecutionContext
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.mdc.Mdc
 
 @deprecated("Use HttpClientV2", "15.0.0")
 trait WSExecute {

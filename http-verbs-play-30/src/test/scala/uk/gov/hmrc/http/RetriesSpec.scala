@@ -26,10 +26,9 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.mdc.{Mdc, MdcExecutionContext}
 
 import java.time.Instant
-import java.util.concurrent.Executors
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
@@ -187,7 +186,8 @@ class RetriesSpec
 
       val mdcData = Map("key1" -> "value1")
 
-      implicit val mdcEc = ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
+      implicit val global: ExecutionContext = // named global to override Implicit.global
+        MdcExecutionContext()
 
       val expectedResponse = HttpResponse(404, "")
 
