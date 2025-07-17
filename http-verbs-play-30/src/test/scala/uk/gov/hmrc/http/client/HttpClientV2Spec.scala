@@ -19,6 +19,9 @@ package uk.gov.hmrc.http.client
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{verify => _, _}
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.verify
@@ -33,13 +36,9 @@ import play.api.libs.ws.{writeableOf_JsValue, writableOf_Source, writeableOf_Str
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfigFactory}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpReadsInstances, HttpResponse, Retries, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
-import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.util.ByteString
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.mdc.{Mdc, MdcExecutionContext}
 
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -657,7 +656,7 @@ class HttpClientV2Spec
       val mdcData = Map("key1" -> "value1")
 
       implicit val global: ExecutionContext = // named global to override Implicit.global
-        ExecutionContext.fromExecutor(new uk.gov.hmrc.play.http.logging.MDCPropagatingExecutorService(Executors.newFixedThreadPool(2)))
+        MdcExecutionContext()
 
       org.slf4j.MDC.clear()
 

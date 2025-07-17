@@ -25,11 +25,11 @@ import play.api.libs.ws.{BodyWritable, EmptyBody, InMemoryBody, SourceBody, WSCl
 import play.core.parsers.FormUrlEncodedParser
 import uk.gov.hmrc.http.{BadGatewayException, BuildInfo, CollectionUtils, GatewayTimeoutException, HeaderCarrier, HttpReads, HttpResponse, Retries, TypeUtil}
 import izumi.reflect.Tag
-import uk.gov.hmrc.play.http.BodyCaptor
-import uk.gov.hmrc.play.http.logging.Mdc
-import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import uk.gov.hmrc.http.hooks.{Data, HookData, HttpHook, RequestData, ResponseData}
 import uk.gov.hmrc.http.logging.ConnectionTracing
+import uk.gov.hmrc.mdc.Mdc
+import uk.gov.hmrc.play.http.BodyCaptor
+import uk.gov.hmrc.play.http.ws.WSProxyConfiguration
 import play.api.libs.ws.writableOf_Source
 
 import java.net.{ConnectException, URL}

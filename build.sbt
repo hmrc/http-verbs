@@ -6,7 +6,7 @@ import sbt._
 Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
 
 val scala2_13 = "2.13.16"
-val scala3    = "3.3.5"
+val scala3    = "3.3.6"
 
 ThisBuild / majorVersion     := 15
 ThisBuild / scalaVersion     := scala2_13
