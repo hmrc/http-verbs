@@ -7,7 +7,7 @@ object LibDependencies {
 
   // Dependencies for http-verbs-common and http-verbs-play-xxx modules
   def coreCompileCommon(scalaVersion: String) = Seq(
-    "uk.gov.hmrc"                 %% "mdc"              % "0.1.0",
+    "uk.gov.hmrc"                 %% "mdc"              % "0.2.0",
     "com.typesafe"                %  "config"           % "1.4.3",
     "com.softwaremill.sttp.model" %% "core"             % "1.7.10",
     "dev.zio"                     %% "izumi-reflect"    % "2.3.8"

@@ -58,7 +58,7 @@ trait HttpGet
       val httpResponse = retryOnSslEngineClosed(GET_VERB, urlWithQuery)(doGet(urlWithQuery, headers = allHeaders))
       executeHooks(
         GET_VERB,
-        url"$url",
+        url"$urlWithQuery",
         RequestData(allHeaders, None),
         httpResponse.map(ResponseData.fromHttpResponse)
       )

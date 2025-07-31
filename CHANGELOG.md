@@ -1,3 +1,8 @@
+### Version 15.4.0
+
+- Query parameters are now passed on to HttpHooks when using the original `HttpClient`.
+- Version of MDC bumped to 0.2.0
+
 ### Version 15.2.0
 
 Drops support for Play 2.8
