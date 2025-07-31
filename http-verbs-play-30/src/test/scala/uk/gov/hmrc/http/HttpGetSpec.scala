@@ -154,6 +154,15 @@ class HttpGetSpec
       response2.status shouldBe 200
       response2.body shouldBe Data.pure(testBody)
     }
+
+    "Invoke any hooks when query parameters included in the request" in {
+      val testGet = new StubbedHttpGet(Future.successful(HttpResponse(200, testBody)))
+
+      testGet.GET[HttpResponse](url, queryParams = Seq("param" -> "value"), headers = Seq.empty).futureValue
+
+      verify(testGet.testHook1).apply(eqTo("GET"), eqTo(url"$url?param=value"), any[RequestData], any[Future[ResponseData]])(any[HeaderCarrier], any[ExecutionContext])
+      verify(testGet.testHook2).apply(eqTo("GET"), eqTo(url"$url?param=value"), any[RequestData], any[Future[ResponseData]])(any[HeaderCarrier], any[ExecutionContext])
+    }
   }
 
   "HttpGet with params Seq" should {
