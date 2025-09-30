@@ -1,3 +1,11 @@
+### Version 15.6.0
+
+- Removes support for Play 2.9
+
+### Version 15.5.0
+
+- Update sttp.model dependency
+
 ### Version 15.4.0
 
 - Query parameters are now passed on to HttpHooks when using the original `HttpClient`.
