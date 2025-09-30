@@ -28,13 +28,13 @@ object LibDependencies {
   val coreTestPlay30 = Seq(
     "org.playframework"      %% "play-test"       % play30Version   % Test,
     "ch.qos.logback"         %  "logback-classic" % "1.5.18"        % Test, // should already provided by play-test, why does it fail without it?
-    "com.github.tomakehurst" %  "wiremock"        % "3.0.1"         % Test,
+    "com.github.tomakehurst" %  "wiremock"        % "3.0.0-beta-7"         % Test,
     "org.slf4j"              %  "slf4j-simple"    % "2.0.17"        % Test
   )
 
   val testCompilePlay30 = Seq(
     "org.scalatest"          %% "scalatest"       % "3.2.19",       // version provided transitively is chosen for compatibility with scalatestplus-play
-    "com.github.tomakehurst" %  "wiremock"        % "3.0.1",        // last version with jackson dependencies compatible with play
+    "com.github.tomakehurst" %  "wiremock"        % "3.0.0-beta-7",        // last version with jackson dependencies compatible with play
     "com.vladsch.flexmark"   %  "flexmark-all"    % "0.64.8"        % Test
   )
 }
