@@ -1,3 +1,7 @@
+### Version 15.7.0
+ 
+- Version of MDC bumped to 0.4.0
+
 ### Version 15.6.0
 
 - Removes support for Play 2.9
