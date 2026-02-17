@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.http
 
+import com.typesafe.config.ConfigFactory
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
@@ -33,6 +34,10 @@ class HttpErrorFunctionsSpec
   // Disable shrinking
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny
 
+  val exampleVerb = "GET"
+  val exampleUrl  = "http://example.com/something"
+  val exampleBody = "this is the string body"
+
   "HttpErrorFunctions.handleResponseEither" should {
     "return the response if the status code is between 200 and 299" in {
       forAll(Gen.choose(200, 299))(expectResponse)
@@ -47,11 +52,53 @@ class HttpErrorFunctionsSpec
       forAll(Gen.choose(0, 399))(expectResponse)
       forAll(Gen.choose(600, 1000))(expectResponse)
     }
-  }
 
-  val exampleVerb = "GET"
-  val exampleUrl  = "http://example.com/something"
-  val exampleBody = "this is the string body"
+    "suppress HTML response body when the flag is true" in {
+      val htmlBody =
+        """<!DOCTYPE html>
+          |<html>
+          |  <head><title>Error</title></head>
+          |  <body>Something went wrong</body>
+          |</html>""".stripMargin
+
+      val response = HttpResponse(
+        status = 500,
+        body = htmlBody,
+        headers = Map("Content-Type" -> Seq("text/html"))
+      )
+
+      new HttpErrorFunctions {
+        val result = handleResponseEither(exampleVerb, exampleUrl, suppressHtmlErrors = true)(response)
+        result match {
+          case Left(err) =>
+            err.message should include ("[HTML error response suppressed]")
+            err.message should not include ("Something went wrong")
+          case Right(_) =>
+            fail("Expected Left(UpstreamErrorResponse), got Right")
+        }
+      }
+    }
+
+    "does not suppress non-HTML response body even when flag is true" in {
+      val jsonBody = """{"error":"bad request"}"""
+
+      val response = HttpResponse(
+        status = 400,
+        body = jsonBody,
+        headers = Map("Content-Type" -> Seq("application/json"))
+      )
+
+      new HttpErrorFunctions {
+        val result = handleResponseEither(exampleVerb, exampleUrl, suppressHtmlErrors = true)(response)
+        result match {
+          case Left(err) =>
+            err.message should include (jsonBody)
+          case Right(_) =>
+            fail("Expected Left(UpstreamErrorResponse), got Right")
+        }
+      }
+    }
+  }
 
   def expectError(statusCode: Int, reportAs: Int): Unit =
     new HttpErrorFunctions {

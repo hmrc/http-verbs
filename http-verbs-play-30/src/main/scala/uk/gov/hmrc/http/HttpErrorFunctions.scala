@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,13 +49,32 @@ trait HttpErrorFunctions {
 
   def is5xx(status: Int) = status >= 500 && status < 600
 
+  private def responseIsHtml(body: String, contentType: Option[String]): Boolean =
+    contentType.exists(_.toLowerCase.contains("text/html")) ||
+      body.trim.toLowerCase.startsWith("<!doctype html") ||
+      body.trim.toLowerCase.startsWith("<html")
+
+  private def suppressHtmlErrorBody(response: HttpResponse, suppressHtmlErrors: Boolean): String =
+    if (suppressHtmlErrors && responseIsHtml(response.body, response.header("Content-Type")))
+      "[HTML error response suppressed]"
+    else
+      response.body
+
+  private lazy val suppressHtmlErrorsFromConfig: Boolean =
+    scala.util.Try(
+      com.typesafe.config.ConfigFactory.load().getBoolean("http-verbs.suppress-html-errors")
+    ).getOrElse(false)
+
   // Note, no special handling of BadRequest or NotFound
   // they will be returned as `Left(Upstream4xxResponse(status = 400))` and `Left(Upstream4xxResponse(status = 404))` respectively
   def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
+    handleResponseEither(httpMethod, url, suppressHtmlErrorsFromConfig)(response)
+
+  def handleResponseEither(httpMethod: String, url: String, suppressHtmlErrors: Boolean)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
     response.status match {
       case status if is4xx(status) || is5xx(status) =>
         Left(UpstreamErrorResponse(
-          message    = upstreamResponseMessage(httpMethod, url, status, response.body),
+          message    = upstreamResponseMessage(httpMethod, url, status, suppressHtmlErrorBody(response, suppressHtmlErrors)),
           statusCode = status,
           reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
           headers    = response.headers
@@ -90,7 +109,7 @@ trait HttpErrorFunctions {
               case e: TimeoutException => "<Timed out awaiting error message>"
             }
           UpstreamErrorResponse(
-            message    = upstreamResponseMessage(httpMethod, url, status, errorMessage),
+            message    = upstreamResponseMessage(httpMethod, url, status, suppressHtmlErrorBody(HttpResponse(status, errorMessage, response.headers), suppressHtmlErrorsFromConfig)),
             statusCode = status,
             reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
             headers    = response.headers
