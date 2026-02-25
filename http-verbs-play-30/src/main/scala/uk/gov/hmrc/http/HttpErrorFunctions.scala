@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,13 +49,40 @@ trait HttpErrorFunctions {
 
   def is5xx(status: Int) = status >= 500 && status < 600
 
+  private def sanitiseHtmlErrorBody(response: HttpResponse): String = {
+
+    import scala.util.matching.Regex
+
+    val TitleRegex: Regex = """(?is)<title[^>]*>(.*?)</title>""".r
+
+    def isHtml(body: String): Boolean = {
+      response.header("Content-Type")
+        .exists(_.toLowerCase.contains("text/html"))       ||
+        body.trim.toLowerCase.startsWith("<!doctype html") ||
+        body.trim.toLowerCase.startsWith("<html")
+    }
+
+    def extractTitle(body: String): Option[String] =
+      TitleRegex
+        .findFirstMatchIn(body)
+        .map(_.group(1))
+        .map(_.trim.replaceAll("\\s+", " "))
+        .map(t => if (t.length > 200) t.take(200) + "...[truncated]" else t)
+
+    Option.when(isHtml(response.body)) {
+      extractTitle(response.body)
+        .map(t => s"[HTML error response suppressed] — title: $t")
+        .getOrElse("[HTML error response suppressed] — no title found")
+    }.getOrElse(response.body)
+  }
+
   // Note, no special handling of BadRequest or NotFound
   // they will be returned as `Left(Upstream4xxResponse(status = 400))` and `Left(Upstream4xxResponse(status = 404))` respectively
   def handleResponseEither(httpMethod: String, url: String)(response: HttpResponse): Either[UpstreamErrorResponse, HttpResponse] =
     response.status match {
       case status if is4xx(status) || is5xx(status) =>
         Left(UpstreamErrorResponse(
-          message    = upstreamResponseMessage(httpMethod, url, status, response.body),
+          message    = upstreamResponseMessage(httpMethod, url, status, sanitiseHtmlErrorBody(response)),
           statusCode = status,
           reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
           headers    = response.headers
