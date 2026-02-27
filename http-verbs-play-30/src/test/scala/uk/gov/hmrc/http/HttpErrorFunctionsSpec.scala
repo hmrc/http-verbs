@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
@@ -69,6 +73,36 @@ class HttpErrorFunctionsSpec
 
       new HttpErrorFunctions {
         val result = handleResponseEither(exampleVerb, exampleUrl)(response)
+        result match {
+          case Left(err) => err.message should include ("HTML error response suppressed")
+                            err.message should not include ("Something went wrong")
+          case Right(_)  => fail("Expected Left(UpstreamErrorResponse), got Right")
+        }
+      }
+    }
+
+    "suppress HTML in streamed error response body" in {
+
+      implicit val system: ActorSystem  = ActorSystem("TestSystem")
+      implicit val mat   : Materializer = Materializer(system)
+
+      val htmlBody =
+        """<!DOCTYPE html>
+          |<html>
+          |  <head><title>Error</title></head>
+          |  <body>Something went wrong</body>
+          |</html>""".stripMargin
+
+      // Create a HttpResponse with bodyAsSource
+      val response = HttpResponse(
+        status        = 500,
+        bodyAsSource  = Source.single(ByteString(htmlBody)),
+        headers       = Map("Content-Type" -> Seq("text/html"))
+      )
+
+      new HttpErrorFunctions {
+        val result = handleResponseEitherStream(exampleVerb, exampleUrl)(response)
+
         result match {
           case Left(err) => err.message should include ("HTML error response suppressed")
                             err.message should not include ("Something went wrong")

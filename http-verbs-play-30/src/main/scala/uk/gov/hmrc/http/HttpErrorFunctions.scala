@@ -49,31 +49,30 @@ trait HttpErrorFunctions {
 
   def is5xx(status: Int) = status >= 500 && status < 600
 
-  private def sanitiseHtmlErrorBody(response: HttpResponse): String = {
+  private def sanitiseHtmlErrorBody(response: HttpResponse, body: String): String = {
 
     import scala.util.matching.Regex
 
     val TitleRegex: Regex = """(?is)<title[^>]*>(.*?)</title>""".r
 
-    def isHtml(body: String): Boolean = {
+    def isHtml: Boolean = {
       response.header("Content-Type")
         .exists(_.toLowerCase.contains("text/html"))       ||
         body.trim.toLowerCase.startsWith("<!doctype html") ||
         body.trim.toLowerCase.startsWith("<html")
     }
 
-    def extractTitle(body: String): Option[String] =
+    def extractTitle: Option[String] =
       TitleRegex
         .findFirstMatchIn(body)
         .map(_.group(1))
         .map(_.trim.replaceAll("\\s+", " "))
-        .map(t => if (t.length > 200) t.take(200) + "...[truncated]" else t)
 
-    Option.when(isHtml(response.body)) {
-      extractTitle(response.body)
+    if (isHtml) {
+      extractTitle
         .map(t => s"[HTML error response suppressed] — title: $t")
         .getOrElse("[HTML error response suppressed] — no title found")
-    }.getOrElse(response.body)
+    } else body
   }
 
   // Note, no special handling of BadRequest or NotFound
@@ -82,7 +81,7 @@ trait HttpErrorFunctions {
     response.status match {
       case status if is4xx(status) || is5xx(status) =>
         Left(UpstreamErrorResponse(
-          message    = upstreamResponseMessage(httpMethod, url, status, sanitiseHtmlErrorBody(response)),
+          message    = upstreamResponseMessage(httpMethod, url, status, sanitiseHtmlErrorBody(response, response.body)),
           statusCode = status,
           reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
           headers    = response.headers
@@ -117,7 +116,7 @@ trait HttpErrorFunctions {
               case e: TimeoutException => "<Timed out awaiting error message>"
             }
           UpstreamErrorResponse(
-            message    = upstreamResponseMessage(httpMethod, url, status, errorMessage),
+            message    = upstreamResponseMessage(httpMethod, url, status, sanitiseHtmlErrorBody(response, errorMessage)),
             statusCode = status,
             reportAs   = if (is4xx(status)) HttpExceptions.INTERNAL_SERVER_ERROR else HttpExceptions.BAD_GATEWAY,
             headers    = response.headers
