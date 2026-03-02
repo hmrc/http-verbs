@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.http
 
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
@@ -33,6 +37,10 @@ class HttpErrorFunctionsSpec
   // Disable shrinking
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny
 
+  val exampleVerb = "GET"
+  val exampleUrl  = "http://example.com/something"
+  val exampleBody = "this is the string body"
+
   "HttpErrorFunctions.handleResponseEither" should {
     "return the response if the status code is between 200 and 299" in {
       forAll(Gen.choose(200, 299))(expectResponse)
@@ -47,11 +55,62 @@ class HttpErrorFunctionsSpec
       forAll(Gen.choose(0, 399))(expectResponse)
       forAll(Gen.choose(600, 1000))(expectResponse)
     }
-  }
 
-  val exampleVerb = "GET"
-  val exampleUrl  = "http://example.com/something"
-  val exampleBody = "this is the string body"
+    "suppress HTML in error response body" in {
+      val htmlBody =
+        """<!DOCTYPE html>
+          |<html>
+          |  <head><title>Error</title></head>
+          |  <body>Something went wrong</body>
+          |</html>""".stripMargin
+
+      val response =
+        HttpResponse(
+          status  = 500,
+          body    = htmlBody,
+          headers = Map("Content-Type" -> Seq("text/html"))
+        )
+
+      new HttpErrorFunctions {
+        val result = handleResponseEither(exampleVerb, exampleUrl)(response)
+        result match {
+          case Left(err) => err.message should include ("HTML error response suppressed")
+                            err.message should not include ("Something went wrong")
+          case Right(_)  => fail("Expected Left(UpstreamErrorResponse), got Right")
+        }
+      }
+    }
+
+    "suppress HTML in streamed error response body" in {
+
+      implicit val system: ActorSystem  = ActorSystem("TestSystem")
+      implicit val mat   : Materializer = Materializer(system)
+
+      val htmlBody =
+        """<!DOCTYPE html>
+          |<html>
+          |  <head><title>Error</title></head>
+          |  <body>Something went wrong</body>
+          |</html>""".stripMargin
+
+      // Create a HttpResponse with bodyAsSource
+      val response = HttpResponse(
+        status        = 500,
+        bodyAsSource  = Source.single(ByteString(htmlBody)),
+        headers       = Map("Content-Type" -> Seq("text/html"))
+      )
+
+      new HttpErrorFunctions {
+        val result = handleResponseEitherStream(exampleVerb, exampleUrl)(response)
+
+        result match {
+          case Left(err) => err.message should include ("HTML error response suppressed")
+                            err.message should not include ("Something went wrong")
+          case Right(_)  => fail("Expected Left(UpstreamErrorResponse), got Right")
+        }
+      }
+    }
+  }
 
   def expectError(statusCode: Int, reportAs: Int): Unit =
     new HttpErrorFunctions {
