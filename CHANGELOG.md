@@ -1,3 +1,7 @@
+### Version 15.8.0
+
+- HttpClientV2 now suppresses HTML in error response body
+
 ### Version 15.7.0
  
 - Version of MDC bumped to 0.4.0
